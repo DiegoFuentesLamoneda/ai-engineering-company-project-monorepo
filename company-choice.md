@@ -2,6 +2,7 @@
 
 ##La elección se basa en mi interés en los negocios B2B: consultoras, asesorías, gestorías incluso empresas relacionadas con la construcción. 
     Este ejemplo es el que más se parece al tipo de empresa que me gustaría poder optimizar y mejorar aplicando AI. 
+    Me interesa este proyecto porque presenta un ecosistema de desafíos interconectados donde la optimización puede generar un impacto inmediato. Mi objetivo es diseñar una propuesta que libere el tiempo de los consultores mediante la automatización, mejore la experiencia del cliente y la conversión comercial mediante una mayor visibilidad, y dote a la dirección de herramientas analíticas actualizadas. Resolver esta brecha operativa y digital es el tipo de reto estratégico que busco abordar.
 
     Los departamentos más interesantes son Ventas y Desarrollo de Negocio: la parte de prospección de leads, generar leads para empresas de cualquier sector con la ayuda de la IA me parece muy interesante
     así como el seguimiento de los leads con AI me llama mucho la atención. 
