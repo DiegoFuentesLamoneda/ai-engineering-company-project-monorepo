@@ -29,6 +29,4 @@ Cada carpeta de primer nivel tiene una responsabilidad y su propio `README.md`; 
 
 No dejes archivos de implementación en la raíz.
 
-## Bitácora
-
-[`docs/bitacora/`](./docs/bitacora/) — una carpeta por semana y un archivo por clase (lunes, miércoles y viernes) a partir de [`_plantilla.md`](./docs/bitacora/_plantilla.md).
+Las notas de clase **no van en este repo**: Diego las lleva por su cuenta en Drive. Este repositorio es solo el proyecto de empresa.
