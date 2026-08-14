@@ -1,0 +1,62 @@
+name: Desplegar el sitio web público
+
+# Publica uis/website/ en GitHub Pages. El sitio es estático, así que el
+# despliegue se limita a compilar el CSS de Tailwind y subir la carpeta.
+#
+# Se compila en CI aunque styles.css esté versionado: así el CSS publicado
+# nunca puede quedar desfasado respecto al HTML por un olvido al commitear.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "uis/website/**"
+      - ".github/workflows/deploy-website.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un despliegue a la vez, sin cancelar el que ya esté en marcha.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: uis/website/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+        working-directory: uis/website
+
+      - name: Compilar Tailwind
+        run: npm run build:css
+        working-directory: uis/website
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Empaquetar el sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: uis/website
+
+      - name: Desplegar
+        id: despliegue
+        uses: actions/deploy-pages@v4
