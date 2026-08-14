@@ -18,3 +18,6 @@ Thumbs.db
 
 # Nota: uis/website/styles.css SI se versiona. Lo genera el CLI de Tailwind,
 # pero el sitio es estatico y debe funcionar sin pasos de build al clonarlo.
+
+# Herramientas locales de QA del sitio (no forman parte del entregable)
+uis/website/_*.html

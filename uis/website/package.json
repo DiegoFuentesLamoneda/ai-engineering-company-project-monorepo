@@ -1,0 +1,15 @@
+{
+  "name": "nexova-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sitio web público de Nexova Solutions — landing y registro de talento",
+  "scripts": {
+    "dev": "http-server . -p 3000 -a 0.0.0.0 -c-1",
+    "build:css": "tailwindcss -i src/input.css -o styles.css --minify",
+    "watch:css": "tailwindcss -i src/input.css -o styles.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

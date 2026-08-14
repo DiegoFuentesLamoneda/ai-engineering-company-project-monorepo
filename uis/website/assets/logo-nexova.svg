@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152 32" role="img" aria-label="Nexova">
+  <title>Nexova</title>
+  <!-- Marca: tres nodos en progresión ascendente unidos por una trayectoria.
+       El nodo superior en ámbar representa la posición cubierta. -->
+  <path d="M6 25 L15 17 L27 6" fill="none" stroke="#1e5695" stroke-width="2.4"
+        stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>
+  <circle cx="6" cy="25" r="4" fill="#1e5695"/>
+  <circle cx="15" cy="17" r="4" fill="#336fb4"/>
+  <circle cx="27" cy="6" r="4.5" fill="#eda820"/>
+  <text x="42" y="24" fill="#143761"
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="19" font-weight="700" letter-spacing="1.6">NEXOVA</text>
+</svg>
