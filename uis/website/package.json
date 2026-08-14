@@ -4,7 +4,7 @@
   "private": true,
   "description": "Sitio web público de Nexova Solutions — landing y registro de talento",
   "scripts": {
-    "dev": "http-server . -p 3000 -a 0.0.0.0 -c-1",
+    "dev": "npx --yes http-server . -p 3000 -a 0.0.0.0 -c-1",
     "build:css": "tailwindcss -i src/input.css -o styles.css --minify",
     "watch:css": "tailwindcss -i src/input.css -o styles.css --watch"
   },
