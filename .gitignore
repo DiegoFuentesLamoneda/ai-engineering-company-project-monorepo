@@ -1,0 +1,20 @@
+# Dependencias
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Entorno
+.env
+.env.local
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+*.log
+
+# Nota: uis/website/styles.css SI se versiona. Lo genera el CLI de Tailwind,
+# pero el sitio es estatico y debe funcionar sin pasos de build al clonarlo.

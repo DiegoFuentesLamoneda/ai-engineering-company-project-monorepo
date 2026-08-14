@@ -1,0 +1,14 @@
+# Excluye rutas de las herramientas de búsqueda (ripgrep, fd, ag y las
+# herramientas de búsqueda de Claude Code / editores).
+#
+# NO es .gitignore: todo lo que aparece aquí sigue versionado y se sube al
+# repositorio. Lo único que cambia es que no ensucia los resultados de búsqueda.
+#
+# Buscar dentro no necesita flags: apuntar a la carpeta basta, porque las
+# reglas de ignore no se aplican a la ruta que se pasa explícitamente.
+#   rg "patrón" .                        -> la salta
+#   rg "patrón" docs/contexts-archive/   -> la busca
+
+# Contextos de las otras tres empresas del track (155 archivos).
+# La empresa activa es Nexova y su material vive en docs/contexts/.
+docs/contexts-archive/
