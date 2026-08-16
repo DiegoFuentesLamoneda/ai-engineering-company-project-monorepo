@@ -9,6 +9,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/utils/*.test.ts",
+    "test:watch": "tsx --test --watch src/utils/*.test.ts",
     "demo": "tsx src/demo.ts",
     "build": "tsc -p tsconfig.build.json"
   },
