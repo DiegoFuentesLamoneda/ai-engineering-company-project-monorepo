@@ -20,7 +20,8 @@ export function findCandidateById(
   candidates: Candidate[],
   id: string,
 ): Candidate | null {
-  throw new Error("Sin implementar: findCandidateById");
+  const candidate = candidates.find((c) => c.id === id);
+  return candidate ?? null;
 }
 
 /**
@@ -36,7 +37,8 @@ export function findCandidateByEmail(
   candidates: Candidate[],
   email: string,
 ): Candidate | null {
-  throw new Error("Sin implementar: findCandidateByEmail");
+  const candidate = candidates.find((c) => c.email.toLowerCase() === email.toLowerCase());
+  return candidate ?? null;
 }
 
 /**
@@ -55,5 +57,27 @@ export function binarySearchCandidateBySalary(
   sortedCandidates: Candidate[],
   targetSalary: number,
 ): number {
-  throw new Error("Sin implementar: binarySearchCandidateBySalary");
+  let left = 0;
+  let right = sortedCandidates.length - 1;
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+
+    // `mid` siempre cae dentro del array, pero TypeScript no sigue ese
+    // razonamiento: sin comprobarlo no deja usar el candidato.
+    const midCandidate = sortedCandidates[mid];
+    if (midCandidate === undefined) return -1;
+
+    const midSalary = midCandidate.expectedSalary;
+
+    if (midSalary === targetSalary) {
+      return mid;
+    } else if (midSalary < targetSalary) {
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+
+  return -1;
 }
