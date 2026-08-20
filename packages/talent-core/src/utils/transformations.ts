@@ -16,6 +16,8 @@ import type {
   SkillCount,
   Vacancy,
 } from "../types/models.js";
+import { ENGLISH_LEVELS, SENIORITY_LEVELS } from "../types/models.js";
+import { normalizeSkill } from "./collections.js";
 
 /**
  * Puntúa el encaje de un candidato con una vacante, de 0 a 100.
@@ -55,7 +57,87 @@ export function calculateCandidateScore(
   candidate: Candidate,
   vacancy: Vacancy,
 ): number {
-  throw new Error("Sin implementar: calculateCandidateScore");
+  const total =
+    scoreSkills(candidate, vacancy) +
+    scoreExperience(candidate, vacancy) +
+    scoreSeniority(candidate, vacancy) +
+    scoreEnglish(candidate, vacancy) +
+    scoreSalary(candidate, vacancy);
+
+  return Math.round(total);
+}
+
+// --- Los cinco bloques del scoring -----------------------------------------
+//
+// Uno por criterio, para poder razonar cada regla por separado. No se exportan:
+// solo tienen sentido como partes de `calculateCandidateScore`.
+
+/** Habilidades — 40 puntos máx. */
+function scoreSkills(candidate: Candidate, vacancy: Vacancy): number {
+  const owned = new Set(candidate.skills.map(normalizeSkill));
+
+  const required = vacancy.requiredSkills.map(normalizeSkill);
+  const matchedRequired = required.filter((skill) => owned.has(skill)).length;
+
+  let requiredPoints: number;
+  if (matchedRequired === required.length) {
+    // Cubre también la vacante que no exige ninguna habilidad.
+    requiredPoints = 40;
+  } else if (matchedRequired / required.length >= 0.5) {
+    requiredPoints = 20;
+  } else {
+    requiredPoints = 0;
+  }
+
+  const matchedPreferred = vacancy.preferredSkills
+    .map(normalizeSkill)
+    .filter((skill) => owned.has(skill)).length;
+  const preferredPoints = Math.min(20, matchedPreferred * 10);
+
+  return Math.min(40, requiredPoints + preferredPoints);
+}
+
+/** Experiencia — 20 puntos máx. */
+function scoreExperience(candidate: Candidate, vacancy: Vacancy): number {
+  // Años que se sale del rango por el extremo más cercano. Dentro del rango
+  // ambas restas son negativas, así que el 0 gana y la distancia es 0.
+  const distance = Math.max(
+    vacancy.minYearsExperience - candidate.yearsOfExperience,
+    candidate.yearsOfExperience - vacancy.maxYearsExperience,
+    0,
+  );
+
+  if (distance === 0) return 20;
+  if (distance <= 2) return 10;
+  return 0;
+}
+
+/** Seniority — 15 puntos máx. */
+function scoreSeniority(candidate: Candidate, vacancy: Vacancy): number {
+  const distance = Math.abs(
+    SENIORITY_LEVELS.indexOf(candidate.seniority) -
+      SENIORITY_LEVELS.indexOf(vacancy.requiredSeniority),
+  );
+
+  if (distance === 0) return 15;
+  if (distance === 1) return 7;
+  return 0;
+}
+
+/** Nivel de inglés — 15 puntos máx. */
+function scoreEnglish(candidate: Candidate, vacancy: Vacancy): number {
+  const candidateLevel = ENGLISH_LEVELS.indexOf(candidate.englishLevel);
+  const requiredLevel = ENGLISH_LEVELS.indexOf(vacancy.requiredEnglishLevel);
+
+  return candidateLevel >= requiredLevel ? 15 : 0;
+}
+
+/** Salario — 10 puntos máx. */
+function scoreSalary(candidate: Candidate, vacancy: Vacancy): number {
+  // Solo se mira el techo: pedir menos del mínimo no penaliza.
+  if (candidate.expectedSalary <= vacancy.salaryRangeMax) return 10;
+  if (candidate.expectedSalary <= vacancy.salaryRangeMax * 1.2) return 5;
+  return 0;
 }
 
 /**
@@ -72,7 +154,14 @@ export function rankCandidatesForVacancy(
   candidates: Candidate[],
   vacancy: Vacancy,
 ): ScoredCandidate[] {
-  throw new Error("Sin implementar: rankCandidatesForVacancy");
+  // `.map` ya devuelve un array nuevo, así que ordenarlo no toca el original.
+  // Y `.sort` es estable, de modo que los empates conservan el orden de entrada.
+  return candidates
+    .map((candidate) => ({
+      candidate,
+      score: calculateCandidateScore(candidate, vacancy),
+    }))
+    .sort((a, b) => b.score - a.score);
 }
 
 /**
@@ -88,7 +177,19 @@ export function rankCandidatesForVacancy(
 export function groupCandidatesBySeniority(
   candidates: Candidate[],
 ): Record<SeniorityLevel, Candidate[]> {
-  throw new Error("Sin implementar: groupCandidatesBySeniority");
+  const grouped: Record<SeniorityLevel, Candidate[]> = {
+    Junior: [],
+    "Semi-Senior": [],
+    Senior: [],
+    Lead: [],
+    Executive: [],
+  };
+
+  for (const candidate of candidates) {
+    grouped[candidate.seniority].push(candidate);
+  }
+
+  return grouped;
 }
 
 /**
@@ -103,6 +204,18 @@ export function groupCandidatesBySeniority(
 export function countCandidatesByStatus(
   candidates: Candidate[],
 ): Record<CandidateStatus, number> {
+  const statusCounts: Record<CandidateStatus, number> = {
+    Active: 0,
+    "In process": 0,
+    Hired: 0,
+    Inactive: 0,
+  };
+
+  for (const candidate of candidates) {
+    statusCounts[candidate.status]++;
+  }
+
+  return statusCounts;
   throw new Error("Sin implementar: countCandidatesByStatus");
 }
 
@@ -114,7 +227,9 @@ export function countCandidatesByStatus(
  *   hay candidatos — dividir entre cero daría `NaN` y contaminaría el reporte.
  */
 export function calculateAverageSalary(candidates: Candidate[]): number {
-  throw new Error("Sin implementar: calculateAverageSalary");
+  if (candidates.length === 0) return 0;
+  const totalSalary = candidates.reduce((sum, candidate) => sum + candidate.expectedSalary, 0);
+  return parseFloat((totalSalary / candidates.length).toFixed(2));
 }
 
 /**
@@ -136,7 +251,39 @@ export function findTopSkills(
   candidates: Candidate[],
   topN: number,
 ): SkillCount[] {
-  throw new Error("Sin implementar: findTopSkills");
+  if (topN <= 0) return [];
+
+  // Clave: la habilidad normalizada. Valor: la primera grafía vista y cuántos
+  // candidatos la declaran.
+  const tally = new Map<string, SkillCount>();
+
+  for (const candidate of candidates) {
+    // Una ficha que repite la misma habilidad sigue sumando 1.
+    const counted = new Set<string>();
+
+    for (const skill of candidate.skills) {
+      const key = normalizeSkill(skill);
+      if (counted.has(key)) continue;
+      counted.add(key);
+
+      const entry = tally.get(key);
+      if (entry === undefined) {
+        tally.set(key, { skill, count: 1 });
+      } else {
+        entry.count += 1;
+      }
+    }
+  }
+
+  return [...tally]
+    .sort(([keyA, a], [keyB, b]) => {
+      if (a.count !== b.count) return b.count - a.count;
+      // Desempate alfabético por la forma normalizada: sin él, dos ejecuciones
+      // con los mismos datos podrían dar reportes distintos.
+      return keyA < keyB ? -1 : keyA > keyB ? 1 : 0;
+    })
+    .slice(0, topN)
+    .map(([, entry]) => entry);
 }
 
 /**
@@ -147,5 +294,7 @@ export function findTopSkills(
  *   redondeado a 2 decimales; 0 si no hay procesos.
  */
 export function calculateVacancyFillRate(processes: SelectionProcess[]): number {
-  throw new Error("Sin implementar: calculateVacancyFillRate");
+  if (processes.length === 0) return 0;
+  const hiredCount = processes.filter((p) => p.stage === "Hired").length;
+  return parseFloat(((hiredCount / processes.length) * 100).toFixed(2));
 }
