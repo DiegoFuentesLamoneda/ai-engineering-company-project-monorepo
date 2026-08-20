@@ -39,7 +39,12 @@ export function filterCandidatesBySkills(
   candidates: Candidate[],
   requiredSkills: string[],
 ): Candidate[] {
-  throw new Error("Sin implementar: filterCandidatesBySkills");
+  const required = requiredSkills.map(normalizeSkill);
+
+  return candidates.filter((candidate) => {
+    const owned = candidate.skills.map(normalizeSkill);
+    return required.every((skill) => owned.includes(skill));
+  });
 }
 
 /**
@@ -53,7 +58,7 @@ export function filterCandidatesBySeniority(
   candidates: Candidate[],
   seniority: SeniorityLevel,
 ): Candidate[] {
-  throw new Error("Sin implementar: filterCandidatesBySeniority");
+  return candidates.filter((candidate) => candidate.seniority === seniority);
 }
 
 /**
@@ -69,7 +74,7 @@ export function filterCandidatesByAvailability(
   candidates: Candidate[],
   availability: AvailabilityStatus[],
 ): Candidate[] {
-  throw new Error("Sin implementar: filterCandidatesByAvailability");
+  return candidates.filter((candidate) => availability.includes(candidate.availability));
 }
 
 /**
@@ -83,7 +88,13 @@ export function sortCandidatesBySalary(
   candidates: Candidate[],
   order: SortOrder,
 ): Candidate[] {
-  throw new Error("Sin implementar: sortCandidatesBySalary");
+  return candidates.slice().sort((a, b) => {
+    if (order === "asc") {
+      return a.expectedSalary - b.expectedSalary;
+    } else {
+      return b.expectedSalary - a.expectedSalary;
+    }
+  });
 }
 
 /**
@@ -97,5 +108,11 @@ export function sortCandidatesByExperience(
   candidates: Candidate[],
   order: SortOrder,
 ): Candidate[] {
-  throw new Error("Sin implementar: sortCandidatesByExperience");
+  return candidates.slice().sort((a, b) => {
+    if (order === "asc") {
+      return a.yearsOfExperience - b.yearsOfExperience;
+    } else {
+      return b.yearsOfExperience - a.yearsOfExperience;
+    }
+  });
 }
