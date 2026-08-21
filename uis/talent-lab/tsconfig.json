@@ -1,0 +1,24 @@
+{
+  // Compila `packages/talent-core` dentro de esta carpeta.
+  //
+  // El laboratorio es una página estática: necesita el JavaScript ya traducido
+  // y servible junto al HTML. Hereda la configuración del paquete para que la
+  // salida sea exactamente la misma que produce su propio `npm run build`.
+  "extends": "../../packages/talent-core/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../../packages/talent-core/src",
+    "outDir": "dist",
+    // El código de librería no toca Node: el único archivo que lo necesitaba
+    // era el demo por consola, y aquí queda excluido.
+    "types": [],
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
+  },
+  "include": ["../../packages/talent-core/src/**/*.ts"],
+  "exclude": [
+    "../../packages/talent-core/src/**/*.test.ts",
+    "../../packages/talent-core/src/testing/**",
+    "../../packages/talent-core/src/demo.ts"
+  ]
+}

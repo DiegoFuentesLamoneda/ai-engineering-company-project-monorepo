@@ -1,0 +1,113 @@
+/**
+ * Operaciones sobre colecciones de candidatos: filtrar y ordenar.
+ *
+ * Todas las funciones de este archivo son puras: reciben un array, devuelven
+ * uno nuevo y **nunca** modifican el que reciben. Ojo con `Array.prototype.sort`,
+ * que ordena in situ — hay que copiar antes.
+ */
+import { SENIORITY_LEVELS } from "../types/models.js";
+/**
+ * Lleva una habilidad a su forma comparable.
+ *
+ * El contexto exige que el matching de habilidades sea case-insensitive, y
+ * los datos reales llegan del ATS con mayúsculas inconsistentes y espacios de
+ * más. Esta es la única definición de "misma habilidad" del paquete: la
+ * reutilizan `search.ts` y `transformations.ts` para no discrepar entre sí.
+ */
+export function normalizeSkill(skill) {
+    return skill.trim().toLowerCase();
+}
+/**
+ * Candidatos que tienen **todas** las habilidades requeridas.
+ *
+ * - El matching es case-insensitive (usa `normalizeSkill`).
+ * - Con `requiredSkills` vacío no hay nada que exigir: devuelve todos.
+ *
+ * @param candidates Colección a filtrar; no se modifica.
+ * @param requiredSkills Habilidades que el candidato debe tener todas.
+ * @returns Un array nuevo con los candidatos que cumplen.
+ */
+export function filterCandidatesBySkills(candidates, requiredSkills) {
+    const required = requiredSkills.map(normalizeSkill);
+    return candidates.filter((candidate) => {
+        const owned = candidate.skills.map(normalizeSkill);
+        return required.every((skill) => owned.includes(skill));
+    });
+}
+/**
+ * Candidatos con el nivel de seniority indicado.
+ *
+ * @param candidates Colección a filtrar; no se modifica.
+ * @param seniority Nivel exacto que se busca.
+ * @returns Un array nuevo con los candidatos de ese nivel.
+ */
+export function filterCandidatesBySeniority(candidates, seniority) {
+    return candidates.filter((candidate) => candidate.seniority === seniority);
+}
+/**
+ * Candidatos cuya disponibilidad coincide con **alguno** de los estados dados.
+ *
+ * - Con `availability` vacío no hay ningún estado aceptable: devuelve vacío.
+ *
+ * @param candidates Colección a filtrar; no se modifica.
+ * @param availability Estados de disponibilidad aceptables.
+ * @returns Un array nuevo con los candidatos que encajan.
+ */
+export function filterCandidatesByAvailability(candidates, availability) {
+    return candidates.filter((candidate) => availability.includes(candidate.availability));
+}
+/**
+ * Candidatos ordenados por salario esperado (`expectedSalary`).
+ *
+ * @param candidates Colección a ordenar; **no se modifica**.
+ * @param order `"asc"` de menor a mayor, `"desc"` de mayor a menor.
+ * @returns Un array nuevo ordenado.
+ */
+export function sortCandidatesBySalary(candidates, order) {
+    return candidates.slice().sort((a, b) => {
+        if (order === "asc") {
+            return a.expectedSalary - b.expectedSalary;
+        }
+        else {
+            return b.expectedSalary - a.expectedSalary;
+        }
+    });
+}
+/**
+ * Candidatos ordenados por seniority y, a igualdad de nivel, por salario esperado.
+ *
+ * Es la vista con la que un consultor repasa una lista de verdad: primero por
+ * nivel profesional, y dentro de cada nivel por lo que pide cada uno.
+ *
+ * @param candidates Colección a ordenar; **no se modifica**.
+ * @param order `"asc"` de Junior a Executive y de menor a mayor salario;
+ *   `"desc"` invierte los dos criterios.
+ * @returns Un array nuevo ordenado.
+ */
+export function sortCandidatesBySeniorityThenSalary(candidates, order) {
+    const direction = order === "asc" ? 1 : -1;
+    return candidates.slice().sort((a, b) => {
+        // El orden de los niveles lo fija SENIORITY_LEVELS; el índice es la escala.
+        const bySeniority = SENIORITY_LEVELS.indexOf(a.seniority) - SENIORITY_LEVELS.indexOf(b.seniority);
+        if (bySeniority !== 0)
+            return bySeniority * direction;
+        return (a.expectedSalary - b.expectedSalary) * direction;
+    });
+}
+/**
+ * Candidatos ordenados por años de experiencia (`yearsOfExperience`).
+ *
+ * @param candidates Colección a ordenar; **no se modifica**.
+ * @param order `"asc"` de menor a mayor, `"desc"` de mayor a menor.
+ * @returns Un array nuevo ordenado.
+ */
+export function sortCandidatesByExperience(candidates, order) {
+    return candidates.slice().sort((a, b) => {
+        if (order === "asc") {
+            return a.yearsOfExperience - b.yearsOfExperience;
+        }
+        else {
+            return b.yearsOfExperience - a.yearsOfExperience;
+        }
+    });
+}

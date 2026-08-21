@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    // ESM moderno: los imports relativos llevan extensión `.js`, de modo que
+    // la salida de `tsc` se puede cargar tal cual en el navegador desde
+    // uis/talent-lab/ sin bundler.
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}

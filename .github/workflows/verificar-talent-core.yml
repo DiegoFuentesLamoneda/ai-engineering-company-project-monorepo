@@ -1,0 +1,46 @@
+name: Verificar talent-core
+
+# El hito 2 exige que no haya errores de compilación de TypeScript en ningún
+# archivo. Comprobarlo en CI lo deja por escrito en cada PR, en vez de depender
+# de que alguien se acuerde de ejecutar los comandos en local.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/talent-core/**"
+      - ".github/workflows/verificar-talent-core.yml"
+  pull_request:
+    paths:
+      - "packages/talent-core/**"
+      - ".github/workflows/verificar-talent-core.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/talent-core/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+        working-directory: packages/talent-core
+
+      - name: Comprobar los tipos
+        run: npm run typecheck
+        working-directory: packages/talent-core
+
+      - name: Ejecutar las pruebas
+        run: npm test
+        working-directory: packages/talent-core

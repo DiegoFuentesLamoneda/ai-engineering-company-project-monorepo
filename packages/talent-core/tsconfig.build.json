@@ -1,0 +1,7 @@
+{
+  // `npm run build` compila solo lo que se publica: los tests y sus fábricas
+  // se quedan fuera de dist/. `npm run typecheck` sí los revisa, porque usa
+  // tsconfig.json.
+  "extends": "./tsconfig.json",
+  "exclude": ["src/**/*.test.ts", "src/testing/**"]
+}
