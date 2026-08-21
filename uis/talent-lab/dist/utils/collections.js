@@ -5,6 +5,7 @@
  * uno nuevo y **nunca** modifican el que reciben. Ojo con `Array.prototype.sort`,
  * que ordena in situ — hay que copiar antes.
  */
+import { SENIORITY_LEVELS } from "../types/models.js";
 /**
  * Lleva una habilidad a su forma comparable.
  *
@@ -70,6 +71,27 @@ export function sortCandidatesBySalary(candidates, order) {
         else {
             return b.expectedSalary - a.expectedSalary;
         }
+    });
+}
+/**
+ * Candidatos ordenados por seniority y, a igualdad de nivel, por salario esperado.
+ *
+ * Es la vista con la que un consultor repasa una lista de verdad: primero por
+ * nivel profesional, y dentro de cada nivel por lo que pide cada uno.
+ *
+ * @param candidates Colección a ordenar; **no se modifica**.
+ * @param order `"asc"` de Junior a Executive y de menor a mayor salario;
+ *   `"desc"` invierte los dos criterios.
+ * @returns Un array nuevo ordenado.
+ */
+export function sortCandidatesBySeniorityThenSalary(candidates, order) {
+    const direction = order === "asc" ? 1 : -1;
+    return candidates.slice().sort((a, b) => {
+        // El orden de los niveles lo fija SENIORITY_LEVELS; el índice es la escala.
+        const bySeniority = SENIORITY_LEVELS.indexOf(a.seniority) - SENIORITY_LEVELS.indexOf(b.seniority);
+        if (bySeniority !== 0)
+            return bySeniority * direction;
+        return (a.expectedSalary - b.expectedSalary) * direction;
     });
 }
 /**

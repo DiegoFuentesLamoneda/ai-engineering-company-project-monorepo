@@ -15,6 +15,7 @@ import {
   filterCandidatesBySkills,
   sortCandidatesByExperience,
   sortCandidatesBySalary,
+  sortCandidatesBySeniorityThenSalary,
 } from "./utils/collections.js";
 import {
   binarySearchCandidateBySalary,
@@ -29,6 +30,7 @@ import {
   findTopSkills,
   groupCandidatesBySeniority,
   rankCandidatesForVacancy,
+  summarizeExpectedSalaries,
 } from "./utils/transformations.js";
 import { validateCandidate, validateVacancy } from "./utils/validations.js";
 
@@ -76,6 +78,15 @@ console.table(
   sortCandidatesByExperience(sampleCandidates, "asc")
     .slice(0, 5)
     .map((c) => ({ Candidato: c.fullName, Años: c.yearsOfExperience })),
+);
+
+// Dos criterios: el nivel manda, y a igualdad de nivel decide el salario.
+console.table(
+  sortCandidatesBySeniorityThenSalary(sampleCandidates, "asc").map((c) => ({
+    Candidato: c.fullName,
+    Seniority: c.seniority,
+    Pide: c.expectedSalary,
+  })),
 );
 
 // ---------------------------------------------------------------------------
@@ -139,8 +150,12 @@ console.table(
 console.log("Habilidades más frecuentes:");
 console.table(findTopSkills(sampleCandidates, 5));
 
+console.log("Ficha económica de la base de talento:");
+console.table(summarizeExpectedSalaries(sampleCandidates));
+
 console.log(`Salario esperado medio:     ${calculateAverageSalary(sampleCandidates)} USD`);
 console.log(`Tasa de cobertura:          ${calculateVacancyFillRate(sampleProcesses)} %`);
+console.log("Resumen de una lista vacía:", summarizeExpectedSalaries([]));
 
 // ---------------------------------------------------------------------------
 section("6 · Validaciones");

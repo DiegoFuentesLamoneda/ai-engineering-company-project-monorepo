@@ -191,6 +191,30 @@ export function calculateAverageSalary(candidates) {
     return parseFloat((totalSalary / candidates.length).toFixed(2));
 }
 /**
+ * Ficha económica de un conjunto de candidatos.
+ *
+ * Reúne lo que dirección pregunta siempre ante una lista: cuánto costaría
+ * entera, cuánto pide de media, y quién marca los extremos.
+ *
+ * @param candidates Candidatos a resumir.
+ * @returns Total, media, mínimo y máximo de `expectedSalary`; `null` si no hay
+ *   candidatos — el mínimo de un conjunto vacío no existe, y devolver 0 lo
+ *   haría pasar por un dato real.
+ */
+export function summarizeExpectedSalaries(candidates) {
+    if (candidates.length === 0)
+        return null;
+    const salaries = candidates.map((candidate) => candidate.expectedSalary);
+    // Con `reduce` y no con `Math.min(...salaries)`: el spread pasa cada salario
+    // como argumento y desborda la pila cuando la base de talento crece.
+    return {
+        total: salaries.reduce((sum, salary) => sum + salary, 0),
+        average: calculateAverageSalary(candidates),
+        min: salaries.reduce((lowest, salary) => (salary < lowest ? salary : lowest)),
+        max: salaries.reduce((highest, salary) => (salary > highest ? salary : highest)),
+    };
+}
+/**
  * Las habilidades más frecuentes en la base de talento.
  *
  * - `count` es **cuántos candidatos** declaran la habilidad, no cuántas veces

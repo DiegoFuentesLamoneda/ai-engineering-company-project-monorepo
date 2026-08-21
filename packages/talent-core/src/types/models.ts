@@ -201,3 +201,15 @@ export interface SkillCount {
   /** Cuántos candidatos declaran esa habilidad */
   count: number;
 }
+
+/** Ficha económica de un conjunto de candidatos, en USD. */
+export interface SalarySummary {
+  /** Suma de todos los `expectedSalary` */
+  total: number;
+  /** Media de `expectedSalary`, redondeada a 2 decimales */
+  average: number;
+  /** El `expectedSalary` más bajo del conjunto */
+  min: number;
+  /** El `expectedSalary` más alto del conjunto */
+  max: number;
+}

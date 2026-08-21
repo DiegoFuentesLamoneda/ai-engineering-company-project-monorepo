@@ -12,7 +12,7 @@ Especificación de referencia: [`CONTEXT.md`](../../CONTEXT.md) (apéndice del h
 npm install        # solo la primera vez
 
 npm run typecheck  # tsc --noEmit — ni un error de tipos
-npm test           # 103 pruebas con el runner de Node
+npm test           # 112 pruebas con el runner de Node
 npm run test:watch # las mismas, relanzadas al guardar
 npm run demo       # recorrido por consola de toda la API
 npm run build      # compila a dist/ como ESM cargable en el navegador
@@ -54,6 +54,7 @@ Las escalas `ENGLISH_LEVELS` y `SENIORITY_LEVELS` fijan el orden de esos niveles
 | `filterCandidatesByAvailability(candidates, availability)` | Quienes encajan con **alguno** de esos estados        |
 | `sortCandidatesBySalary(candidates, order)`                | Ordenados por `expectedSalary`                        |
 | `sortCandidatesByExperience(candidates, order)`            | Ordenados por `yearsOfExperience`                     |
+| `sortCandidatesBySeniorityThenSalary(candidates, order)`   | Por nivel y, a igualdad de nivel, por salario         |
 | `normalizeSkill(skill)`                                    | La definición única de "misma habilidad" del paquete  |
 
 ### Búsquedas
@@ -75,6 +76,7 @@ La binaria **exige** el array ya ordenado por `expectedSalary` ascendente. Sobre
 | `groupCandidatesBySeniority(candidates)`         | Los cinco niveles como claves, siempre                      |
 | `countCandidatesByStatus(candidates)`            | Los cuatro estados como claves, siempre                     |
 | `calculateAverageSalary(candidates)`             | Media de `expectedSalary`, 2 decimales                      |
+| `summarizeExpectedSalaries(candidates)`          | Total, media, mínimo y máximo; `null` si no hay candidatos  |
 | `findTopSkills(candidates, topN)`                | Las N habilidades más frecuentes                            |
 | `calculateVacancyFillRate(processes)`            | Porcentaje de procesos en `"Hired"`, 2 decimales            |
 
@@ -114,6 +116,8 @@ Carolina Silva contra la vacante del enunciado saca 100; María González, 92; J
 
 **Los datos de ejemplo son deterministas.** Fechas fijas, nada de `new Date()` ni de aleatoriedad, para poder comparar la salida entre ejecuciones.
 
+**`summarizeExpectedSalaries` devuelve `null` con la lista vacía, no ceros.** La media de un conjunto vacío se puede definir como 0 por convenio —y así lo hace `calculateAverageSalary`, porque el contexto lo pide—, pero el mínimo y el máximo simplemente no existen. Devolver `{ min: 0, max: 0 }` metería un dato falso en el informe.
+
 ## Desviaciones respecto al enunciado
 
 | Enunciado                                                    | En el paquete                                        | Motivo                                                                       |
@@ -125,6 +129,13 @@ Carolina Silva contra la vacante del enunciado saca 100; María González, 92; J
 | La versión inglesa del contexto sitúa el rol en el "TrackFlow Tech Team" | "Nexova AI Team", como en la versión española | TrackFlow es otra empresa del track; es un descuido del original |
 
 Se mantienen **literales** los nombres de las 18 funciones y de sus parámetros, todos los campos de las tres entidades, los valores de las seis uniones, las reglas de validación, los tres candidatos y la vacante de ejemplo.
+
+## Añadidos sobre el contexto
+
+El `CONTEXT.md` de Nexova lista 18 funciones, pero el enunciado del hito pide además *"calcular totales, máximos y mínimos"* y ordenar *"por múltiples campos"*. Dos funciones cubren ese hueco sin salirse del dominio:
+
+- **`summarizeExpectedSalaries`** — la ficha económica de una lista: cuánto costaría entera, la media, y quién marca los extremos.
+- **`sortCandidatesBySeniorityThenSalary`** — ordenación de dos criterios, que es como un consultor repasa una lista de verdad: por nivel, y dentro de cada nivel por lo que pide cada uno.
 
 ## Pruebas
 

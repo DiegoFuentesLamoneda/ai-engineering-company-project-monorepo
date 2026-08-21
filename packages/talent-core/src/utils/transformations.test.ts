@@ -11,6 +11,7 @@ import {
   findTopSkills,
   groupCandidatesBySeniority,
   rankCandidatesForVacancy,
+  summarizeExpectedSalaries,
 } from "./transformations.js";
 
 // La vacante del contexto: 3 requeridas, 2 preferidas, 4-8 años, B2, Senior,
@@ -268,6 +269,38 @@ describe("calculateAverageSalary", () => {
 
   it("devuelve 0 con una colección vacía, no NaN", () => {
     assert.equal(calculateAverageSalary([]), 0);
+  });
+});
+
+describe("summarizeExpectedSalaries", () => {
+  it("calcula total, media, mínimo y máximo", () => {
+    assert.deepEqual(
+      summarizeExpectedSalaries([
+        makeCandidate({ expectedSalary: 2000 }),
+        makeCandidate({ expectedSalary: 1000 }),
+        makeCandidate({ expectedSalary: 3001 }),
+      ]),
+      { total: 6001, average: 2000.33, min: 1000, max: 3001 },
+    );
+  });
+
+  it("no depende del orden de entrada", () => {
+    const desordenados = [5000, 1000, 9000].map((s) => makeCandidate({ expectedSalary: s }));
+    const ordenados = [1000, 5000, 9000].map((s) => makeCandidate({ expectedSalary: s }));
+    assert.deepEqual(summarizeExpectedSalaries(desordenados), summarizeExpectedSalaries(ordenados));
+  });
+
+  it("con un único candidato, el mínimo y el máximo son el mismo", () => {
+    assert.deepEqual(summarizeExpectedSalaries([makeCandidate({ expectedSalary: 4200 })]), {
+      total: 4200,
+      average: 4200,
+      min: 4200,
+      max: 4200,
+    });
+  });
+
+  it("devuelve null con una colección vacía, no ceros", () => {
+    assert.equal(summarizeExpectedSalaries([]), null);
   });
 });
 

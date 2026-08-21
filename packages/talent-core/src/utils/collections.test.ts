@@ -9,6 +9,7 @@ import {
   normalizeSkill,
   sortCandidatesByExperience,
   sortCandidatesBySalary,
+  sortCandidatesBySeniorityThenSalary,
 } from "./collections.js";
 
 const ana = makeCandidate({
@@ -146,5 +147,41 @@ describe("sortCandidatesByExperience", () => {
 
   it("acepta una colección vacía", () => {
     assert.deepEqual(sortCandidatesByExperience([], "desc"), []);
+  });
+});
+
+describe("sortCandidatesBySeniorityThenSalary", () => {
+  it("ordena por nivel y, dentro del nivel, por salario ascendente", () => {
+    // Junior primero; luego los dos Senior, el que menos pide por delante.
+    assert.deepEqual(ids(sortCandidatesBySeniorityThenSalary(candidates, "asc")), [
+      "C-2",
+      "C-3",
+      "C-1",
+    ]);
+  });
+
+  it("invierte los dos criterios en orden descendente", () => {
+    assert.deepEqual(ids(sortCandidatesBySeniorityThenSalary(candidates, "desc")), [
+      "C-1",
+      "C-3",
+      "C-2",
+    ]);
+  });
+
+  it("desempata por salario solo dentro del mismo nivel", () => {
+    // El Junior pide 2500, menos que los dos Senior, y aun así va detrás en
+    // orden descendente: el nivel manda sobre el salario.
+    const ordenados = sortCandidatesBySeniorityThenSalary(candidates, "desc");
+    assert.equal(ordenados.at(-1)?.seniority, "Junior");
+  });
+
+  it("no modifica la colección recibida", () => {
+    const original = ids(candidates);
+    sortCandidatesBySeniorityThenSalary(candidates, "asc");
+    assert.deepEqual(ids(candidates), original);
+  });
+
+  it("acepta una colección vacía", () => {
+    assert.deepEqual(sortCandidatesBySeniorityThenSalary([], "asc"), []);
   });
 });

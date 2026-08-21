@@ -27,6 +27,8 @@ import {
   sampleVacancies,
   sortCandidatesByExperience,
   sortCandidatesBySalary,
+  sortCandidatesBySeniorityThenSalary,
+  summarizeExpectedSalaries,
   validateCandidate,
 } from "./dist/index.js";
 
@@ -180,16 +182,19 @@ function filtrar() {
   );
 }
 
+const ORDENACIONES = {
+  salario: { fn: sortCandidatesBySalary, etiqueta: "salario esperado" },
+  experiencia: { fn: sortCandidatesByExperience, etiqueta: "años de experiencia" },
+  nivel: { fn: sortCandidatesBySeniorityThenSalary, etiqueta: "nivel y, a igualdad, salario" },
+};
+
 function ordenar(campo, order) {
-  const ordenados =
-    campo === "salario"
-      ? sortCandidatesBySalary(sampleCandidates, order)
-      : sortCandidatesByExperience(sampleCandidates, order);
+  const { fn, etiqueta } = ORDENACIONES[campo];
 
   mostrar(
-    `Ordenado por ${campo === "salario" ? "salario esperado" : "años de experiencia"}`,
+    `Ordenado por ${etiqueta}`,
     `${order === "asc" ? "Ascendente" : "Descendente"} · la lista original no se modifica`,
-    tablaCandidatos(ordenados),
+    tablaCandidatos(fn(sampleCandidates, order)),
   );
 }
 
@@ -316,20 +321,29 @@ function reporteTopSkills() {
 }
 
 function reporteMetricas() {
+  const usd = (n) => `${n.toLocaleString("es-ES")} USD`;
+  const salarios = summarizeExpectedSalaries(sampleCandidates);
+
+  const filas = [
+    ["Salario esperado medio", usd(calculateAverageSalary(sampleCandidates))],
+    ["Tasa de cobertura de vacantes", `${calculateVacancyFillRate(sampleProcesses)} %`],
+    ["Procesos registrados", sampleProcesses.length],
+  ];
+
+  // `summarizeExpectedSalaries` devuelve null si no hay candidatos: el mínimo
+  // de un conjunto vacío no existe.
+  if (salarios !== null) {
+    filas.push(
+      ["Coste total de la base de talento", usd(salarios.total)],
+      ["Salario esperado más bajo", usd(salarios.min)],
+      ["Salario esperado más alto", usd(salarios.max)],
+    );
+  }
+
   mostrar(
     "Métricas del informe semanal",
     "Las cifras que hoy se preparan a mano para dirección",
-    tabla(
-      ["Métrica", "Valor"],
-      [
-        [
-          "Salario esperado medio",
-          `${calculateAverageSalary(sampleCandidates).toLocaleString("es-ES")} USD`,
-        ],
-        ["Tasa de cobertura de vacantes", `${calculateVacancyFillRate(sampleProcesses)} %`],
-        ["Procesos registrados", sampleProcesses.length],
-      ],
-    ),
+    tabla(["Métrica", "Valor"], filas),
   );
 }
 
@@ -370,6 +384,8 @@ const acciones = {
   "salario-desc": () => ordenar("salario", "desc"),
   "experiencia-asc": () => ordenar("experiencia", "asc"),
   "experiencia-desc": () => ordenar("experiencia", "desc"),
+  "nivel-asc": () => ordenar("nivel", "asc"),
+  "nivel-desc": () => ordenar("nivel", "desc"),
   "buscar-id": buscarPorId,
   "buscar-email": buscarPorEmail,
   "buscar-salario": buscarPorSalario,
