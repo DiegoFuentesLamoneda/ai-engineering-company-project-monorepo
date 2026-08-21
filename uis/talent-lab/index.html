@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>talent-core · Banco de pruebas — Nexova</title>
+    <meta
+      name="description"
+      content="Herramienta interna para probar a mano las funciones de scoring y matching de candidatos de Nexova."
+    />
+    <link rel="icon" href="../website/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body class="bg-marca-50 text-marca-950 antialiased">
+    <a
+      href="#resultado"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-marca-700 focus:px-4 focus:py-2 focus:text-white"
+      >Saltar al resultado</a
+    >
+
+    <header class="border-b border-marca-200 bg-white">
+      <div class="mx-auto flex max-w-7xl flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-4 sm:px-6">
+        <h1 class="text-lg font-bold tracking-tight text-marca-800">Nexova · talent-core</h1>
+        <p class="text-sm text-marca-600">Banco de pruebas interno</p>
+        <p class="ml-auto text-xs text-marca-500" id="dataset"></p>
+      </div>
+    </header>
+
+    <main class="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[22rem_1fr]">
+      <!-- ---------------------------------------------------------------- -->
+      <aside class="space-y-4">
+        <!-- Filtros -->
+        <section class="rounded-lg border border-marca-200 bg-white p-4">
+          <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-marca-700">Filtrar</h2>
+
+          <div class="space-y-3">
+            <div>
+              <label for="skills" class="block text-sm font-medium">Habilidades requeridas</label>
+              <input
+                id="skills"
+                type="text"
+                placeholder="TypeScript, Node.js"
+                class="mt-1 w-full rounded border border-marca-300 px-2 py-1.5 text-sm focus:border-marca-600 focus:ring-2 focus:ring-marca-300 focus:outline-none"
+              />
+              <p class="mt-1 text-xs text-marca-500">Separadas por comas. Debe tenerlas todas.</p>
+            </div>
+
+            <div>
+              <label for="seniority" class="block text-sm font-medium">Seniority</label>
+              <select
+                id="seniority"
+                class="mt-1 w-full rounded border border-marca-300 bg-white px-2 py-1.5 text-sm focus:border-marca-600 focus:ring-2 focus:ring-marca-300 focus:outline-none"
+              >
+                <option value="">Cualquiera</option>
+              </select>
+            </div>
+
+            <fieldset>
+              <legend class="text-sm font-medium">Disponibilidad</legend>
+              <div id="availability" class="mt-1 grid grid-cols-2 gap-x-2 gap-y-1"></div>
+            </fieldset>
+
+            <div class="flex gap-2 pt-1">
+              <button type="button" data-action="filtrar" class="flex-1 rounded bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-800 focus:ring-2 focus:ring-marca-400 focus:outline-none">
+                Filtrar
+              </button>
+              <button type="button" data-action="limpiar" class="rounded border border-marca-300 px-3 py-1.5 text-sm font-medium hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">
+                Limpiar
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Ordenar -->
+        <section class="rounded-lg border border-marca-200 bg-white p-4">
+          <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-marca-700">Ordenar</h2>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-action="salario-asc" class="rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Salario ↑</button>
+            <button type="button" data-action="salario-desc" class="rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Salario ↓</button>
+            <button type="button" data-action="experiencia-asc" class="rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Experiencia ↑</button>
+            <button type="button" data-action="experiencia-desc" class="rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Experiencia ↓</button>
+          </div>
+        </section>
+
+        <!-- Buscar -->
+        <section class="rounded-lg border border-marca-200 bg-white p-4">
+          <h2 class="mb-1 text-sm font-bold uppercase tracking-wide text-marca-700">Buscar</h2>
+          <p class="mb-3 text-xs text-marca-500">Las dos primeras son lineales; la tercera, binaria.</p>
+
+          <div class="space-y-3">
+            <div>
+              <label for="buscar-id" class="block text-sm font-medium">Por id</label>
+              <div class="mt-1 flex gap-2">
+                <input id="buscar-id" type="text" value="C-2024-0453" class="min-w-0 flex-1 rounded border border-marca-300 px-2 py-1.5 text-sm focus:border-marca-600 focus:ring-2 focus:ring-marca-300 focus:outline-none" />
+                <button type="button" data-action="buscar-id" class="rounded bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-800 focus:ring-2 focus:ring-marca-400 focus:outline-none">Ir</button>
+              </div>
+            </div>
+
+            <div>
+              <label for="buscar-email" class="block text-sm font-medium">Por email</label>
+              <div class="mt-1 flex gap-2">
+                <input id="buscar-email" type="text" value="CAROLINA.SILVA@EMAIL.COM" class="min-w-0 flex-1 rounded border border-marca-300 px-2 py-1.5 text-sm focus:border-marca-600 focus:ring-2 focus:ring-marca-300 focus:outline-none" />
+                <button type="button" data-action="buscar-email" class="rounded bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-800 focus:ring-2 focus:ring-marca-400 focus:outline-none">Ir</button>
+              </div>
+            </div>
+
+            <div>
+              <label for="buscar-salario" class="block text-sm font-medium">Binaria por salario esperado</label>
+              <div class="mt-1 flex gap-2">
+                <input id="buscar-salario" type="number" value="6500" step="100" class="min-w-0 flex-1 rounded border border-marca-300 px-2 py-1.5 text-sm focus:border-marca-600 focus:ring-2 focus:ring-marca-300 focus:outline-none" />
+                <button type="button" data-action="buscar-salario" class="rounded bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-800 focus:ring-2 focus:ring-marca-400 focus:outline-none">Ir</button>
+              </div>
+              <p class="mt-1 text-xs text-marca-500">Ordena la lista antes de buscar. Prueba con 3333.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rankear -->
+        <section class="rounded-lg border border-marca-200 bg-white p-4">
+          <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-marca-700">Rankear</h2>
+
+          <label for="vacante" class="block text-sm font-medium">Vacante</label>
+          <select id="vacante" class="mt-1 w-full rounded border border-marca-300 bg-white px-2 py-1.5 text-sm focus:border-marca-600 focus:ring-2 focus:ring-marca-300 focus:outline-none"></select>
+          <p id="vacante-detalle" class="mt-2 text-xs text-marca-600"></p>
+
+          <button type="button" data-action="rankear" class="mt-3 w-full rounded bg-acento-400 px-3 py-1.5 text-sm font-bold text-marca-950 hover:bg-acento-500 focus:ring-2 focus:ring-marca-400 focus:outline-none">
+            Puntuar y rankear
+          </button>
+        </section>
+
+        <!-- Reportes -->
+        <section class="rounded-lg border border-marca-200 bg-white p-4">
+          <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-marca-700">Reportes</h2>
+
+          <div class="space-y-2">
+            <button type="button" data-action="por-estado" class="w-full rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Candidatos por estado</button>
+            <button type="button" data-action="por-seniority" class="w-full rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Candidatos por seniority</button>
+            <button type="button" data-action="top-skills" class="w-full rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Habilidades más frecuentes</button>
+            <button type="button" data-action="metricas" class="w-full rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Salario medio y tasa de cobertura</button>
+          </div>
+        </section>
+
+        <!-- Validar -->
+        <section class="rounded-lg border border-marca-200 bg-white p-4">
+          <h2 class="mb-1 text-sm font-bold uppercase tracking-wide text-marca-700">Validar</h2>
+          <p class="mb-3 text-xs text-marca-500">Comprueba las reglas de negocio antes de procesar.</p>
+
+          <div class="space-y-2">
+            <button type="button" data-action="validar-ok" class="w-full rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Ficha correcta</button>
+            <button type="button" data-action="validar-ko" class="w-full rounded border border-marca-300 px-2 py-1.5 text-sm hover:bg-marca-100 focus:ring-2 focus:ring-marca-400 focus:outline-none">Ficha rota a propósito</button>
+          </div>
+        </section>
+      </aside>
+
+      <!-- ---------------------------------------------------------------- -->
+      <section id="resultado" tabindex="-1" class="min-w-0">
+        <div class="rounded-lg border border-marca-200 bg-white">
+          <div class="border-b border-marca-200 px-4 py-3">
+            <h2 id="resultado-titulo" class="font-bold text-marca-800">Base de talento completa</h2>
+            <p id="resultado-nota" class="mt-0.5 text-sm text-marca-600"></p>
+          </div>
+          <div id="resultado-cuerpo" class="overflow-x-auto p-4" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mx-auto max-w-7xl px-4 pb-8 text-xs text-marca-500 sm:px-6">
+      Herramienta interna de Nexova Solutions. Los datos son de ejemplo, no hay personas reales.
+    </footer>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

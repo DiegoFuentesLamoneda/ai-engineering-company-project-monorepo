@@ -18,6 +18,12 @@ npm run demo       # recorrido por consola de toda la API
 npm run build      # compila a dist/ como ESM cargable en el navegador
 ```
 
+Para probarlo a mano hay un banco de pruebas web en [`uis/talent-lab/`](../../uis/talent-lab/), que dispara las 18 funciones desde botones. Se sirve con un solo comando desde la raíz del repositorio:
+
+```bash
+npx http-server uis/talent-lab -p 3000 -a 0.0.0.0
+```
+
 ## Estructura
 
 | Archivo                                                | Contenido                                                           |
@@ -116,6 +122,7 @@ Carolina Silva contra la vacante del enunciado saca 100; María González, 92; J
 | Salario: solo define qué pasa por encima del rango           | Por debajo del mínimo puntúa 10                      | Pedir menos no perjudica al cliente                                          |
 | Teléfonos de los tres candidatos de ejemplo con prefijo `+56` | Se mantienen literales; los añadidos usan `+34` / `+1` | Nexova opera en España y EE. UU., pero los datos del enunciado no se tocan |
 | Firmas con la forma del retorno en línea                     | Interfaces con nombre (`ScoredCandidate`, …)         | Estructuralmente idénticas y el código se lee mejor                          |
+| La versión inglesa del contexto sitúa el rol en el "TrackFlow Tech Team" | "Nexova AI Team", como en la versión española | TrackFlow es otra empresa del track; es un descuido del original |
 
 Se mantienen **literales** los nombres de las 18 funciones y de sus parámetros, todos los campos de las tres entidades, los valores de las seis uniones, las reglas de validación, los tres candidatos y la vacante de ejemplo.
 

@@ -22,5 +22,5 @@ Thumbs.db
 # Salida de compilacion de TypeScript
 packages/talent-core/dist/
 
-# Herramientas locales de QA del sitio (no forman parte del entregable)
-uis/website/_*.html
+# Herramientas locales de QA de las interfaces (no forman parte del entregable)
+uis/*/_*.html
