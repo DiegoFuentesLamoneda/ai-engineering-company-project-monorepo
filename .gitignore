@@ -8,8 +8,8 @@ __pycache__/
 venv/
 
 # Entorno
-.env
-.env.local
+.env*
+!.env.example
 
 # Sistema y editores
 .DS_Store

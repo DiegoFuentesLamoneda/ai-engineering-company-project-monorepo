@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* Tokens de marca de Nexova. Mismos valores que uis/website/src/input.css
+   para que la herramienta interna y la web publica compartan identidad. */
+@theme {
+  --color-marca-50: #eff5fc;
+  --color-marca-100: #d9e6f7;
+  --color-marca-200: #b7cfee;
+  --color-marca-300: #8ab0e0;
+  --color-marca-400: #578dcd;
+  --color-marca-500: #336fb4;
+  --color-marca-600: #1e5695;
+  --color-marca-700: #184478;
+  --color-marca-800: #143761;
+  --color-marca-900: #112c4c;
+  --color-marca-950: #0a1c33;
+
+  --color-acento-300: #fbd88a;
+  --color-acento-400: #f7c14f;
+  --color-acento-500: #eda820;
+  --color-acento-600: #c9860d;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
