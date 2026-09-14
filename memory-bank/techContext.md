@@ -10,7 +10,7 @@
 | [`uis/website/`](../uis/website/) | Web pública de Nexova: landing + formulario de registro de talento | HTML5, Tailwind 4 (CLI), JS sin dependencias | 1 |
 | [`packages/talent-core/`](../packages/talent-core/) | Motor de scoring de candidatos y matching de vacantes | TypeScript 5, `node:test`, `tsx` | 2 |
 | [`uis/talent-lab/`](../uis/talent-lab/) | Banco de pruebas manual de `talent-core`: dispara sus 18 funciones desde botones | HTML + Tailwind 4 + el `dist/` de `talent-core` | 2 |
-| [`uis/talent-pipeline-tracker/`](../uis/talent-pipeline-tracker/) | Herramienta interna de seguimiento de candidaturas | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 |
+| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: seguimiento de candidaturas del proceso de selección | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 |
 | [`packages/shared/`](../packages/shared/) | `@repo/shared-types` — viene de la plantilla, prácticamente vacío | TypeScript | — |
 | [`scripts/sync_contexts.py`](../scripts/sync_contexts.py) | Descarga los contextos del syllabus y los coloca en `docs/contexts/` | Python 3, solo stdlib | — |
 
@@ -93,7 +93,7 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 | --- | --- |
 | `uis/website/` | `npm run dev` (http-server en :3000) · `npm run build:css` · `npm run watch:css` |
 | `uis/talent-lab/` | `npm run dev` · `npm run build` (compila la librería + el CSS) |
-| `uis/talent-pipeline-tracker/` | `npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` |
+| `uis/backoffice/` | `npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` |
 | `packages/talent-core/` | `npm run typecheck` · `npm test` · `npm run demo` · `npm run build` |
 
 ## Restricciones técnicas
@@ -101,7 +101,7 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 - **Entorno de desarrollo: Windows + PowerShell.** Los comandos de la documentación llevan su equivalente cuando difieren (`cp` → `Copy-Item`).
 - **Artefactos generados que no se editan a mano:** `uis/website/styles.css`, `uis/talent-lab/styles.css` y `dist/`, `packages/talent-core/dist/`, `.next/`.
 - **`.env*` no se versiona** (salvo `.env.example`). Está en el `.gitignore`.
-- **`uis/talent-pipeline-tracker/AGENTS.md`** contiene un bloque entre marcadores `BEGIN/END:nextjs-agent-rules` que **regenera `next dev`**. Borrarlo solo lo hace reaparecer sucio en el diff; se commitea tal cual.
+- **`uis/backoffice/AGENTS.md`** contiene un bloque entre marcadores `BEGIN/END:nextjs-agent-rules` que **regenera `next dev`**. Borrarlo solo lo hace reaparecer sucio en el diff; se commitea tal cual.
 - **`CONTEXT.md`, `CONTEXT.es.md` y `docs/contexts/`** se sincronizan desde el syllabus con `scripts/sync_contexts.py`. No se editan a mano salvo el apéndice del hito en curso.
 - **`docs/contexts-archive/`** contiene los contextos de las otras tres empresas del track (155 archivos). Está en el [`.ignore`](../.ignore) de la raíz y **no se incluye en búsquedas**: taparía cualquier resultado sobre Nexova.
 

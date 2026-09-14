@@ -11,7 +11,7 @@ _Última actualización: 14 de septiembre de 2026 (hito 4 en curso)._
 | --- | --- | --- | --- | --- |
 | 1 — Sitio Web Público | Landing corporativa + formulario de registro de talento. Lighthouse 100/100/100/100. Desplegado en GitHub Pages | [`uis/website/`](../uis/website/) | `hito-01-web-publica` | #1 · fusionada el 14/08/2026 |
 | 2 — Fundamentos de Programación | `@repo/talent-core`: filtros, búsquedas lineal y binaria, scoring, ranking, reportes y validaciones. 112 pruebas en verde. Banco de pruebas web | [`packages/talent-core/`](../packages/talent-core/) · [`uis/talent-lab/`](../uis/talent-lab/) | `feature/domain-models` | #2 · abierta desde el 21/08/2026 |
-| 3 — Talent Pipeline Tracker | Listado, filtros y búsqueda sin recarga, detalle, cambio de estado y etapa, notas internas, alta y edición de candidaturas | [`uis/talent-pipeline-tracker/`](../uis/talent-pipeline-tracker/) | `feature/talent-pipeline-tracker` | #3 · abierta desde el 03/09/2026 |
+| 3 — Talent Pipeline Tracker | Listado, filtros y búsqueda sin recarga, detalle, cambio de estado y etapa, notas internas, alta y edición de candidaturas | [`uis/backoffice/`](../uis/backoffice/) | `feature/talent-pipeline-tracker` | #3 · abierta desde el 03/09/2026 |
 
 > Las PRs #2 y #3 siguen abiertas para la evaluación del campus. Por eso las ramas se apilan: cada hito nuevo sale de la rama del anterior, no de `main`. `main` solo tiene el hito 1.
 
@@ -25,7 +25,8 @@ Rama `feature/agent-memory-bank`. Infraestructura para que cualquier agente de c
 | `AGENTS.md` en la raíz: qué leer, flujo antes de cada commit, qué no se toca | ⬜ |
 | Reglas de desarrollo en `.agents/rules/` con su ámbito de aplicación | ⬜ |
 | Skills en `.agents/skills/` con inputs y criterios verificables | ⬜ |
-| Mover el tracker a `uis/backoffice/` y el listado a la ruta `/candidates` | ⬜ |
+| Mover el tracker a `uis/backoffice/` | ✅ |
+| Llevar el listado a la ruta `/candidates` | ⬜ |
 | Panel de entrada del backoffice en `/` con layout propio y datos de Nexova | ⬜ |
 | Actualizar `CONTEXT.md` y la documentación al hito 4 | ⬜ |
 

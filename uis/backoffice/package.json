@@ -1,7 +1,8 @@
 {
-  "name": "talent-pipeline-tracker",
+  "name": "nexova-backoffice",
   "version": "0.1.0",
   "private": true,
+  "description": "Aplicación interna de Nexova Solutions — operaciones de selección",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
