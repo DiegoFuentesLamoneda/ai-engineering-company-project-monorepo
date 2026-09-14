@@ -100,6 +100,7 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 ## Restricciones técnicas
 
 - **Entorno de desarrollo: Windows + PowerShell.** Los comandos de la documentación llevan su equivalente cuando difieren (`cp` → `Copy-Item`).
+- **`localhost` y `127.0.0.1` son orígenes distintos para el navegador**, aunque apunten a la misma máquina: la política del mismo origen compara el texto del host, no la IP. Next bloquea por defecto sus recursos de desarrollo desde un origen ajeno, así que entrando por `127.0.0.1` la página **no se hidrata y los componentes se quedan colgados en su estado de carga, sin ningún error visible** —la petición a la API ni siquiera llega a hacerse—. `uis/backoffice/next.config.ts` declara `allowedDevOrigins` para que ambas direcciones funcionen.
 - **Artefactos generados que no se editan a mano:** `uis/website/styles.css`, `uis/talent-lab/styles.css` y `dist/`, `packages/talent-core/dist/`, `.next/`.
 - **`.env*` no se versiona** (salvo `.env.example`). Está en el `.gitignore`.
 - **`uis/backoffice/AGENTS.md`** contiene un bloque entre marcadores `BEGIN/END:nextjs-agent-rules` que **regenera `next dev`**. Borrarlo solo lo hace reaparecer sucio en el diff; se commitea tal cual.
