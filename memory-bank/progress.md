@@ -29,6 +29,9 @@ Rama `feature/agent-memory-bank`. Infraestructura para que cualquier agente de c
 | Llevar el listado a la ruta `/candidates` | ✅ |
 | Panel de entrada del backoffice en `/` con layout propio y datos de Nexova | ✅ |
 | Actualizar `CONTEXT.md` y la documentación al hito 4 | ✅ |
+| Verificar el backoffice en CI | ✅ |
+
+**PR [#4](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/4)**, abierta en borrador el 14/09/2026. Falta añadirle las dos capturas —web pública y backoffice— antes de sacarla de borrador y entregarla en el campus.
 
 ### Decisiones de este hito
 
