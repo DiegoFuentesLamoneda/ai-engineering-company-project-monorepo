@@ -49,6 +49,6 @@ Después: telemetría (6), pipelines de datos (6b), RAG sobre la base de candida
 | --- | --- |
 | **npm workspaces** | Aplazado. Cada proyecto se instala por separado. Se reevalúa cuando dos aplicaciones consuman el mismo paquete a la vez. |
 | **`packages/shared/`** | Viene de la plantilla y está prácticamente vacío. Decidir si se usa o se retira cuando haya tipos que compartir de verdad. |
-| **Sin CI para el tracker** | `typecheck`, `lint` y `build` se ejecutan solo en local. Falta el workflow equivalente al de `talent-core`. |
+| ~~Sin CI para el backoffice~~ | Resuelto en el hito 4: `verificar-backoffice.yml` ejecuta `lint`, `build`, `typecheck` y la comprobación de etiquetas de dominio en cada PR. |
 | **Ambigüedad en `CONTEXT.md`** | El responsable de Ventas aparece con dos nombres distintos. Sin resolver — ver [`projectbrief.md`](./projectbrief.md). |
 | **Dependencia de una API mock compartida** | Los datos los escriben también otros alumnos. Ninguna funcionalidad puede asumir que un registro concreto sigue existiendo. |

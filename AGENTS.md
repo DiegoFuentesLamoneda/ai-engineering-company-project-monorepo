@@ -104,6 +104,8 @@ Desde la carpeta afectada. No hay runner en la raíz:
 
 **En rojo no se commitea.** Si algo falla, se arregla o se para y se pregunta. No se commitea "para arreglarlo en el siguiente".
 
+Las comprobaciones de `packages/talent-core/` y `uis/backoffice/` se repiten en CI sobre cada PR — ver [`.github/workflows/`](./.github/workflows/) —, pero se ejecutan antes en local: descubrir un fallo diez minutos después, en la PR, cuesta más que descubrirlo en el momento.
+
 ### Paso 3 — Actualizar el contexto
 
 | Actualiza… | Cuando… |

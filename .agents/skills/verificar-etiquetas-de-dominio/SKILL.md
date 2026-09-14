@@ -98,6 +98,8 @@ Levantar la aplicación (`npm run dev`) y recorrer el listado, el detalle, los f
 - [ ] Recorriendo la aplicación en el navegador, ningún texto visible contiene un guion bajo ni está en inglés.
 - [ ] `npm run typecheck` pasa (garantiza que los mapas cubren el tipo completo).
 
+> Los dos comandos de búsqueda se ejecutan también en CI, en [`verificar-backoffice.yml`](../../../.github/workflows/verificar-backoffice.yml): si un valor crudo se cuela, la PR se pone en rojo. Una regla que solo vive en un documento acaba incumpliéndose; una que rompe el build, no.
+
 ## Qué NO hace esta skill
 
 - No revisa ortografía ni redacción de los textos de interfaz.

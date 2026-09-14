@@ -84,6 +84,7 @@ Cada workflow se dispara solo cuando cambia su carpeta. Ver [`.github/workflows/
 | --- | --- | --- |
 | `deploy-website.yml` | Compila Tailwind y publica `uis/website/` en GitHub Pages | push a `main` en `uis/website/**` |
 | `verificar-talent-core.yml` | `typecheck` + las 112 pruebas | push a `main` y **toda PR** que toque `packages/talent-core/**` |
+| `verificar-backoffice.yml` | `lint`, `build`, `typecheck` y la comprobación de etiquetas de dominio | push a `main` y **toda PR** que toque `uis/backoffice/**` |
 
 ## Comandos por carpeta
 
