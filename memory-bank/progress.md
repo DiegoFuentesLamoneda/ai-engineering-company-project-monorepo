@@ -26,8 +26,8 @@ Rama `feature/agent-memory-bank`. Infraestructura para que cualquier agente de c
 | Reglas de desarrollo en `.agents/rules/` con su ámbito de aplicación | ⬜ |
 | Skills en `.agents/skills/` con inputs y criterios verificables | ⬜ |
 | Mover el tracker a `uis/backoffice/` | ✅ |
-| Llevar el listado a la ruta `/candidates` | ⬜ |
-| Panel de entrada del backoffice en `/` con layout propio y datos de Nexova | ⬜ |
+| Llevar el listado a la ruta `/candidates` | ✅ |
+| Panel de entrada del backoffice en `/` con layout propio y datos de Nexova | ✅ |
 | Actualizar `CONTEXT.md` y la documentación al hito 4 | ⬜ |
 
 ### Decisiones de este hito

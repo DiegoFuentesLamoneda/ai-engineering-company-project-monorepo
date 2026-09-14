@@ -2,18 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { STAGE_LABELS, STATUS_LABELS } from "@/lib/labels";
+import { STAGE_LABELS, STATUS_BADGE_STYLES, STATUS_LABELS } from "@/lib/labels";
 import { useCandidateFilters } from "@/hooks/useCandidateFilters";
 import { useCandidates } from "@/hooks/useCandidates";
-import type { Status } from "@/types/candidate";
-
-/** Color del distintivo segun el estado de la candidatura. */
-const STATUS_STYLES: Record<Status, string> = {
-  received: "bg-slate-700 text-slate-200",
-  in_progress: "bg-marca-600 text-white",
-  selected: "bg-emerald-700 text-emerald-50",
-  discarded: "bg-red-900 text-red-100",
-};
 
 export default function CandidateList() {
   const filtros = useCandidateFilters();
@@ -58,7 +49,7 @@ export default function CandidateList() {
       {/* En pantallas grandes solo hace scroll la tabla: los filtros y la
           cabecera de columnas quedan siempre a la vista. En movil se
           desactiva, porque el scroll anidado ahi estorba mas que ayuda. */}
-      <div className="overflow-x-auto rounded-lg border border-marca-800 bg-marca-900 shadow-sm md:max-h-[calc(100vh-17rem)] md:overflow-y-auto">
+      <div className="overflow-x-auto rounded-lg border border-marca-800 bg-marca-900 shadow-sm md:max-h-[calc(100vh-20rem)] md:overflow-y-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="text-left text-slate-200">
             <tr>
@@ -89,7 +80,7 @@ export default function CandidateList() {
                 <td className="px-4 py-3">{candidate.position}</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[candidate.status]}`}
+                    className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[candidate.status]}`}
                   >
                     {STATUS_LABELS[candidate.status]}
                   </span>

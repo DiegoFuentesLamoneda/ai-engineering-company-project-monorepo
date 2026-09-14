@@ -10,7 +10,7 @@
 | [`uis/website/`](../uis/website/) | Web pública de Nexova: landing + formulario de registro de talento | HTML5, Tailwind 4 (CLI), JS sin dependencias | 1 |
 | [`packages/talent-core/`](../packages/talent-core/) | Motor de scoring de candidatos y matching de vacantes | TypeScript 5, `node:test`, `tsx` | 2 |
 | [`uis/talent-lab/`](../uis/talent-lab/) | Banco de pruebas manual de `talent-core`: dispara sus 18 funciones desde botones | HTML + Tailwind 4 + el `dist/` de `talent-core` | 2 |
-| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: seguimiento de candidaturas del proceso de selección | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 |
+| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones y seguimiento de candidaturas | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 |
 | [`packages/shared/`](../packages/shared/) | `@repo/shared-types` — viene de la plantilla, prácticamente vacío | TypeScript | — |
 | [`scripts/sync_contexts.py`](../scripts/sync_contexts.py) | Descarga los contextos del syllabus y los coloca en `docs/contexts/` | Python 3, solo stdlib | — |
 

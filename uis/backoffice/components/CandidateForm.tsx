@@ -207,7 +207,8 @@ export default function CandidateForm({ modo, candidateId, valoresIniciales }: P
     }
   }
 
-  const volverHref = modo === "editar" && candidateId ? `/candidates/${candidateId}` : "/";
+  const volverHref =
+    modo === "editar" && candidateId ? `/candidates/${candidateId}` : "/candidates";
 
   return (
     <form onSubmit={enviar} noValidate>

@@ -3,9 +3,9 @@ import CandidateForm from "@/components/CandidateForm";
 
 export default function NewCandidatePage() {
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-10">
+    <div className="mx-auto w-full max-w-4xl px-6 py-10">
       <Link
-        href="/"
+        href="/candidates"
         className="text-sm text-acento-400 underline underline-offset-4 hover:text-acento-300"
       >
         ← Volver al listado
@@ -21,6 +21,6 @@ export default function NewCandidatePage() {
       </header>
 
       <CandidateForm modo="crear" />
-    </main>
+    </div>
   );
 }

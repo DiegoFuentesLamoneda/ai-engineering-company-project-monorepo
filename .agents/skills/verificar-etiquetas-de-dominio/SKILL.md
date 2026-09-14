@@ -45,7 +45,8 @@ No toda aparición es un error. Son legítimas:
 - Las **definiciones de tipo** (`type Status = "received" | ...`).
 - El **mapa de etiquetas** en `lib/labels.ts`: es justo su trabajo.
 - El **cliente de API** en `lib/api.ts`: habla con el servidor, no con la persona.
-- El atributo `value` de un `<option>`, siempre que el **texto visible** sea la etiqueta.
+- El atributo `value` de un `<select>` o de un `<option>`, siempre que el **texto visible** sea la etiqueta.
+- Las **rutas y parámetros de consulta** (`/candidates?status=in_progress`): son direcciones, no texto.
 - Las **claves** de un objeto o un `Record<Status, …>`.
 
 Es un error cuando el valor crudo se **renderiza como texto**.
@@ -63,16 +64,22 @@ Abrir `lib/labels.ts` y confirmar que `STATUS_LABELS` y `STAGE_LABELS` tienen **
 ```bash
 grep -rnE '"(received|in_progress|selected|discarded|pending|review|personal_interview|technical_interview|offer_presented)"' \
   uis/backoffice --include='*.ts' --include='*.tsx' \
+  --exclude-dir=node_modules --exclude-dir=.next \
   | grep -vE '(types/|lib/labels\.ts|lib/api\.ts)'
 ```
+
+> Sin `--exclude-dir` el comando entra en `node_modules/` y devuelve cientos de coincidencias de librerías que no tienen nada que ver. Lo mismo con `.next/`, que contiene el código compilado.
 
 ### 3. Buscar el error más habitual: interpolar el valor directamente en el JSX
 
 ```bash
-grep -rnE '\{[a-zA-Z_$][a-zA-Z0-9_$]*\.(status|stage)\}' uis/backoffice --include='*.tsx'
+grep -rnE '[^=]\{[a-zA-Z_$][a-zA-Z0-9_$]*\.(status|stage)\}' uis/backoffice \
+  --include='*.tsx' --exclude-dir=node_modules --exclude-dir=.next
 ```
 
 Este es el que de verdad rompe la interfaz. Cualquier resultado hay que justificarlo o corregirlo.
+
+> El `[^=]` inicial descarta los atributos: `value={candidate.status}` en un `<select>` es correcto —es el valor del control, no texto que se lea— mientras que `{candidate.status}` como hijo de un elemento sí se pinta en pantalla. Sin ese detalle, el comando marca como error justo lo que hace bien un desplegable.
 
 ### 4. Revisar cada hallazgo
 

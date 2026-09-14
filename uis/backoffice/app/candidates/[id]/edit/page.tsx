@@ -8,7 +8,7 @@ export default async function EditCandidatePage({
   const { id } = await params;
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-10">
+    <div className="mx-auto w-full max-w-4xl px-6 py-10">
       <Link
         href={`/candidates/${id}`}
         className="text-sm text-acento-400 underline underline-offset-4 hover:text-acento-300"
@@ -28,6 +28,6 @@ export default async function EditCandidatePage({
       <Suspense fallback={<p className="text-sm text-slate-400">Cargando…</p>}>
         <EditCandidateForm id={id} />
       </Suspense>
-    </main>
+    </div>
   );
 }

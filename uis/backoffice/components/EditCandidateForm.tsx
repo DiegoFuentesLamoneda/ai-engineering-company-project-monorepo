@@ -21,7 +21,10 @@ export default function EditCandidateForm({ id }: { id: string }) {
       <div className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
         <p className="font-medium">No se ha podido cargar la candidatura</p>
         <p className="mt-1">{error ?? "No existe."}</p>
-        <Link href="/" className="mt-3 inline-block text-acento-400 underline underline-offset-4">
+        <Link
+          href="/candidates"
+          className="mt-3 inline-block text-acento-400 underline underline-offset-4"
+        >
           Volver al listado
         </Link>
       </div>

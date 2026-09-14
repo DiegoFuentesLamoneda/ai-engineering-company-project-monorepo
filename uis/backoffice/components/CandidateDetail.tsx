@@ -42,7 +42,7 @@ export default function CandidateDetail({ id }: { id: string }) {
 
   // Volvemos al listado conservando los filtros que traiamos.
   const consulta = searchParams.toString();
-  const volverHref = consulta ? `/?${consulta}` : "/";
+  const volverHref = consulta ? `/candidates?${consulta}` : "/candidates";
 
   async function actualizar(cambios: { status?: Status; stage?: Stage }) {
     if (!candidate) return;

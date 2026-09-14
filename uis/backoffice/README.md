@@ -1,14 +1,33 @@
-# Talent Pipeline Tracker
+# Backoffice de Nexova Solutions
 
-Herramienta interna del equipo de **People & Talent de Nexova** para el seguimiento de
-candidaturas. Sustituye la hoja de cálculo compartida con la que se estaba gestionando el
-proceso de selección de **Asistente de Dirección** (sede de Valencia).
+La **aplicación interna** de Nexova: el sitio donde el equipo trabaja, frente a
+[`uis/website`](../website/), que es la cara pública de la empresa.
 
-Hito 3 del proyecto transversal de AI Engineering · 4Geeks Academy.
+Hoy cubre las **operaciones de selección**. A medida que avancen los hitos irá albergando el
+resto de capacidades internas —formación, soporte, RR. HH.— como secciones nuevas, en lugar de
+crear una aplicación por cada una.
+
+Hitos 3 y 4 del proyecto transversal de AI Engineering · 4Geeks Academy.
 
 ---
 
 ## Qué hace
+
+### Panel (`/`)
+
+Vista de entrada con el estado del trabajo en curso:
+
+- **Proceso activo**: puesto, sede, perfil buscado y quién lo ha solicitado.
+- **Estado del proceso en vivo**: candidaturas por estado y reparto por etapa, leídos de la API.
+- **Líneas de negocio y áreas** de la empresa, con sus responsables y el tamaño de cada equipo.
+
+Los datos de empresa salen de [`CONTEXT.md`](../../CONTEXT.md) a través de
+[`lib/company.ts`](./lib/company.ts); los del proceso, de la API.
+
+### Candidaturas (`/candidates`)
+
+El Talent Pipeline Tracker, que sustituye la hoja de cálculo compartida con la que se gestionaba
+el proceso de **Asistente de Dirección** (sede de Valencia):
 
 - **Listado** de candidaturas con nombre, puesto, estado y etapa.
 - **Filtros** por estado y por etapa, y **búsqueda** por nombre o email, sin recargar la página.
@@ -69,14 +88,21 @@ La app queda en `http://localhost:3000`.
 
 ```
 app/                         Rutas (App Router)
-  page.tsx                   Listado
+  layout.tsx                 Layout propio: barra lateral, cabecera y pie
+  page.tsx                   Panel de entrada
+  candidates/                Listado
   candidates/new/            Alta
   candidates/[id]/           Detalle
   candidates/[id]/edit/      Edición
-components/                  Componentes de interfaz
+components/
+  AppNav.tsx                 Navegación entre secciones
+  BrandLogo.tsx              Logotipo de Nexova, en línea
+  PipelineSummary.tsx        Estado del proceso en vivo
+  Candidate*.tsx             Interfaz del tracker
 hooks/                       Lógica de datos reutilizable
 lib/
   api.ts                     Cliente único de la API
+  company.ts                 Datos de empresa tomados de CONTEXT.md
   labels.ts                  Etiquetas de dominio en español
   format.ts                  Formato de fechas
 types/candidate.ts           Contrato de la API en TypeScript
@@ -146,5 +172,24 @@ consciente: la herramienta se usa desde el puesto de trabajo. La alternativa ser
 tarjetas por debajo de 768 px.
 
 **Altura de la tabla con un valor fijo.** En escritorio solo hace scroll la tabla, con
-`calc(100vh-17rem)`. Es un número mágico: si crece la cabecera hay que ajustarlo. La solución
-robusta sería una cadena de contenedores flex con `min-h-0`.
+`calc(100vh-20rem)`. Es un número mágico: si crece la cabecera hay que ajustarlo —al añadir el
+pie del layout hubo que subirlo de 17rem a 20rem—. La solución robusta sería una cadena de
+contenedores flex con `min-h-0`.
+
+**Layout propio, distinto del de la web pública.** Barra lateral de navegación en escritorio,
+cabecera con las secciones en móvil y un pie permanente recordando que las candidaturas y las
+notas son información sobre personas. La web pública tiene su propia cabecera y su propio pie,
+pensados para un visitante; aquí el usuario es alguien que trabaja ocho horas con la herramienta
+y necesita saber siempre dónde está. Comparten la identidad visual —los mismos tokens `marca-*`
+y `acento-*`, el mismo logotipo— pero no el layout.
+
+**Los datos de empresa, en un módulo con su fuente citada.** `lib/company.ts` recoge las líneas
+de negocio, las áreas y el proceso activo tal y como están en `CONTEXT.md`. Tenerlos en un solo
+sitio evita que se repitan por los componentes y deja explícito de dónde sale cada cifra. Por la
+misma razón el responsable de Ventas aparece sin asignar: el briefing lo nombra de dos formas
+distintas, así que la interfaz lo dice en vez de elegir.
+
+**El desglose del panel avisa cuando es parcial.** La API pagina y se piden 100 candidaturas. Si
+hubiera más, el reparto por estado y etapa sería el de esa muestra, no el total, y el panel lo
+dice en pantalla. Un panel que enseña números parciales como si fueran totales miente, y a
+partir de ahí nadie se fía de ninguno.
