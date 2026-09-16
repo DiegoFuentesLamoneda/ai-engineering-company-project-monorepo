@@ -139,89 +139,107 @@ The AI challenges at Nexova include semantic search over a candidate database, f
 
 ---
 
-> **Official context for the current milestone**, copied from [`docs/contexts/03-frontend-development.en.md`](./docs/contexts/03-frontend-development.en.md). Implementation decisions are documented separately, in [`uis/talent-pipeline-tracker/README.md`](./uis/talent-pipeline-tracker/README.md).
+> **Brief for the current milestone.** The syllabus does not publish a per-company context for this milestone — the numbering in [`docs/contexts/`](./docs/contexts/) jumps from 03 to 05 — so this appendix is the specification for Nexova. Implementation decisions are documented separately, in [`AGENTS.md`](./AGENTS.md), [`memory-bank/`](./memory-bank/) and [`uis/backoffice/README.md`](./uis/backoffice/README.md).
 
-## Milestone 3: Talent Pipeline Tracker
+## Milestone 4: AI-Driven Engineering
 
 ## Your company
 
-You are part of the AI Engineering team at **Nexova**, a human resources consulting and talent acquisition firm with offices in Valencia and Miami. Nexova's core business is precisely what this tool supports: finding the right people. Building this frontend is not just an internal project — it is a direct demonstration of Nexova's own capabilities.
+You are part of the AI Engineering team at **Nexova**. Everything built from here on — interfaces, APIs, agents, automations — lives in this same monorepo. Before adding features, you have to build the infrastructure that makes that code coherent, maintainable and AI-ready.
 
 ---
 
 ## The assignment
 
-Elena Vargas, L&D Manager, has sent the following email with Sergio Molina, CTO, on copy:
+Your tech lead has had a task sitting on the board for two weeks:
 
-> **To:** Sergio Molina (CTO)
-> **CC:** AI Engineering Team
-> **Subject:** URGENT — We need the candidate management tool this week
+> **Subject:** Monorepo AI Setup — we need this this week
 >
-> Sergio,
+> Hi,
 >
-> I'm writing to you directly because the situation with the **Executive Assistant** selection process has become unmanageable. We received over a hundred applications and my team is still working from a shared spreadsheet. Yesterday we found duplicated entries and at least one candidate whose status hadn't been updated in two weeks.
+> I've reviewed the state of the repo and we're starting with no support structure. If I put an agent on this right now it's going to make mistakes that will cost us three times the time.
 >
-> I know the backend is ready — I spoke with Javier and he confirmed it. I need someone from your team to build the frontend now. We cannot keep running a recruitment process for our own company on a spreadsheet. It's embarrassing and it's costing us candidates.
+> I need the repository to have clear, persistent context before we keep adding features: what the company is, what we're building, what the project rules are. That goes in the memory bank. The agent has to read it before touching anything — and it has to include both business context and technical context, not just one of the two.
 >
-> What I need the tool to do:
+> I also want an `AGENTS.md` that defines how any agent operates in this repo — what workflow it has to follow before making a commit. No agents writing code without going through the delivery process.
 >
-> - Show all candidates in a list with name, position, status, and stage visible at a glance.
-> - Filter by status and stage, and search by name or email without reloading the page.
-> - Open a candidate's detail and update their status or stage from there.
-> - Add internal notes after each call or interview, and delete them when they're no longer needed.
-> - Register candidates who apply through referrals and correct data when it comes in wrong.
+> For the more specific rules we'll use the `.agents/` folder. Think about which conventions the agent needs to know so it doesn't break what we already have, and document them there with the right scope.
 >
-> Please make this a priority.
+> Finally, I want us to formalise at least one skill that captures a recurring task in our workflow — something the agent can execute consistently and that we can reuse as the project grows. It needs explicit acceptance criteria: if it can't be verified, it's worthless.
 >
-> Elena
+> As for the application layer, follow the template monorepo structure: the public-facing website in `./uis/website` and the internal applications in `./uis/backoffice`, with their own layout and entry view so we have something visible from day one. Any backend service goes inside `/services`.
+>
+> When you're done, PR and let me know.
+>
+> — Your tech lead
 
 ---
 
-## Context of the active search
+## Expected structure
 
-| Field    | Value                                                                                          |
-| -------- | ---------------------------------------------------------------------------------------------- |
-| Position | Executive Assistant                                                                            |
-| Company  | Nexova                                                                                         |
-| Location | Valencia headquarters                                                                          |
-| Profile  | Executive support experience, calendar and travel management, professional English and Spanish |
+```
+./.agents
+└─ /rules
+   └─ <rule-name>.md
+└─ /skills
+   └─ /<skill>
+      └─ SKILL.md
+./memory-bank
+└─ <context>.md
+```
 
----
-
-## API and data
-
-The mock API is centrally deployed and shared across all company contexts in the course. Fields, values, and structure are as defined in the backend technical specification. No adaptation is required.
-
-### `status` values
-
-| API value     | UI label    |
-| ------------- | ----------- |
-| `received`    | Received    |
-| `in_progress` | In progress |
-| `selected`    | Selected    |
-| `discarded`   | Discarded   |
-
-### `stage` values
-
-| API value             | UI label            |
-| --------------------- | ------------------- |
-| `pending`             | Pending review      |
-| `review`              | Under review        |
-| `personal_interview`  | Personal interview  |
-| `technical_interview` | Technical interview |
-| `offer_presented`     | Offer presented     |
-
-> Raw API values (`in_progress`, `personal_interview`, etc.) must never be visible in the interface. Always use the labels from this table.
+> **`.agents/` is not `/agents`.** `.agents/` is the configuration directory for coding agents (Cursor, Windsurf, Claude Code…): this is where the rules and skills that teach the agent how to work in this repository live. The `/agents` and `/skills` folders are for the agents and integrations you will build for the company in later modules. They are different things.
 
 ---
 
-## Specific acceptance criteria
+## What to build
 
-- Status and stage fields show human-readable labels, never raw API values.
-- Notes are visible only within the candidate detail view.
-- The registration form includes all fields required by the API.
+### Agent infrastructure
+
+- **`memory-bank/`** at the monorepo root with, at minimum:
+  - `projectbrief.md` — business description, project goals and the problem it solves
+  - `techContext.md` — tech stack, architecture decisions taken and technical constraints
+  - `progress.md` — current state of development and planned next steps
+- **`AGENTS.md`** at the root defining:
+  - which memory bank files the agent must read at the start of every session
+  - the mandatory workflow before each commit (at least 4 ordered, explicit steps)
+  - the folders and files the agent **must not modify** without explicit confirmation
+- **`.agents/`** with at least one development rule documented with its scope: always active, by file pattern, or requested by the agent
+- **At least one skill** for a recurring workflow task, with a single objective, documented inputs and explicit, verifiable acceptance criteria
+
+> **Important:** the memory bank, the rules and the skill must be aligned with the data, processes and constraints of this `CONTEXT.md`. Generic infrastructure — or infrastructure built on the unreplaced template placeholder — will not be accepted.
+
+### Application structure
+
+- Initialise the frontend structure inside `/uis` following the template repository structure
+- **`./uis/website`**: the `/` route renders a corporate website aligned with this briefing, built with reusable components and styles consistent with the company's visual identity
+- **`./uis/backoffice`**: the `/` route is reachable with an entry view, has its **own layout** separate from the public website's, and shows at least one fragment of company-relevant logic or data — taken from this `CONTEXT.md` — in the interface, not only in the console
+- Any backend service goes under `/services`, following the monorepo conventions
+
+---
+
+## Acceptance criteria
+
+- The memory bank contains business context **and** technical context, not just one of the two.
+- `AGENTS.md` specifies a workflow with at least 4 ordered steps before committing.
+- The `.agents/` folder contains at least one rule with an explicit application scope.
+- The implemented skill has a single objective, documented inputs and verifiable acceptance criteria.
+- The public interface in `./uis/website` starts with no errors using the project's development command.
+- The `/` route in `./uis/website` renders a complete corporate website aligned with `CONTEXT.md`.
+- `./uis/backoffice` exists, has its own layout and renders without errors.
+- `./uis/backoffice` shows company-relevant content on screen, not only in the console.
+- Application code follows the monorepo folder conventions with no unnecessary duplication.
+
+---
+
+## Delivery
+
+1. The working branch is named `feature/agent-memory-bank`.
+2. The delivery workflow defined in `AGENTS.md` is executed before the final commit.
+3. Pull request against the `main` branch.
+4. The PR description includes: a screenshot of the corporate website rendered from `./uis/website`, a screenshot of `./uis/backoffice` with company-relevant content visible on screen, and a direct link to `AGENTS.md`.
 
 ---
 
 _Internal document — 4Geeks Academy · AI Engineering Track_
-_For exclusive use in programme project generation_
+_Context for exclusive use in the generation of programme projects_

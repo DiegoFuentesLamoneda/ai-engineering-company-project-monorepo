@@ -19,9 +19,10 @@ Cada hito tiene versión española (`.es.md`) e inglesa (`.en.md`).
 | #      | Archivo                                                              | Hito                                             | Estado       |
 | ------ | -------------------------------------------------------------------- | ------------------------------------------------ | ------------ |
 | —      | [`00-briefing`](./00-briefing.es.md)                                  | Briefing de empresa                              | ✅ base      |
-| 1      | [`01-web-fundamentals`](./01-web-fundamentals.es.md)                  | Sitio Web Público                                | 🔨 en curso  |
-| 2      | [`02-coding-fundamentals`](./02-coding-fundamentals.es.md)            | Fundamentos de Programación                      | ⬜ pendiente |
-| 3      | [`03-frontend-development`](./03-frontend-development.es.md)          | Talent Pipeline Tracker                          | ⬜ pendiente |
+| 1      | [`01-web-fundamentals`](./01-web-fundamentals.es.md)                  | Sitio Web Público                                | ✅ entregado |
+| 2      | [`02-coding-fundamentals`](./02-coding-fundamentals.es.md)            | Fundamentos de Programación                      | ✅ entregado |
+| 3      | [`03-frontend-development`](./03-frontend-development.es.md)          | Talent Pipeline Tracker                          | ✅ entregado |
+| 4      | sin archivo — ver [`CONTEXT.md`](../../CONTEXT.md)                    | Ingeniería impulsada por IA                      | 🔨 en curso  |
 | 5      | [`05-backend-development`](./05-backend-development.es.md)            | Gestión de Inventario Backend                    | ⬜ pendiente |
 | 6 · 1  | [`06a-telemetry`](./06a-telemetry.es.md)                              | Telemetría: plan, captura, almacenamiento, reporte | ⬜ pendiente |
 | 6 · 2  | [`06b-data-pipelines`](./06b-data-pipelines.es.md)                    | Pipeline de desempeño de negocio                 | ⬜ pendiente |
@@ -32,7 +33,7 @@ Cada hito tiene versión española (`.es.md`) e inglesa (`.en.md`).
 | 10 · 1 | [`10a-realtime-notification`](./10a-realtime-notification.es.md)      | Tiempo real: notificaciones                      | ⬜ pendiente |
 | 10 · 2 | [`10b-realtime-communication`](./10b-realtime-communication.es.md)    | Tiempo real: comunicación                        | ⬜ pendiente |
 
-> El hito 4 no existe en el syllabus; la numeración salta del 3 al 5. Se respeta el hueco para que coincida con la del curso.
+> **El hito 4 no tiene archivo aquí.** El syllabus no publica un contexto por empresa para él: la numeración de `content/contexts/` salta del 03 al 05, y el enunciado es común a las cuatro empresas del track. Su especificación para Nexova vive en el apéndice de [`CONTEXT.md`](../../CONTEXT.md), escrito a mano a partir del enunciado del hito.
 
 ## [`knowledge-base/`](./knowledge-base/) — documentos de dominio
 

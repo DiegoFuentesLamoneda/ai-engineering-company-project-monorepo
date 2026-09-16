@@ -139,87 +139,105 @@ Los retos de IA en Nexova incluyen búsqueda semántica sobre una base de datos 
 
 ---
 
-> **Contexto oficial del hito en curso**, copiado sin modificar de [`docs/contexts/03-frontend-development.es.md`](./docs/contexts/03-frontend-development.es.md). Las decisiones de implementación se documentan aparte, en [`uis/talent-pipeline-tracker/README.md`](./uis/talent-pipeline-tracker/README.md).
+> **Enunciado del hito en curso.** El syllabus no publica un contexto por empresa para este hito —la numeración de [`docs/contexts/`](./docs/contexts/) salta del 03 al 05—, así que la especificación para Nexova es este apéndice. Las decisiones de implementación se documentan aparte, en [`AGENTS.md`](./AGENTS.md), [`memory-bank/`](./memory-bank/) y [`uis/backoffice/README.md`](./uis/backoffice/README.md).
 
-## Hito 3: Talent Pipeline Tracker
+## Hito 4: Ingeniería impulsada por IA
 
 ## Tu empresa
 
-Eres parte del equipo de Ingeniería de IA de **Nexova**, una consultora de recursos humanos y adquisición de talento con oficinas en Valencia y Miami. El negocio principal de Nexova es exactamente lo que esta herramienta soporta: encontrar a las personas adecuadas. Construir este frontend no es solo un proyecto interno — es una demostración directa de las propias capacidades de Nexova.
+Eres parte del equipo de Ingeniería de IA de **Nexova**. Todo lo que se construya de aquí en adelante —interfaces, APIs, agentes, automatizaciones— vive en este mismo monorepo. Antes de añadir funcionalidad hay que construir la infraestructura que haga que ese código sea coherente, mantenible y utilizable por un agente de IA.
 
 ---
 
 ## El encargo
 
-Elena Vargas, L&D Manager, ha enviado el siguiente correo con copia a Sergio Molina, CTO:
+Tu tech lead ha dejado una tarea pendiente en el tablero desde hace dos semanas:
 
-> **Para:** Sergio Molina (CTO)
-> **CC:** Equipo de Ingeniería de IA
-> **Asunto:** URGENTE — Necesitamos la herramienta de gestión de candidaturas esta semana
+> **Asunto:** Monorepo AI Setup — necesitamos esto esta semana
 >
-> Sergio,
+> Hola,
 >
-> Te escribo directamente porque la situación con el proceso de selección del **Asistente de Dirección** se ha vuelto inmanejable. Hemos recibido más de cien candidaturas y mi equipo sigue trabajando desde una hoja de cálculo compartida. Ayer encontramos entradas duplicadas y al menos un candidato cuyo estado no se había actualizado en dos semanas.
+> He revisado el estado del repo y estamos empezando sin estructura de soporte. Si meto un agente sobre esto ahora mismo va a cometer errores que nos van a costar el triple de tiempo.
 >
-> Sé que el backend está listo — hablé con Javier y me lo confirmó. Necesito que alguien de tu equipo monte el frontend ahora. No podemos seguir llevando un proceso de selección para nuestra propia empresa en una hoja de cálculo. Es un problema de imagen y nos está costando candidatos.
+> Necesito que el repositorio tenga un contexto claro y persistente antes de que sigamos añadiendo features: qué es la empresa, qué estamos construyendo, cuáles son las reglas del proyecto. Eso va al banco de memoria. El agente tiene que leerlo antes de tocar nada — y tiene que incluir tanto el contexto de negocio como el técnico, no solo uno de los dos.
 >
-> Lo que necesito que haga la herramienta:
+> También quiero un `AGENTS.md` que defina cómo opera cualquier agente en este repo — qué flujo tiene que seguir antes de hacer un commit. Nada de agentes que escriban código sin pasar por el proceso de entrega.
 >
-> - Mostrar todas las candidaturas en un listado con nombre, puesto, estado y etapa de un vistazo.
-> - Filtrar por estado y etapa, y buscar por nombre o email sin recargar la página.
-> - Abrir el detalle de un candidato y actualizar su estado o etapa desde ahí.
-> - Añadir notas internas después de cada llamada o entrevista, y eliminarlas cuando ya no sean necesarias.
-> - Registrar candidatos que llegan por otras vías y corregir datos cuando vienen mal.
+> Para las reglas más específicas usaremos la carpeta `.agents/`. Piensa en qué convenciones necesita conocer el agente para no romper lo que ya tenemos, y documéntalas ahí con el alcance correcto.
 >
-> Por favor, ponlo como prioridad.
+> Por último, quiero que formalicemos al menos una skill que capture una tarea recurrente de nuestro flujo de trabajo — algo que el agente pueda ejecutar de forma consistente y que podamos reutilizar a medida que el proyecto crezca. Que tenga criterios de aceptación explícitos: si no se puede verificar, no vale.
 >
-> Elena
+> En cuanto a la capa de aplicación, sigue la estructura del monorepo de plantilla: el website de cara al público en `./uis/website` y las aplicaciones internas en `./uis/backoffice` con su propio layout y vista de entrada para tener algo visible desde el primer día. Cualquier servicio backend va dentro de `/services`.
+>
+> Cuando termines, PR y avísame.
+>
+> — Tu tech lead
 
 ---
 
-## Contexto del proceso de selección
+## Estructura esperada
 
-| Campo          | Valor                                                                                           |
-| -------------- | ----------------------------------------------------------------------------------------------- |
-| Puesto         | Asistente de Dirección                                                                          |
-| Empresa        | Nexova                                                                                          |
-| Ubicación      | Sede de Valencia                                                                                |
-| Perfil buscado | Experiencia en asistencia ejecutiva, gestión de agenda y viajes, inglés y español profesionales |
+```
+./.agents
+└─ /rules
+   └─ <rule-name>.md
+└─ /skills
+   └─ /<skill>
+      └─ SKILL.md
+./memory-bank
+└─ <context>.md
+```
 
----
-
-## API y datos
-
-La API mock está desplegada de forma centralizada y es compartida por todos los contextos del curso. Los campos, valores y estructura son los definidos en la especificación técnica del backend. No es necesario adaptarlos.
-
-### Valores de `status`
-
-| Valor API     | Etiqueta en la UI |
-| ------------- | ----------------- |
-| `received`    | Recibida          |
-| `in_progress` | En proceso        |
-| `selected`    | Seleccionada      |
-| `discarded`   | Descartada        |
-
-### Valores de `stage`
-
-| Valor API             | Etiqueta en la UI     |
-| --------------------- | --------------------- |
-| `pending`             | Pendiente de revisión |
-| `review`              | En revisión           |
-| `personal_interview`  | Entrevista personal   |
-| `technical_interview` | Entrevista técnica    |
-| `offer_presented`     | Oferta presentada     |
-
-> Los valores crudos de la API (`in_progress`, `personal_interview`, etc.) no deben aparecer nunca en la interfaz. Usa siempre las etiquetas de esta tabla.
+> **`.agents/` no es `/agents`.** `.agents/` es el directorio de configuración de los agentes de código (Cursor, Windsurf, Claude Code…): aquí van las reglas y skills que le enseñan al agente cómo trabajar en este repositorio. Las carpetas `/agents` y `/skills` son para los agentes e integraciones que se construirán para la empresa en módulos posteriores. Son cosas distintas.
 
 ---
 
-## Criterios de aceptación específicos
+## Lo que hay que construir
 
-- Los estados y etapas muestran etiquetas legibles, nunca valores de API.
-- Las notas internas son visibles únicamente en el detalle del candidato.
-- El formulario de registro incluye todos los campos requeridos por la API.
+### Infraestructura de agentes
+
+- **`memory-bank/`** en la raíz del monorepo con, al menos:
+  - `projectbrief.md` — descripción del negocio, objetivos del proyecto y problema que resuelve
+  - `techContext.md` — stack tecnológico, decisiones de arquitectura tomadas y restricciones técnicas
+  - `progress.md` — estado actual del desarrollo y próximos pasos previstos
+- **`AGENTS.md`** en la raíz que defina:
+  - qué archivos del banco de memoria debe leer el agente al inicio de cada sesión
+  - el flujo obligatorio antes de cada commit (mínimo 4 pasos ordenados y explícitos)
+  - las carpetas y archivos que el agente **no debe modificar** sin confirmación explícita
+- **`.agents/`** con al menos una regla de desarrollo documentada con su alcance de aplicación: siempre activa, por patrón de archivo, o solicitada por el agente
+- **Al menos una skill** para una tarea recurrente del flujo de trabajo, con objetivo único, inputs documentados y criterios de aceptación explícitos y verificables
+
+> **Importante:** el banco de memoria, las reglas y la skill deben estar alineados con los datos, procesos y restricciones de este `CONTEXT.md`. Una infraestructura genérica —o construida sobre el placeholder de la plantilla sin reemplazar— no se acepta.
+
+### Estructura de aplicación
+
+- Inicializar la estructura frontend dentro de `/uis` siguiendo la estructura del repositorio de plantilla
+- **`./uis/website`**: la ruta `/` renderiza una web corporativa alineada con este briefing, construida con componentes reutilizables y estilos coherentes con la identidad visual de la empresa
+- **`./uis/backoffice`**: la ruta `/` accesible con una vista de entrada, **layout propio** separado del de la web pública, y al menos un fragmento de lógica o datos relevantes para la empresa —tomados de este `CONTEXT.md`— visible en la interfaz, no solo en consola
+- Cualquier servicio backend va bajo `/services`, siguiendo las convenciones del monorepo
+
+---
+
+## Criterios de aceptación
+
+- El banco de memoria contiene contexto de negocio **y** contexto técnico, no solo uno de los dos.
+- `AGENTS.md` especifica un flujo de trabajo con al menos 4 pasos ordenados antes del commit.
+- La carpeta `.agents/` contiene al menos una regla con alcance de aplicación explícito.
+- La skill implementada tiene objetivo único, inputs documentados y criterios de aceptación verificables.
+- La interfaz pública en `./uis/website` arranca sin errores con el comando de desarrollo del proyecto.
+- La ruta `/` en `./uis/website` renderiza una web corporativa completa alineada con `CONTEXT.md`.
+- `./uis/backoffice` existe, tiene layout propio y renderiza sin errores.
+- `./uis/backoffice` muestra contenido relevante para la empresa en pantalla, no solo en consola.
+- El código de aplicación sigue las convenciones de carpetas del monorepo sin duplicación innecesaria.
+
+---
+
+## Entrega
+
+1. La rama de trabajo se llama `feature/agent-memory-bank`.
+2. Se ejecuta el flujo de entrega definido en `AGENTS.md` antes del commit final.
+3. Pull request hacia la rama `main`.
+4. La descripción de la PR incluye: captura de la web corporativa renderizada desde `./uis/website`, captura de `./uis/backoffice` con contenido relevante para la empresa visible en pantalla, y enlace directo a `AGENTS.md`.
 
 ---
 

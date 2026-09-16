@@ -1,0 +1,83 @@
+name: Verificar el backoffice
+
+# El flujo de AGENTS.md exige typecheck, lint y build antes de commitear
+# cualquier cambio en uis/backoffice. Comprobarlo en CI lo deja por escrito en
+# cada PR, en vez de depender de que alguien se acuerde de ejecutarlo en local.
+#
+# La última comprobación es el criterio de aceptación de la skill
+# verificar-etiquetas-de-dominio: ningún valor crudo de la API puede llegar a
+# la interfaz. Una regla que solo vive en un documento se incumple; una que
+# rompe el build, no.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "uis/backoffice/**"
+      - ".github/workflows/verificar-backoffice.yml"
+  pull_request:
+    paths:
+      - "uis/backoffice/**"
+      - ".github/workflows/verificar-backoffice.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: uis/backoffice
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: uis/backoffice/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Pasar ESLint
+        run: npm run lint
+
+      # El build va antes que el typecheck a propósito: Next genera los tipos
+      # de rutas (PageProps, LayoutProps) en .next/types al compilar, y sin
+      # ellos tsc no encuentra esos nombres.
+      - name: Compilar
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://playground.4geeks.com/tracker/api/v1
+
+      - name: Comprobar los tipos
+        run: npm run typecheck
+
+      - name: Comprobar las etiquetas de dominio
+        run: |
+          CRUDOS='"(received|in_progress|selected|discarded|pending|review|personal_interview|technical_interview|offer_presented)"'
+
+          fuera=$(grep -rnE "$CRUDOS" . \
+            --include='*.ts' --include='*.tsx' \
+            --exclude-dir=node_modules --exclude-dir=.next \
+            | grep -vE '(types/|lib/labels\.ts|lib/api\.ts)' || true)
+
+          interpolados=$(grep -rnE '[^=]\{[a-zA-Z_$][a-zA-Z0-9_$]*\.(status|stage)\}' . \
+            --include='*.tsx' \
+            --exclude-dir=node_modules --exclude-dir=.next || true)
+
+          if [ -n "$fuera$interpolados" ]; then
+            echo "::error::Valores crudos de la API fuera de los archivos permitidos."
+            echo "Usa STATUS_LABELS / STAGE_LABELS de lib/labels.ts:"
+            echo "$fuera"
+            echo "$interpolados"
+            exit 1
+          fi
+
+          echo "Ningún valor crudo de la API llega a la interfaz."

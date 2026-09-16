@@ -16,6 +16,11 @@ venv/
 Thumbs.db
 *.log
 
+# Ajustes locales de las herramientas de agente. El contexto compartido vive en
+# AGENTS.md y .agents/, que si se versionan. Esto guarda permisos y rutas
+# absolutas de cada maquina, que no le sirven a nadie mas.
+.claude/
+
 # Nota: uis/website/styles.css SI se versiona. Lo genera el CLI de Tailwind,
 # pero el sitio es estatico y debe funcionar sin pasos de build al clonarlo.
 

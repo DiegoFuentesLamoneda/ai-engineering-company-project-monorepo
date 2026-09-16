@@ -18,6 +18,6 @@ Organiza `uis/` por **distintas áreas de la compañía** — cada subcarpeta ag
 | --- | --- | --- |
 | [`website`](./website/) | Web pública de Nexova | 1 |
 | [`talent-lab`](./talent-lab/) | Banco de pruebas de los modelos de dominio | 2 |
-| [`talent-pipeline-tracker`](./talent-pipeline-tracker/) | Herramienta interna de seguimiento de candidaturas (Next.js) | 3 |
+| [`backoffice`](./backoffice/) | Aplicación interna de Nexova: panel de operaciones y seguimiento de candidaturas (Next.js) | 3 · 4 |
 
 > _These instructions are also available in [English](./README.md)._
