@@ -12,4 +12,12 @@ Organiza `uis/` por **distintas áreas de la compañía** — cada subcarpeta ag
 - **Propósito principal**: centralizar en un único lugar todas las aplicaciones frontend que dan soporte a los casos de uso de la compañía.
 - **Recomendación**: documenta en este archivo (o en sub-READMEs) las aplicaciones que vayas añadiendo, su objetivo, tecnología usada y cómo ejecutarlas.
 
+## Aplicaciones actuales
+
+| Carpeta | Qué es | Hito |
+| --- | --- | --- |
+| [`website`](./website/) | Web pública de Nexova | 1 |
+| [`talent-lab`](./talent-lab/) | Banco de pruebas de los modelos de dominio | 2 |
+| [`talent-pipeline-tracker`](./talent-pipeline-tracker/) | Herramienta interna de seguimiento de candidaturas (Next.js) | 3 |
+
 > _These instructions are also available in [English](./README.md)._
