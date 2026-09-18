@@ -66,7 +66,9 @@ Todo `fetch` pasa por `lib/api.ts`. Un solo sitio donde tocar cabeceras, manejo 
 
 ### `talent-core` no tiene dependencias de runtime
 
-Funciones puras sin estado, probadas con el runner de `node:test` (112 pruebas). Sin Jest ni Vitest: menos superficie que mantener y arranque instantáneo. Se consumirá desde `services/`, desde las interfaces y desde los agentes, así que no puede arrastrar dependencias de ninguno.
+Funciones puras sin estado, probadas con el runner de `node:test` (112 pruebas). Sin Jest ni Vitest: menos superficie que mantener y arranque instantáneo. No puede arrastrar dependencias porque lo consumen varias interfaces a la vez.
+
+> **Corregido el 16/09/2026.** Esta decisión afirmaba que `talent-core` "se consumirá desde `services/`". Se escribió antes de elegir el lenguaje del backend y dejó de ser cierta al decidir FastAPI: un proceso Python no puede importar un paquete TypeScript. El motor de scoring **se reimplementará en Python** dentro del dominio `recruitment`, usando las 112 pruebas existentes como especificación, y `talent-core` queda como librería de las interfaces. El razonamiento completo y el riesgo de divergencia están en [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHITECTURE_PROPOSAL.md) (decisiones D-05 y D-06, riesgo R-05).
 
 ### Sin npm workspaces todavía
 
@@ -75,6 +77,22 @@ Cada proyecto tiene su `package.json` y su `package-lock.json`, y se instala por
 ### `services/` está vacío a propósito
 
 La API del tracker es la mock centralizada del curso. No se envuelve en un backend propio para aparentar arquitectura. El primer servicio real llega en el hito 5.
+
+### El backend será un monolito modular por dominios sobre FastAPI
+
+Decidido en el hito 5 y razonado por extenso en [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHITECTURE_PROPOSAL.md). Lo que fija, en corto:
+
+| Punto | Decisión |
+| --- | --- |
+| Patrón | Monolito modular por dominios. No microservicios (6 personas en Tecnología, sin telemetría hasta el hito 6) ni serverless (arranques en frío y conexiones persistentes del RAG) |
+| Ubicación | Un servicio por carpeta: `services/nexova-api/`. Solo se crea el dominio que se implementa |
+| Organización interna | Paquetes por dominio (`app/domains/<dominio>/`), no por tipo de archivo. Convención de `fastapi-best-practices`, inspirada en Netflix Dispatch, sobre la base del tutorial oficial *Bigger Applications* |
+| Capas | `router` (HTTP) → `service` (negocio) → `models` (persistencia). Un `service` nunca importa `fastapi`; un `router` nunca calcula; un dominio nunca importa los modelos de otro |
+| Rutas | Un `APIRouter` por dominio con `prefix` y `tags`. `main.py` solo compone. Sin prefijo de versión mientras los consumidores sean nuestras propias interfaces |
+| Errores | `422` para validación de forma (automático de Pydantic), `400` para reglas de negocio lanzadas desde el `service` |
+| Salida de datos | Los schemas de respuesta son **siempre** distintos de los modelos de tabla. Es lo que impide que una nota interna salga por la API |
+| CORS | Lista explícita de orígenes, nunca comodín: `allow_credentials=True` lo prohíbe. `localhost` y `127.0.0.1` ambos incluidos —ya nos costó una tarde en el hito 4— |
+| Entorno | Configuración tipada y validada al arrancar en el backend. Ninguna credencial en variables `NEXT_PUBLIC_`: se incrustan en el bundle durante el build y son públicas |
 
 ### CI acotada por rutas
 

@@ -139,105 +139,76 @@ Los retos de IA en Nexova incluyen búsqueda semántica sobre una base de datos 
 
 ---
 
-> **Enunciado del hito en curso.** El syllabus no publica un contexto por empresa para este hito —la numeración de [`docs/contexts/`](./docs/contexts/) salta del 03 al 05—, así que la especificación para Nexova es este apéndice. Las decisiones de implementación se documentan aparte, en [`AGENTS.md`](./AGENTS.md), [`memory-bank/`](./memory-bank/) y [`uis/backoffice/README.md`](./uis/backoffice/README.md).
+> **Enunciado del hito en curso.** El syllabus sí publica un contexto por empresa para este hito —[`docs/contexts/05-backend-development.es.md`](./docs/contexts/05-backend-development.es.md), ticket NXV-0201, la API de inventario—, y ese documento es la especificación del proyecto de implementación que cierra el hito. Este apéndice recoge el **primer** encargo del hito, la propuesta de arquitectura, para el que el syllabus no publica contexto por empresa. Las decisiones de implementación se documentan aparte, en [`AGENTS.md`](./AGENTS.md), [`memory-bank/`](./memory-bank/) y [`docs/ARCHITECTURE_PROPOSAL.md`](./docs/ARCHITECTURE_PROPOSAL.md).
 
-## Hito 4: Ingeniería impulsada por IA
+## Hito 5: Propuesta de arquitectura de backend
 
 ## Tu empresa
 
-Eres parte del equipo de Ingeniería de IA de **Nexova**. Todo lo que se construya de aquí en adelante —interfaces, APIs, agentes, automatizaciones— vive en este mismo monorepo. Antes de añadir funcionalidad hay que construir la infraestructura que haga que ese código sea coherente, mantenible y utilizable por un agente de IA.
+Acabas de completar el cuarto hito: el sitio corporativo de tu empresa ya está desplegado, estructurado y gestionado con agentes de IA. Ahora el equipo de ingeniería tiene que dar el siguiente paso: construir el backend.
+
+Antes de escribir una sola línea de código, tu CTO quiere asegurarse de que el equipo tenga claridad arquitectónica. Nadie va a comenzar a programar sin un criterio compartido sobre cómo organizar el proyecto. Por eso te ha pedido a ti que redactes el primer borrador del documento de arquitectura.
+
+Llevas cuatro hitos trabajando con esta empresa. Conoces su sector, sus operaciones, los datos que maneja, los usuarios que va a tener y los flujos críticos de su negocio. Y acabas de aprender que no existe una arquitectura universalmente correcta: la elección depende de la naturaleza del sistema y de las necesidades del negocio.
+
+**Stack fijado para lo que viene: Next.js en el frontend, FastAPI en el backend.**
 
 ---
 
 ## El encargo
 
-Tu tech lead ha dejado una tarea pendiente en el tablero desde hace dos semanas:
-
-> **Asunto:** Monorepo AI Setup — necesitamos esto esta semana
+> **Mensaje de tu CTO**
 >
-> Hola,
+> Hola, antes de que el equipo empiece a configurar el entorno y los primeros endpoints, necesito que me mandes un documento con tus consideraciones sobre cómo deberíamos estructurar el backend.
 >
-> He revisado el estado del repo y estamos empezando sin estructura de soporte. Si meto un agente sobre esto ahora mismo va a cometer errores que nos van a costar el triple de tiempo.
+> No necesito código todavía. Necesito entender tu razonamiento: qué patrón arquitectónico propones, por qué encaja con lo que estamos construyendo, cómo organizarías los módulos y dominios del proyecto, y qué decisiones técnicas iniciales tomarías.
 >
-> Necesito que el repositorio tenga un contexto claro y persistente antes de que sigamos añadiendo features: qué es la empresa, qué estamos construyendo, cuáles son las reglas del proyecto. Eso va al banco de memoria. El agente tiene que leerlo antes de tocar nada — y tiene que incluir tanto el contexto de negocio como el técnico, no solo uno de los dos.
+> Basa tu análisis en lo que sabemos de la empresa y en lo que has aprendido sobre arquitecturas de backend. Si detectas riesgos o puntos donde podría haber confusión en el equipo, inclúyelos también.
 >
-> También quiero un `AGENTS.md` que defina cómo opera cualquier agente en este repo — qué flujo tiene que seguir antes de hacer un commit. Nada de agentes que escriban código sin pasar por el proceso de entrega.
+> Antes de redactar, te recomiendo que investigues cómo se estructuran habitualmente los proyectos en FastAPI y cómo se organiza una aplicación cuando el frontend y el backend son sistemas separados. Eso te va a dar contexto concreto para fundamentar tus decisiones.
 >
-> Para las reglas más específicas usaremos la carpeta `.agents/`. Piensa en qué convenciones necesita conocer el agente para no romper lo que ya tenemos, y documéntalas ahí con el alcance correcto.
+> Necesito el documento antes del inicio del próximo sprint. Un Markdown está bien.
 >
-> Por último, quiero que formalicemos al menos una skill que capture una tarea recurrente de nuestro flujo de trabajo — algo que el agente pueda ejecutar de forma consistente y que podamos reutilizar a medida que el proyecto crezca. Que tenga criterios de aceptación explícitos: si no se puede verificar, no vale.
->
-> En cuanto a la capa de aplicación, sigue la estructura del monorepo de plantilla: el website de cara al público en `./uis/website` y las aplicaciones internas en `./uis/backoffice` con su propio layout y vista de entrada para tener algo visible desde el primer día. Cualquier servicio backend va dentro de `/services`.
->
-> Cuando termines, PR y avísame.
->
-> — Tu tech lead
-
----
-
-## Estructura esperada
-
-```
-./.agents
-└─ /rules
-   └─ <rule-name>.md
-└─ /skills
-   └─ /<skill>
-      └─ SKILL.md
-./memory-bank
-└─ <context>.md
-```
-
-> **`.agents/` no es `/agents`.** `.agents/` es el directorio de configuración de los agentes de código (Cursor, Windsurf, Claude Code…): aquí van las reglas y skills que le enseñan al agente cómo trabajar en este repositorio. Las carpetas `/agents` y `/skills` son para los agentes e integraciones que se construirán para la empresa en módulos posteriores. Son cosas distintas.
+> — Sergio Molina, CTO
 
 ---
 
 ## Lo que hay que construir
 
-### Infraestructura de agentes
+- Crear el archivo `ARCHITECTURE_PROPOSAL.md` dentro del directorio `/docs` del repositorio transversal.
+- Identificar y justificar el **patrón arquitectónico** más adecuado para la empresa (MVC, arquitectura en capas, serverless u otro). La justificación debe estar vinculada a las características reales de la empresa, no a una preferencia genérica.
+- Proponer y describir la **estructura de carpetas y módulos** del proyecto backend, explicando el criterio de separación utilizado: por dominio o por responsabilidad.
+- Incluir una sección sobre cómo organizarías los **endpoints y routers** de FastAPI según los dominios identificados. No es necesario escribir código: basta con describir qué rutas existirían y bajo qué criterio se agruparían.
+- Investigar cómo se estructuran habitualmente los proyectos en FastAPI (convenciones de carpetas, separación de routers, modelos y configuración) y documentar en la propuesta cómo esa estructura estándar influye en tus decisiones.
+- Investigar cómo se organiza una aplicación cuando el frontend y el backend son sistemas separados (separación de repositorios o monorepo, comunicación por API, variables de entorno, CORS) y reflejar esas consideraciones en el documento.
+- Incluir una sección de **riesgos o puntos de atención** con al menos dos consideraciones sobre lo que podría salir mal si el equipo no sigue la estructura propuesta.
 
-- **`memory-bank/`** en la raíz del monorepo con, al menos:
-  - `projectbrief.md` — descripción del negocio, objetivos del proyecto y problema que resuelve
-  - `techContext.md` — stack tecnológico, decisiones de arquitectura tomadas y restricciones técnicas
-  - `progress.md` — estado actual del desarrollo y próximos pasos previstos
-- **`AGENTS.md`** en la raíz que defina:
-  - qué archivos del banco de memoria debe leer el agente al inicio de cada sesión
-  - el flujo obligatorio antes de cada commit (mínimo 4 pasos ordenados y explícitos)
-  - las carpetas y archivos que el agente **no debe modificar** sin confirmación explícita
-- **`.agents/`** con al menos una regla de desarrollo documentada con su alcance de aplicación: siempre activa, por patrón de archivo, o solicitada por el agente
-- **Al menos una skill** para una tarea recurrente del flujo de trabajo, con objetivo único, inputs documentados y criterios de aceptación explícitos y verificables
-
-> **Importante:** el banco de memoria, las reglas y la skill deben estar alineados con los datos, procesos y restricciones de este `CONTEXT.md`. Una infraestructura genérica —o construida sobre el placeholder de la plantilla sin reemplazar— no se acepta.
-
-### Estructura de aplicación
-
-- Inicializar la estructura frontend dentro de `/uis` siguiendo la estructura del repositorio de plantilla
-- **`./uis/website`**: la ruta `/` renderiza una web corporativa alineada con este briefing, construida con componentes reutilizables y estilos coherentes con la identidad visual de la empresa
-- **`./uis/backoffice`**: la ruta `/` accesible con una vista de entrada, **layout propio** separado del de la web pública, y al menos un fragmento de lógica o datos relevantes para la empresa —tomados de este `CONTEXT.md`— visible en la interfaz, no solo en consola
-- Cualquier servicio backend va bajo `/services`, siguiendo las convenciones del monorepo
+> **Importante:** el entregable de este proyecto es un documento Markdown, no código funcional. No se evaluará si FastAPI está instalado ni si el proyecto arranca. Se evaluará la calidad del razonamiento técnico documentado.
 
 ---
 
 ## Criterios de aceptación
 
-- El banco de memoria contiene contexto de negocio **y** contexto técnico, no solo uno de los dos.
-- `AGENTS.md` especifica un flujo de trabajo con al menos 4 pasos ordenados antes del commit.
-- La carpeta `.agents/` contiene al menos una regla con alcance de aplicación explícito.
-- La skill implementada tiene objetivo único, inputs documentados y criterios de aceptación verificables.
-- La interfaz pública en `./uis/website` arranca sin errores con el comando de desarrollo del proyecto.
-- La ruta `/` en `./uis/website` renderiza una web corporativa completa alineada con `CONTEXT.md`.
-- `./uis/backoffice` existe, tiene layout propio y renderiza sin errores.
-- `./uis/backoffice` muestra contenido relevante para la empresa en pantalla, no solo en consola.
-- El código de aplicación sigue las convenciones de carpetas del monorepo sin duplicación innecesaria.
+- El patrón arquitectónico elegido está justificado con argumentos vinculados a la naturaleza del negocio y del sistema, no por preferencia genérica.
+- La estructura de carpetas propuesta es coherente con el patrón elegido y refleja una separación clara de responsabilidades o dominios.
+- La organización de routers y endpoints es reconocible como una aplicación FastAPI válida (rutas agrupadas por dominio, no todas en un único archivo).
+- Las decisiones técnicas documentadas son concretas, justificadas y no contradicen los contenidos del curso.
+- La propuesta refleja investigación real sobre la estructura estándar de proyectos FastAPI: las convenciones identificadas están presentes en la estructura propuesta y se menciona explícitamente su origen.
+- El documento aborda cómo frontend y backend coexisten como sistemas separados: se identifican al menos las implicaciones de comunicación por API y la gestión de CORS o variables de entorno.
+
+> No se evalúa el uso de frameworks, librerías ni herramientas que no hayan sido cubiertas hasta este punto del curso.
+
+---
+
+## Qué viene después en este hito
+
+El proyecto de implementación: la **API de inventario** especificada en el ticket NXV-0201 —entradas y salidas de activos, stock calculado, todas las rutas bajo `/inventory`—. Especificación completa de entidades y campos en [`docs/contexts/05-backend-development.es.md`](./docs/contexts/05-backend-development.es.md).
 
 ---
 
 ## Entrega
 
-1. La rama de trabajo se llama `feature/agent-memory-bank`.
-2. Se ejecuta el flujo de entrega definido en `AGENTS.md` antes del commit final.
-3. Pull request hacia la rama `main`.
-4. La descripción de la PR incluye: captura de la web corporativa renderizada desde `./uis/website`, captura de `./uis/backoffice` con contenido relevante para la empresa visible en pantalla, y enlace directo a `AGENTS.md`.
+Haz push del repositorio a GitHub y comparte el enlace según las instrucciones de tu instructor.
 
 ---
 

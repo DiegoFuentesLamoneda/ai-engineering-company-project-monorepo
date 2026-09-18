@@ -139,105 +139,76 @@ The AI challenges at Nexova include semantic search over a candidate database, f
 
 ---
 
-> **Brief for the current milestone.** The syllabus does not publish a per-company context for this milestone — the numbering in [`docs/contexts/`](./docs/contexts/) jumps from 03 to 05 — so this appendix is the specification for Nexova. Implementation decisions are documented separately, in [`AGENTS.md`](./AGENTS.md), [`memory-bank/`](./memory-bank/) and [`uis/backoffice/README.md`](./uis/backoffice/README.md).
+> **Brief for the current milestone.** The syllabus does publish a per-company context for this milestone — [`docs/contexts/05-backend-development.en.md`](./docs/contexts/05-backend-development.en.md), ticket NXV-0201, the inventory API — and that document is the specification for the implementation project that closes the milestone. This appendix records the **first** assignment of the milestone, the architecture proposal, for which the syllabus publishes no per-company context. Implementation decisions are documented separately, in [`AGENTS.md`](./AGENTS.md), [`memory-bank/`](./memory-bank/) and [`docs/ARCHITECTURE_PROPOSAL.md`](./docs/ARCHITECTURE_PROPOSAL.md).
 
-## Milestone 4: AI-Driven Engineering
+## Milestone 5: Backend Architecture Proposal
 
 ## Your company
 
-You are part of the AI Engineering team at **Nexova**. Everything built from here on — interfaces, APIs, agents, automations — lives in this same monorepo. Before adding features, you have to build the infrastructure that makes that code coherent, maintainable and AI-ready.
+You have just completed the fourth milestone: the corporate website is deployed, structured and managed with AI agents. Now the engineering team has to take the next step — building the backend.
+
+Before writing a single line of code, your CTO wants the team to have architectural clarity. Nobody is going to start programming without a shared criterion on how to organise the project. That is why he has asked you to draft the first version of the architecture document.
+
+You have spent four milestones working with this company. You know its sector, its operations, the data it handles, the users it will have and its critical business flows. And you have just learned that there is no universally correct architecture: the choice depends on the nature of the system and the needs of the business.
+
+**Fixed stack for what comes next: Next.js on the frontend, FastAPI on the backend.**
 
 ---
 
 ## The assignment
 
-Your tech lead has had a task sitting on the board for two weeks:
-
-> **Subject:** Monorepo AI Setup — we need this this week
+> **Message from your CTO**
 >
-> Hi,
+> Hi, before the team starts setting up the environment and the first endpoints, I need you to send me a document with your considerations on how we should structure the backend.
 >
-> I've reviewed the state of the repo and we're starting with no support structure. If I put an agent on this right now it's going to make mistakes that will cost us three times the time.
+> I don't need code yet. I need to understand your reasoning: which architectural pattern you propose, why it fits what we're building, how you would organise the project's modules and domains, and what initial technical decisions you would take.
 >
-> I need the repository to have clear, persistent context before we keep adding features: what the company is, what we're building, what the project rules are. That goes in the memory bank. The agent has to read it before touching anything — and it has to include both business context and technical context, not just one of the two.
+> Base your analysis on what we know about the company and on what you have learned about backend architectures. If you spot risks or points where the team could get confused, include those too.
 >
-> I also want an `AGENTS.md` that defines how any agent operates in this repo — what workflow it has to follow before making a commit. No agents writing code without going through the delivery process.
+> Before writing, I recommend you research how FastAPI projects are usually structured and how an application is organised when the frontend and the backend are separate systems. That will give you concrete context to ground your decisions.
 >
-> For the more specific rules we'll use the `.agents/` folder. Think about which conventions the agent needs to know so it doesn't break what we already have, and document them there with the right scope.
+> I need the document before the next sprint starts. Markdown is fine.
 >
-> Finally, I want us to formalise at least one skill that captures a recurring task in our workflow — something the agent can execute consistently and that we can reuse as the project grows. It needs explicit acceptance criteria: if it can't be verified, it's worthless.
->
-> As for the application layer, follow the template monorepo structure: the public-facing website in `./uis/website` and the internal applications in `./uis/backoffice`, with their own layout and entry view so we have something visible from day one. Any backend service goes inside `/services`.
->
-> When you're done, PR and let me know.
->
-> — Your tech lead
-
----
-
-## Expected structure
-
-```
-./.agents
-└─ /rules
-   └─ <rule-name>.md
-└─ /skills
-   └─ /<skill>
-      └─ SKILL.md
-./memory-bank
-└─ <context>.md
-```
-
-> **`.agents/` is not `/agents`.** `.agents/` is the configuration directory for coding agents (Cursor, Windsurf, Claude Code…): this is where the rules and skills that teach the agent how to work in this repository live. The `/agents` and `/skills` folders are for the agents and integrations you will build for the company in later modules. They are different things.
+> — Sergio Molina, CTO
 
 ---
 
 ## What to build
 
-### Agent infrastructure
+- Create the file `ARCHITECTURE_PROPOSAL.md` inside the `/docs` directory of the cross-functional repository.
+- Identify and justify the **architectural pattern** best suited to the company (MVC, layered architecture, serverless or other). The justification must be tied to the real characteristics of the company, not to a generic preference.
+- Propose and describe the **folder and module structure** of the backend project, explaining the separation criterion used — by domain or by responsibility.
+- Include a section on how you would organise FastAPI's **endpoints and routers** according to the identified domains. No code required: describing which routes would exist and under which criterion they would be grouped is enough.
+- Research how FastAPI projects are commonly structured (folder conventions, separation of routers, models and configuration) and document in the proposal how that standard structure influences your decisions.
+- Research how an application is organised when frontend and backend are separate systems (separate repositories or monorepo, API communication, environment variables, CORS) and reflect those considerations in the document.
+- Include a **risks or points of attention** section with at least two considerations about what could go wrong if the team does not follow the proposed structure.
 
-- **`memory-bank/`** at the monorepo root with, at minimum:
-  - `projectbrief.md` — business description, project goals and the problem it solves
-  - `techContext.md` — tech stack, architecture decisions taken and technical constraints
-  - `progress.md` — current state of development and planned next steps
-- **`AGENTS.md`** at the root defining:
-  - which memory bank files the agent must read at the start of every session
-  - the mandatory workflow before each commit (at least 4 ordered, explicit steps)
-  - the folders and files the agent **must not modify** without explicit confirmation
-- **`.agents/`** with at least one development rule documented with its scope: always active, by file pattern, or requested by the agent
-- **At least one skill** for a recurring workflow task, with a single objective, documented inputs and explicit, verifiable acceptance criteria
-
-> **Important:** the memory bank, the rules and the skill must be aligned with the data, processes and constraints of this `CONTEXT.md`. Generic infrastructure — or infrastructure built on the unreplaced template placeholder — will not be accepted.
-
-### Application structure
-
-- Initialise the frontend structure inside `/uis` following the template repository structure
-- **`./uis/website`**: the `/` route renders a corporate website aligned with this briefing, built with reusable components and styles consistent with the company's visual identity
-- **`./uis/backoffice`**: the `/` route is reachable with an entry view, has its **own layout** separate from the public website's, and shows at least one fragment of company-relevant logic or data — taken from this `CONTEXT.md` — in the interface, not only in the console
-- Any backend service goes under `/services`, following the monorepo conventions
+> **Important:** the deliverable for this project is a Markdown document, not working code. It will not be assessed on whether FastAPI is installed or the project starts. It will be assessed on the quality of the documented technical reasoning.
 
 ---
 
 ## Acceptance criteria
 
-- The memory bank contains business context **and** technical context, not just one of the two.
-- `AGENTS.md` specifies a workflow with at least 4 ordered steps before committing.
-- The `.agents/` folder contains at least one rule with an explicit application scope.
-- The implemented skill has a single objective, documented inputs and verifiable acceptance criteria.
-- The public interface in `./uis/website` starts with no errors using the project's development command.
-- The `/` route in `./uis/website` renders a complete corporate website aligned with `CONTEXT.md`.
-- `./uis/backoffice` exists, has its own layout and renders without errors.
-- `./uis/backoffice` shows company-relevant content on screen, not only in the console.
-- Application code follows the monorepo folder conventions with no unnecessary duplication.
+- The chosen architectural pattern is justified with arguments tied to the nature of the business and the system, not to a generic preference.
+- The proposed folder structure is coherent with the chosen pattern and reflects a clear separation of responsibilities or domains.
+- The organisation of routers and endpoints is recognisable as a valid FastAPI application (routes grouped by domain, not all in a single file).
+- The documented technical decisions are concrete, justified and do not contradict the course contents.
+- The proposal reflects real research into the standard structure of FastAPI projects: the identified conventions are present in the proposed structure and their origin is explicitly mentioned.
+- The document addresses how frontend and backend coexist as separate systems: at least the implications of API communication and the handling of CORS or environment variables are identified.
+
+> Frameworks, libraries or tools not covered up to this point in the course are not assessed.
+
+---
+
+## What comes next in this milestone
+
+The implementation project: the **inventory API** specified in ticket NXV-0201 — asset entries and exits, calculated stock, all routes under `/inventory`. Full entity and field specification in [`docs/contexts/05-backend-development.en.md`](./docs/contexts/05-backend-development.en.md).
 
 ---
 
 ## Delivery
 
-1. The working branch is named `feature/agent-memory-bank`.
-2. The delivery workflow defined in `AGENTS.md` is executed before the final commit.
-3. Pull request against the `main` branch.
-4. The PR description includes: a screenshot of the corporate website rendered from `./uis/website`, a screenshot of `./uis/backoffice` with company-relevant content visible on screen, and a direct link to `AGENTS.md`.
+Push the repository to GitHub and share the link according to the instructor's instructions.
 
 ---
 

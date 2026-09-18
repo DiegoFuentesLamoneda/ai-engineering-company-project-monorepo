@@ -62,6 +62,18 @@ El código y la interfaz usan estas palabras, y solo estas. Cambiarlas rompe el 
 | **Scoring** | Puntuación de un candidato frente a una vacante. Debe ser **explicable**: si no se puede justificar, no sirve. |
 | **SLA** | Compromiso de tiempo de respuesta con el cliente. En soporte son 24 h. |
 
+### Vocabulario de inventario — a partir del hito 5
+
+Lo fija el ticket **NXV-0201** ([`docs/contexts/05-backend-development.es.md`](../docs/contexts/05-backend-development.es.md)). Se usa literalmente:
+
+| Término | Qué significa aquí | Nombre en el código |
+| --- | --- | --- |
+| **Activo** | Equipo o material de la empresa: portátiles, periféricos, material de oficina, materiales de formación | `Asset` |
+| **Entrada de activos** | Una compra o entrega de proveedor recibida por Nexova | `AssetEntry` |
+| **Salida de activos** | Una asignación a un empleado (`allocation`) o un consumo (`consumption`) | `AssetExit` |
+| **Stock** | Resultado neto de entradas menos salidas. **Se calcula, nunca se almacena ni se establece a mano** | `current_stock` |
+| **Oficina** | `"Valencia"` o `"Miami"`. Ambas conviven en las mismas tablas y se filtran por este campo | `office` |
+
 ### Etiquetas de dominio — regla dura
 
 Los valores crudos de la API (`in_progress`, `personal_interview`, `offer_presented`…) **no aparecen nunca en la interfaz**. La traducción vive en un único mapa por aplicación. El detalle y la verificación, en [`.agents/rules/backoffice-nextjs.md`](../.agents/rules/backoffice-nextjs.md) y en la skill [`verificar-etiquetas-de-dominio`](../.agents/skills/verificar-etiquetas-de-dominio/SKILL.md).
