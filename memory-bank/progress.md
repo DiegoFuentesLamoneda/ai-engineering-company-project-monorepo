@@ -66,7 +66,7 @@ Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/con
 | Lógica compartida en [`packages/incident-analysis/`](../packages/incident-analysis/): validación, métricas, exportación e informe. 44 pruebas, incluida la de aceptación contra el briefing | ✅ |
 | Script [`scripts/analyze.py`](../scripts/analyze.py): 100 / 96 / 4 y todos los desgloses coinciden con el briefing | ✅ |
 | API en [`services/api/`](../services/api/): `POST /api/incidents/analyze` y `GET /api/incidents/results/export`. 18 pruebas del service y la configuración; rutas, errores y CORS verificados con el servidor arrancado; la exportación es idéntica byte a byte a la del script | ✅ |
-| Página de análisis de incidencias en `uis/backoffice/` | ⏳ |
+| Página [`/incidents`](../uis/backoffice/app/incidents/) en el backoffice: subida por arrastre o selector, totales, desglose por categoría y estado, índice de satisfacción, registros inválidos por regla con sus filas y descarga del CSV. Verificada en el navegador con la API arrancada: cifras del briefing, CSV descargado idéntico byte a byte al del script, y errores 400 y 415 mostrados con el mensaje de la API | ✅ |
 | Capturas (consola e interfaz) y PR hacia `main` | ⬜ |
 
 ## Próximo

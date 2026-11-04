@@ -7,8 +7,31 @@ import type {
   Stage,
   Status,
 } from "@/types/candidate";
+import type { IncidentAnalysis } from "@/types/incident";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+/**
+ * El backoffice habla con dos APIs:
+ * - la del tracker (API mock de 4Geeks), para las candidaturas;
+ * - la propia de Nexova (services/api), para el analisis de incidencias.
+ * Cada una con su variable de entorno, y las dos por el mismo request().
+ */
+interface ApiTarget {
+  baseUrl: string | undefined;
+  /** Nombre de la variable, para el mensaje si falta. */
+  variable: string;
+}
+
+// process.env.NEXT_PUBLIC_* se escribe literal: Next sustituye el texto
+// exacto al compilar, y con un acceso dinamico llegaria vacio al navegador.
+const TRACKER_API: ApiTarget = {
+  baseUrl: process.env.NEXT_PUBLIC_API_URL,
+  variable: "NEXT_PUBLIC_API_URL",
+};
+
+const NEXOVA_API: ApiTarget = {
+  baseUrl: process.env.NEXT_PUBLIC_NEXOVA_API_URL,
+  variable: "NEXT_PUBLIC_NEXOVA_API_URL",
+};
 
 /** Error de la API con el codigo HTTP y, si los hay, los errores por campo. */
 export class ApiError extends Error {
@@ -23,16 +46,20 @@ export class ApiError extends Error {
   }
 }
 
-// La API devuelve dos formatos de error distintos, ambos con codigo 422.
+// Formatos de error que llegan:
+// - tracker:          { error, details: { campo } }  y  { detail: [ { loc, msg } ] }
+// - services/api:     { detail: "mensaje en espanol, listo para mostrar" }
 interface ErrorBody {
   error?: string;
   details?: Record<string, string>;
-  detail?: Array<{ loc: Array<string | number>; msg: string }>;
+  detail?: string | Array<{ loc: Array<string | number>; msg: string }>;
 }
 
 const MENSAJES_POR_ESTADO: Record<number, string> = {
   400: "La peticion no es valida.",
   404: "No se ha encontrado el recurso.",
+  413: "El fichero es demasiado grande.",
+  415: "El tipo de fichero no es valido.",
   422: "Hay datos que no son validos.",
   500: "Error del servidor. Intentalo de nuevo.",
 };
@@ -63,32 +90,56 @@ async function construirError(res: Response): Promise<ApiError> {
 
   const mensaje =
     body?.error ??
+    (typeof body?.detail === "string" ? body.detail : undefined) ??
     MENSAJES_POR_ESTADO[res.status] ??
     `Error inesperado (${res.status}).`;
 
   return new ApiError(mensaje, res.status, fieldErrors);
 }
 
-/** Punto unico por el que pasan todas las peticiones a la API. */
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  if (!BASE_URL) {
-    throw new ApiError("Falta la variable NEXT_PUBLIC_API_URL en .env.local", 0);
+/**
+ * Punto unico por el que pasan todas las peticiones. Devuelve la respuesta
+ * ya comprobada (2xx); si no, lanza un ApiError.
+ */
+async function send(
+  api: ApiTarget,
+  path: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  if (!api.baseUrl) {
+    throw new ApiError(`Falta la variable ${api.variable} en .env.local`, 0);
   }
+
+  // Con FormData no se pone Content-Type: el navegador escribe
+  // "multipart/form-data; boundary=…" con el separador que ha generado.
+  // Si lo fijamos a mano, el boundary se pierde y el servidor no lo entiende.
+  const headers =
+    options.body instanceof FormData
+      ? options.headers
+      : { "Content-Type": "application/json", ...options.headers };
 
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
-      ...options,
-      headers: { "Content-Type": "application/json", ...options.headers },
-    });
+    res = await fetch(`${api.baseUrl}${path}`, { ...options, headers });
   } catch {
-    // Sin red, DNS caido o CORS: fetch si lanza en estos casos.
+    // Sin red, servidor apagado o CORS: fetch si lanza en estos casos.
     throw new ApiError("No se ha podido conectar con el servidor.", 0);
   }
 
   if (!res.ok) {
     throw await construirError(res);
   }
+
+  return res;
+}
+
+/** send() + el cuerpo JSON. */
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  api: ApiTarget = TRACKER_API,
+): Promise<T> {
+  const res = await send(api, path, options);
 
   // 204 No Content: no hay cuerpo que parsear.
   if (res.status === 204) {
@@ -177,4 +228,24 @@ export function createNote(recordId: string, content: string): Promise<Note> {
 
 export function deleteNote(recordId: string, noteId: string): Promise<void> {
   return request<void>(`/records/${recordId}/notes/${noteId}`, { method: "DELETE" });
+}
+
+// --- Incidencias de soporte (services/api) ---
+
+/** Sube el CSV del helpdesk y devuelve su analisis. */
+export function analyzeIncidents(file: File): Promise<IncidentAnalysis> {
+  const datos = new FormData();
+  datos.append("file", file);
+
+  return request<IncidentAnalysis>(
+    "/api/incidents/analyze",
+    { method: "POST", body: datos },
+    NEXOVA_API,
+  );
+}
+
+/** El ultimo analisis como CSV (una metrica por fila), listo para descargar. */
+export async function downloadIncidentResults(): Promise<Blob> {
+  const res = await send(NEXOVA_API, "/api/incidents/results/export");
+  return res.blob();
 }
