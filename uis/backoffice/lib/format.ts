@@ -23,3 +23,16 @@ export function formatearFechaHora(iso: string): string {
     minute: "2-digit",
   });
 }
+
+/** Numero con separadores en espanol: 1000000 -> "1.000.000". */
+export function formatearNumero(valor: number, decimales = 0): string {
+  return valor.toLocaleString("es-ES", {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  });
+}
+
+/** Porcentaje que ya llega calculado de la API: 29.2 -> "29,2 %". */
+export function formatearPorcentaje(valor: number): string {
+  return `${formatearNumero(valor, 1)} %`;
+}
