@@ -6,6 +6,8 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+# Metadatos que genera `pip install -e` de un paquete local
+*.egg-info/
 
 # Entorno
 .env*

@@ -46,7 +46,7 @@ Documento técnico, no código: [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHIT
 **Decisiones propuestas en el documento** (pasan a [`techContext.md`](./techContext.md) cuando se implementen):
 
 - **Monolito modular por dominios** sobre FastAPI, no microservicios ni serverless. Justificado por el tamaño del equipo de Tecnología (6 personas), la ausencia de telemetría hasta el hito 6, el acoplamiento natural entre dominios y un volumen de cientos de usuarios.
-- **Un servicio, `services/nexova-api/`**, con paquetes por dominio (`app/domains/<dominio>/`) y tres capas: `router` → `service` → `models`.
+- **Un servicio, `services/nexova-api/`** —ubicado finalmente en `services/api/`, ver [`techContext.md`](./techContext.md)—, con paquetes por dominio (`app/domains/<dominio>/`) y tres capas: `router` → `service` → `models`.
 - **Estructura por dominio, no por tipo de archivo**, siguiendo la convención de `fastapi-best-practices` (inspirada en Netflix Dispatch) sobre la base del tutorial oficial *Bigger Applications*.
 - **El motor de scoring se porta a Python.** Ver la deuda técnica más abajo.
 - **CORS con lista explícita de orígenes** —`localhost` y `127.0.0.1` incluidos desde el primer commit— y ninguna credencial en variables `NEXT_PUBLIC_`.
@@ -65,8 +65,8 @@ Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/con
 | --- | --- |
 | Lógica compartida en [`packages/incident-analysis/`](../packages/incident-analysis/): validación, métricas, exportación e informe. 44 pruebas, incluida la de aceptación contra el briefing | ✅ |
 | Script [`scripts/analyze.py`](../scripts/analyze.py): 100 / 96 / 4 y todos los desgloses coinciden con el briefing | ✅ |
-| API en `services/api/`: `POST /api/incidents/analyze` y `GET /api/incidents/results/export` | ⏳ |
-| Página de análisis de incidencias en `uis/backoffice/` | ⬜ |
+| API en [`services/api/`](../services/api/): `POST /api/incidents/analyze` y `GET /api/incidents/results/export`. 18 pruebas del service y la configuración; rutas, errores y CORS verificados con el servidor arrancado; la exportación es idéntica byte a byte a la del script | ✅ |
+| Página de análisis de incidencias en `uis/backoffice/` | ⏳ |
 | Capturas (consola e interfaz) y PR hacia `main` | ⬜ |
 
 ## Próximo
@@ -85,4 +85,6 @@ Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), m
 | **Ambigüedad en `CONTEXT.md`** | El responsable de Ventas aparece con dos nombres distintos. Sin resolver — ver [`projectbrief.md`](./projectbrief.md). Bloqueará el dominio de ventas cuando llegue |
 | **Regla de ramas desfasada** | [`AGENTS.md`](../AGENTS.md) §9 y [`.agents/rules/commits-y-entrega.md`](../.agents/rules/commits-y-entrega.md) siguen diciendo que cada rama sale de la del hito anterior. Desde el 16/09/2026 salen de `main` (ver arriba). Corregir al cerrar el analizador de incidencias |
 | **API de inventario (NXV-0201) pendiente** | Pospuesta el 04/11/2026 para hacer antes el analizador de incidencias |
+| **"El último análisis" en memoria** | `GET /api/incidents/results/export` exporta el último análisis del proceso: se pierde al reiniciar, es común a todos los usuarios y no funciona con varios workers. Solución prevista: un `analysis_id` en la respuesta del `POST`. Cambia el contrato del enunciado, así que se aplaza hasta que haya más de un usuario |
+| **Pruebas automáticas de las rutas HTTP** | Necesitan el cliente de pruebas de FastAPI, que depende de `httpx`, y `httpx` no está aprobado como dependencia. Hoy se prueban el service y la configuración, y las rutas se verifican a mano |
 | **Dependencia de una API mock compartida** | Los datos los escriben también otros alumnos. Ninguna funcionalidad puede asumir que un registro concreto sigue existiendo. El backend propio **no la envuelve**: convivirán |
