@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 16 de septiembre de 2026 (hito 5 en curso)._
+_Última actualización: 4 de noviembre de 2026 (analizador de incidencias en curso)._
 
 ## Entregado
 
@@ -55,6 +55,20 @@ Documento técnico, no código: [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHIT
 
 Implementación del ticket **NXV-0201**: `Asset`, `AssetEntry`, `AssetExit`, stock calculado como entradas menos salidas y todas las rutas bajo `/inventory`. Especificación literal en [`docs/contexts/05-backend-development.es.md`](../docs/contexts/05-backend-development.es.md). Es el hito en el que [`services/`](../services/) deja de estar vacío.
 
+**Estado a 04/11/2026:** la PR #5 (propuesta de arquitectura) está fusionada en `main`. La API de inventario **no está empezada**: se pospone para hacer antes el analizador de incidencias, y entrará como otro dominio del mismo servicio `services/api/`.
+
+## En curso — Analizador de incidencias
+
+Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/contexts/proyectos/incidents-file-analysis.es.md`](../docs/contexts/proyectos/incidents-file-analysis.es.md). Script de análisis del CSV de tickets de soporte de Roberto Díaz, y después la misma lógica en la API y en el backoffice.
+
+| Paso | Estado |
+| --- | --- |
+| Lógica compartida en [`packages/incident-analysis/`](../packages/incident-analysis/): validación, métricas, exportación e informe. 44 pruebas, incluida la de aceptación contra el briefing | ✅ |
+| Script [`scripts/analyze.py`](../scripts/analyze.py): 100 / 96 / 4 y todos los desgloses coinciden con el briefing | ✅ |
+| API en `services/api/`: `POST /api/incidents/analyze` y `GET /api/incidents/results/export` | ⏳ |
+| Página de análisis de incidencias en `uis/backoffice/` | ⬜ |
+| Capturas (consola e interfaz) y PR hacia `main` | ⬜ |
+
 ## Próximo
 
 Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), memoria y harness de agentes (8), workflows agénticos (9) y tiempo real (10).
@@ -69,4 +83,6 @@ Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), m
 | **npm workspaces** | Aplazado. Cada proyecto se instala por separado. Se reevalúa cuando dos aplicaciones consuman el mismo paquete a la vez |
 | **`packages/shared/`** | Viene de la plantilla y está prácticamente vacío. Decidir si se usa o se retira cuando haya tipos que compartir de verdad |
 | **Ambigüedad en `CONTEXT.md`** | El responsable de Ventas aparece con dos nombres distintos. Sin resolver — ver [`projectbrief.md`](./projectbrief.md). Bloqueará el dominio de ventas cuando llegue |
+| **Regla de ramas desfasada** | [`AGENTS.md`](../AGENTS.md) §9 y [`.agents/rules/commits-y-entrega.md`](../.agents/rules/commits-y-entrega.md) siguen diciendo que cada rama sale de la del hito anterior. Desde el 16/09/2026 salen de `main` (ver arriba). Corregir al cerrar el analizador de incidencias |
+| **API de inventario (NXV-0201) pendiente** | Pospuesta el 04/11/2026 para hacer antes el analizador de incidencias |
 | **Dependencia de una API mock compartida** | Los datos los escriben también otros alumnos. Ninguna funcionalidad puede asumir que un registro concreto sigue existiendo. El backend propio **no la envuelve**: convivirán |

@@ -12,6 +12,8 @@
 | [`uis/talent-lab/`](../uis/talent-lab/) | Banco de pruebas manual de `talent-core`: dispara sus 18 funciones desde botones | HTML + Tailwind 4 + el `dist/` de `talent-core` | 2 |
 | [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones y seguimiento de candidaturas | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 |
 | [`packages/shared/`](../packages/shared/) | `@repo/shared-types` — viene de la plantilla, prácticamente vacío | TypeScript | — |
+| [`packages/incident-analysis/`](../packages/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte. Lógica única que comparten el script y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias |
+| [`scripts/analyze.py`](../scripts/analyze.py) | Analizador de tickets por consola, con exportación a `results.csv` | Python 3, usa `incident-analysis` | Analizador de incidencias |
 | [`scripts/sync_contexts.py`](../scripts/sync_contexts.py) | Descarga los contextos del syllabus y los coloca en `docs/contexts/` | Python 3, solo stdlib | — |
 
 Las carpetas `services/`, `data/`, `agents/`, `mcps/`, `workflows/`, `infra/` e `internal/` existen con su README pero **están vacías a propósito**. Se llenarán en los hitos que las necesiten. No se crean subcarpetas "por si acaso".
@@ -70,6 +72,15 @@ Funciones puras sin estado, probadas con el runner de `node:test` (112 pruebas).
 
 > **Corregido el 16/09/2026.** Esta decisión afirmaba que `talent-core` "se consumirá desde `services/`". Se escribió antes de elegir el lenguaje del backend y dejó de ser cierta al decidir FastAPI: un proceso Python no puede importar un paquete TypeScript. El motor de scoring **se reimplementará en Python** dentro del dominio `recruitment`, usando las 112 pruebas existentes como especificación, y `talent-core` queda como librería de las interfaces. El razonamiento completo y el riesgo de divergencia están en [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHITECTURE_PROPOSAL.md) (decisiones D-05 y D-06, riesgo R-05).
 
+### El análisis de tickets vive en un paquete Python, no en el script ni en la API
+
+`packages/incident-analysis/` es la **única** implementación de la validación y las métricas del CSV de tickets. El script `scripts/analyze.py` y la API la importan, no la copian. Es un criterio de evaluación del proyecto, y si estuviera duplicada, el día que cambiara una regla los dos darían números distintos. Mismo papel que `talent-core` en TypeScript.
+
+- **Librería estándar, sin pandas.** Se lee el CSV en streaming con `csv.DictReader`: la memoria no crece con el tamaño del fichero, que en producción puede llegar al millón de líneas.
+- **El script no exige instalar el paquete**: añade su carpeta a `sys.path`. La API sí lo instala (`pip install -e`).
+- **El email del cliente no sale del validador.** `AnalysisResult` contiene solo números y códigos de regla. Hay una prueba que lo comprueba.
+- **Prueba de aceptación**: `test_briefing.py` fija los valores esperados del briefing contra `scripts/incidents-nexova.csv`.
+
 ### Sin npm workspaces todavía
 
 Cada proyecto tiene su `package.json` y su `package-lock.json`, y se instala por separado desde su carpeta. Es más ruidoso, pero mantiene los proyectos independientes y los workflows de CI acotados por ruta. Se reevaluará cuando dos aplicaciones necesiten compartir el mismo paquete a la vez.
@@ -114,6 +125,8 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 | `uis/talent-lab/` | `npm run dev` · `npm run build` (compila la librería + el CSS) |
 | `uis/backoffice/` | `npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` |
 | `packages/talent-core/` | `npm run typecheck` · `npm test` · `npm run demo` · `npm run build` |
+| `packages/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
+| `scripts/` | `python analyze.py incidents-nexova.csv` |
 
 ## Restricciones técnicas
 
