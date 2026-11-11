@@ -2,11 +2,12 @@
 
 API de Nexova Solutions sobre **FastAPI**. Es un **monolito modular por dominios**: un solo servicio con un paquete por área de negocio. Su razonamiento está en [`docs/ARCHITECTURE_PROPOSAL.md`](../../docs/ARCHITECTURE_PROPOSAL.md) y las decisiones vigentes, en [`memory-bank/techContext.md`](../../memory-bank/techContext.md).
 
-Hoy tiene un dominio:
+Hoy tiene dos dominios:
 
 | Dominio | Qué hace | Rutas |
 | --- | --- | --- |
 | [`incidents`](./app/domains/incidents/) | Analiza la exportación CSV del helpdesk de soporte (Roberto Díaz). La validación y las métricas son las del paquete [`packages/incident-analysis/`](../../packages/incident-analysis/), las mismas que usa el script [`scripts/analyze.py`](../../scripts/analyze.py) | `POST /api/incidents/analyze` · `GET /api/incidents/results/export` |
+| [`suppliers`](./app/domains/suppliers/) | Directorio oficial de proveedores externos (Patricia Solís). Persistido en TinyDB, con las reglas del [BRIEFING](../../docs/contexts/proyectos/supplier-directory.es.md) | `/suppliers` (ver abajo) |
 
 ## Puesta en marcha
 
@@ -60,8 +61,12 @@ app/
    │  ├─ exceptions.py  errores del dominio, sin HTTP
    │  └─ dependencies.py
    └─ suppliers/
+      ├─ router.py      HTTP: valida la entrada, llama al service, traduce errores a códigos
+      ├─ service.py     reglas: quién pone updated_at, qué se puede borrar. No importa fastapi
       ├─ schemas.py     modelos Pydantic: entrada y salida separadas, reglas del BRIEFING
       ├─ database.py    TinyDB. El único módulo que la conoce
+      ├─ exceptions.py  errores del dominio, sin HTTP
+      ├─ dependencies.py
       └─ seed_data.py   los 15 proveedores del BRIEFING, copiados literalmente
 storage/                base de datos de TinyDB (no se versiona)
 tests/                  pruebas de los services, los modelos, la base de datos y la configuración
@@ -95,6 +100,21 @@ Todos los errores tienen la forma `{"detail": "mensaje"}`, en español y listos 
 
 El último análisis como CSV descargable (`results.csv`, una métrica por fila). Es **byte a byte el mismo fichero** que escribe el script. Devuelve `404` si todavía no se ha analizado nada.
 
+## Rutas de `suppliers`
+
+Las rutas son las del enunciado, sin el prefijo `/api` de `incidents`. Antes de probarlas, `uv run seed`.
+
+| Método y ruta | Qué hace | Respuestas |
+| --- | --- | --- |
+| `POST /suppliers` | Da de alta un proveedor. `id` y `updated_at` los pone el sistema; si llegan en el cuerpo, se rechaza | `201` con el proveedor y la cabecera `Location` · `422` |
+| `GET /suppliers?country=&category=` | Lista el directorio ordenado por nombre. Los dos filtros son opcionales y se combinan | `200` · `422` si un filtro no es un valor del BRIEFING |
+| `GET /suppliers/{id}` | Un proveedor | `200` · `404` |
+| `PATCH /suppliers/{id}/rate` | Cambia `monthly_rate` (`> 0`) y renueva `updated_at` | `200` · `404` · `422` |
+| `PATCH /suppliers/{id}/status` | `active` o `suspended`. No toca `updated_at` | `200` · `404` · `422` |
+| `DELETE /suppliers/{id}` | Borra un proveedor **activo** y lo devuelve | `200` · `404` · `409` si está suspendido |
+
+Los `404` y `409` llevan `{"detail": "mensaje en español"}`. Los `422` son los de FastAPI: `detail` es una lista de errores por campo (`loc`, `msg`).
+
 ## Decisiones
 
 - **La API no calcula.** Toda la validación y las métricas están en `incident_analysis`. Aquí solo se añade lo propio de recibir un fichero por la red: extensión, tamaño y la conversión de bytes a texto.
@@ -103,6 +123,10 @@ El último análisis como CSV descargable (`results.csv`, una métrica por fila)
 - **Rutas síncronas (`def`).** El análisis es cálculo y lectura bloqueante. FastAPI ejecuta las rutas síncronas en un pool de hilos, así que un fichero grande no congela las demás peticiones.
 - **El email del cliente no sale.** Ni en la respuesta, ni en los errores, ni en el log del servidor. Hay una prueba que comprueba que la respuesta no contiene ninguna `@`.
 - **Un análisis fallido no borra el anterior.** El último análisis solo se sustituye cuando el nuevo termina bien.
+- **Un proveedor suspendido no se borra: `409`.** El BRIEFING dice que los suspendidos permanecen en el directorio para mantener el historial. La API lo hace cumplir aunque alguien la llame sin pasar por el backoffice. Un activo sí se borra, por ejemplo uno dado de alta por error.
+- **Solo la tarifa mueve `updated_at`.** Patricia lo usa para justificar variaciones de presupuesto, y suspender no cambia el precio. Una tarifa repetida sí lo renueva: confirma ese precio en esa fecha.
+- **`DELETE` devuelve `200` con el proveedor borrado**, no `204` sin cuerpo. Así el frontend puede decir qué ha borrado sin haberlo guardado antes.
+- **La base de datos se abre al arrancar el servidor, no al importar** (`lifespan` en [`main.py`](./app/main.py)), y se cierra al pararlo. Crear la app para las pruebas o para leer el OpenAPI no toca el fichero.
 
 ## Limitaciones conocidas
 

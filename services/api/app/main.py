@@ -1,10 +1,13 @@
 """Punto de entrada de la API de Nexova: compone la app y nada más.
 
 Arranque, desde services/api:
-    uvicorn app.main:app --reload --port 8000
+    uv run uvicorn app.main:app --reload --port 8000
 """
 
 from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +15,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import Settings, load_settings
 from .domains.incidents.router import router as incidents_router
 from .domains.incidents.service import ResultsStore
+from .domains.suppliers.database import SupplierRepository
+from .domains.suppliers.router import router as suppliers_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Abre la base de datos de proveedores al arrancar y la cierra al parar.
+
+    Se abre aquí y no al importar el módulo: crear la app (en las pruebas,
+    o para leer el OpenAPI) no toca el fichero de TinyDB.
+    """
+    with SupplierRepository(app.state.settings.suppliers_db_path) as repo:
+        app.state.suppliers = repo
+        yield
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -22,6 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="Nexova API",
         version="0.1.0",
         description="Backend de Nexova Solutions. Un monolito modular por dominios.",
+        lifespan=lifespan,
     )
     app.state.settings = settings
     app.state.incident_results = ResultsStore()
@@ -31,13 +49,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["Content-Type"],
         # Para que el frontend pueda leer el nombre del fichero descargado.
         expose_headers=["Content-Disposition"],
     )
 
     app.include_router(incidents_router)
+    app.include_router(suppliers_router)
     return app
 
 
