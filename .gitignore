@@ -30,6 +30,10 @@ Thumbs.db
 # se genera en la carpeta desde la que se ejecuta el script
 results.csv
 
+# Base de datos de TinyDB de la API (directorio de proveedores). Es estado de
+# ejecucion: cada entorno crea la suya con `uv run seed`
+services/api/storage/
+
 # Salida de compilacion de TypeScript
 packages/talent-core/dist/
 

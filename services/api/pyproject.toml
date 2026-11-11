@@ -25,6 +25,10 @@ dependencies = [
     "tinydb==4.9.0",
 ]
 
+[project.scripts]
+# `uv run seed` carga en TinyDB los proveedores del BRIEFING (app/seed.py).
+seed = "app.seed:main"
+
 [tool.uv.sources]
 # Paquete del propio monorepo. editable: la API ve los cambios sin reinstalar.
 nexova-incident-analysis = { path = "../../packages/incident-analysis", editable = true }
