@@ -14,10 +14,11 @@ from incident_analysis import FileEncodingError, IncidentFileError
 
 from ...config import Settings
 from ...dependencies import get_settings
+from ...schemas import ErrorResponse
 from . import service
 from .dependencies import get_results_store
 from .exceptions import FileTooLargeError, NoAnalysisYetError, UnsupportedFileTypeError
-from .schemas import AnalysisResponse, ErrorResponse
+from .schemas import AnalysisResponse
 from .service import ResultsStore
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])

@@ -60,7 +60,3 @@ class AnalysisResponse(BaseModel):
     satisfaction: Satisfaction
     # Como mucho 50 filas: suficiente para localizar el problema en el origen.
     invalid_samples: list[InvalidSample]
-
-
-class ErrorResponse(BaseModel):
-    detail: str
