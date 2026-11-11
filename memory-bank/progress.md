@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 11 de noviembre de 2026 (directorio de proveedores, fase 1)._
+_Última actualización: 11 de noviembre de 2026 (directorio de proveedores, fase 2)._
 
 ## Entregado
 
@@ -76,7 +76,7 @@ Rama `feature/supplier-directory`, **apilada sobre `feature/incidents-analyzer`*
 | Fase | Estado |
 | --- | --- |
 | 1 — Montaje: `services/api` pasa a `pyproject.toml` + uv, TinyDB 4.9.0 añadido, `requirements.txt` retirado. 18 pruebas en verde y la API arranca con `uv run` | ✅ |
-| 2 — Modelo de datos: schemas Pydantic de entrada y salida, categorías y estados válidos, moneda según el país | ⬜ |
+| 2 — Modelo de datos: [`schemas.py`](../services/api/app/domains/suppliers/schemas.py) con enums de país, moneda, categoría y estado, tarifa > 0 (y finita), moneda según el país, entrada y salida separadas, `extra="forbid"` en la entrada. 19 pruebas | ✅ |
 | 3 — Base de datos y seeder: TinyDB persistida en fichero, `uv run seed` sin duplicados | ⬜ |
 | 4 — Endpoints `/suppliers`: alta, listado con filtros, detalle, tarifa, estado y baja | ⬜ |
 | 5 — Página `/suppliers` en el backoffice | ⬜ |
