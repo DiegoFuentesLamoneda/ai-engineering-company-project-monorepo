@@ -10,12 +10,12 @@
 | [`uis/website/`](../uis/website/) | Web pública de Nexova: landing + formulario de registro de talento | HTML5, Tailwind 4 (CLI), JS sin dependencias | 1 |
 | [`packages/talent-core/`](../packages/talent-core/) | Motor de scoring de candidatos y matching de vacantes | TypeScript 5, `node:test`, `tsx` | 2 |
 | [`uis/talent-lab/`](../uis/talent-lab/) | Banco de pruebas manual de `talent-core`: dispara sus 18 funciones desde botones | HTML + Tailwind 4 + el `dist/` de `talent-core` | 2 |
-| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas y análisis de incidencias de soporte | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias |
+| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas, análisis de incidencias de soporte y directorio de proveedores | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias · Directorio de proveedores |
 | [`packages/shared/`](../packages/shared/) | `@repo/shared-types` — viene de la plantilla, prácticamente vacío | TypeScript | — |
 | [`packages/incident-analysis/`](../packages/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte. Lógica única que comparten el script y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias |
 | [`scripts/analyze.py`](../scripts/analyze.py) | Analizador de tickets por consola, con exportación a `results.csv` | Python 3, usa `incident-analysis` | Analizador de incidencias |
 | [`scripts/sync_contexts.py`](../scripts/sync_contexts.py) | Descarga los contextos del syllabus y los coloca en `docs/contexts/` | Python 3, solo stdlib | — |
-| [`services/api/`](../services/api/) | Backend de Nexova. Hoy un dominio, `incidents`: análisis del CSV subido y exportación del último análisis | Python 3.11+, FastAPI, uvicorn | Analizador de incidencias |
+| [`services/api/`](../services/api/) | Backend de Nexova. Dos dominios: `incidents` (análisis del CSV subido y exportación del último análisis) y `suppliers` (directorio de proveedores con su seeder, `uv run seed`) | Python 3.11+, FastAPI, Pydantic 2, uvicorn, TinyDB, uv | Analizador de incidencias · Directorio de proveedores |
 
 Las carpetas `data/`, `agents/`, `mcps/`, `workflows/`, `infra/` e `internal/` existen con su README pero **están vacías a propósito**. Se llenarán en los hitos que las necesiten. No se crean subcarpetas "por si acaso".
 
@@ -46,7 +46,7 @@ Consecuencias prácticas: los datos que devuelve **pueden cambiar o desaparecer*
 
 El prefijo `NEXT_PUBLIC_` incrusta la variable en el bundle del navegador — **es pública**. Nunca debe usarse para credenciales.
 
-El backoffice habla además con la API propia, `services/api/`, para el análisis de incidencias: variable **`NEXT_PUBLIC_NEXOVA_API_URL`** (`http://localhost:8000` en local). Las dos APIs pasan por el mismo `request()` de `lib/api.ts`, cada una con su URL base.
+El backoffice habla además con la API propia, `services/api/`, para el análisis de incidencias y el directorio de proveedores: variable **`NEXT_PUBLIC_NEXOVA_API_URL`** (`http://localhost:8000` en local). Las dos APIs pasan por el mismo `request()` de `lib/api.ts`, cada una con su URL base.
 
 ## Decisiones de arquitectura tomadas
 
@@ -129,6 +129,16 @@ Decidido el 11/11/2026, con el directorio de proveedores. Sustituye a `pip` + `r
 - **La API es un paquete instalable** (`nexova-api`, backend `setuptools`, el mismo que `incident-analysis`). Es lo que permite declarar comandos en `[project.scripts]`.
 - **Las versiones directas se siguen fijando con `==`** en `pyproject.toml`, como hasta ahora. Una actualización es un cambio deliberado, no algo que pasa al reinstalar.
 
+### Proveedores: TinyDB detrás de un repositorio
+
+Decidido el 11/11/2026, con el directorio de proveedores. El enunciado pide almacenamiento ligero: TinyDB, un fichero JSON sin servidor.
+
+- **El fichero no se versiona.** `services/api/storage/suppliers.json` está en el `.gitignore` y se rellena con `uv run seed`. La ruta se cambia con `NEXOVA_API_SUPPLIERS_DB_PATH`, que es lo que usan las pruebas y las capturas para no tocar la base de datos de trabajo.
+- **Solo `database.py` importa `tinydb`.** El `service` habla con un `SupplierRepository`. Pasar a Postgres es reescribir ese archivo, no el dominio.
+- **El seeder no duplica.** Decide por nombre qué falta y valida cada entrada con el mismo modelo que `POST /suppliers`.
+- **Códigos de error del dominio:** `404` si no existe y `409` al borrar un suspendido. El BRIEFING dice que los suspendidos se quedan en el directorio por el historial, y la API lo hace cumplir aunque alguien la llame sin pasar por el backoffice. Amplía la tabla de errores de arriba: `409` para una operación que no se permite en el estado actual del recurso.
+- **El backoffice no deja escribir la moneda.** La deduce del país (España → EUR, EE. UU. → USD, según el BRIEFING), y la API rechaza una combinación que no cuadre.
+
 ### CI acotada por rutas
 
 Cada workflow se dispara solo cuando cambia su carpeta. Ver [`.github/workflows/`](../.github/workflows/):
@@ -151,7 +161,7 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 | `packages/talent-core/` | `npm run typecheck` · `npm test` · `npm run demo` · `npm run build` |
 | `packages/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
 | `scripts/` | `python analyze.py incidents-nexova.csv` |
-| `services/api/` | `uv sync` · `uv run uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
+| `services/api/` | `uv sync` · `uv run seed` · `uv run uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
 
 ## Restricciones técnicas
 

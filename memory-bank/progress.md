@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 11 de noviembre de 2026 (directorio de proveedores, fase 5)._
+_Última actualización: 11 de noviembre de 2026 (directorio de proveedores, cierre)._
 
 ## Entregado
 
@@ -67,7 +67,7 @@ Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/con
 | Script [`scripts/analyze.py`](../scripts/analyze.py): 100 / 96 / 4 y todos los desgloses coinciden con el briefing | ✅ |
 | API en [`services/api/`](../services/api/): `POST /api/incidents/analyze` y `GET /api/incidents/results/export`. 18 pruebas del service y la configuración; rutas, errores y CORS verificados con el servidor arrancado; la exportación es idéntica byte a byte a la del script | ✅ |
 | Página [`/incidents`](../uis/backoffice/app/incidents/) en el backoffice: subida por arrastre o selector, totales, desglose por categoría y estado, índice de satisfacción, registros inválidos por regla con sus filas y descarga del CSV. Verificada en el navegador con la API arrancada: cifras del briefing, CSV descargado idéntico byte a byte al del script, y errores 400 y 415 mostrados con el mensaje de la API | ✅ |
-| Capturas (consola e interfaz) y PR hacia `main` | ⬜ |
+| Capturas (consola e interfaz) y PR hacia `main`: [#6](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/6), abierta el 04/11/2026 para la evaluación del campus | ✅ |
 
 ## En curso — Directorio de proveedores
 
@@ -80,9 +80,11 @@ Rama `feature/supplier-directory`, **apilada sobre `feature/incidents-analyzer`*
 | 3 — Base de datos y seeder: [`database.py`](../services/api/app/domains/suppliers/database.py) (TinyDB en `services/api/storage/suppliers.json`, ignorado por git, con filtros por país y categoría) y [`seed.py`](../services/api/app/seed.py) (`uv run seed`: 15 insertados la primera vez, 0 la segunda). 55 pruebas en total | ✅ |
 | 4 — Endpoints `/suppliers`: [`router.py`](../services/api/app/domains/suppliers/router.py) y [`service.py`](../services/api/app/domains/suppliers/service.py). Alta `201`, listado con filtros, detalle, tarifa (renueva `updated_at`), estado y baja; `404`/`422` y `409` al borrar un suspendido (decisión de Diego, 11/11/2026). Probado a mano con curl y tras reiniciar. 70 pruebas | ✅ |
 | 5 — Página [`/suppliers`](../uis/backoffice/app/suppliers/page.tsx) en el backoffice, en el menú: tabla, filtros por país y categoría en la URL, tarifa y estado editables por fila, suspendidos atenuados, aviso de renovación a 60 días y alta en `/suppliers/new` con validación y errores de la API en español. Etiquetas aprobadas por Diego (11/11/2026). Typecheck, lint y build en verde, y 20 comprobaciones en el navegador | ✅ |
-| 6 — Cierre: capturas, banco de memoria y PR | ⬜ |
+| 6 — Cierre: capturas del seeder, de Swagger con un filtro y de la interfaz con un filtro; banco de memoria ([`techContext.md`](./techContext.md): TinyDB detrás de un repositorio y el `409`) y PR hacia `main` | ⏳ |
 
-**Estructura:** dominio `app/domains/suppliers/`, no los archivos sueltos que propone el enunciado (`models.py`, `routes/suppliers.py`…). Lo decidió la propuesta de arquitectura del hito 5. La PR llevará una tabla con la equivalencia entre los dos.
+**Estructura:** dominio `app/domains/suppliers/`, no los archivos sueltos que propone el enunciado (`models.py`, `routes/suppliers.py`…). Lo decidió la propuesta de arquitectura del hito 5. La PR lleva una tabla con la equivalencia entre los dos.
+
+**La PR de proveedores incluye los commits de la #6**, porque la rama está apilada. Cuando se fusione la #6, su diff se queda solo con lo de proveedores.
 
 ## Próximo
 
