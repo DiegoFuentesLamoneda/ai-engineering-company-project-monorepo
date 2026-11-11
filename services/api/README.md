@@ -10,20 +10,24 @@ Hoy tiene un dominio:
 
 ## Puesta en marcha
 
-Python 3.11 o superior. Desde esta carpeta, en PowerShell:
+Python 3.11 o superior y [uv](https://docs.astral.sh/uv/). Desde esta carpeta:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt      # incluye el paquete compartido en modo editable
-uvicorn app.main:app --reload --port 8000
+uv sync                                         # crea .venv e instala lo que fija uv.lock
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
-La documentación interactiva queda en http://localhost:8000/docs. Desde ahí se puede subir un CSV y probar las dos rutas sin el backoffice.
+`uv run` ejecuta el comando dentro de `.venv` sin tener que activarlo. La documentación interactiva queda en http://localhost:8000/docs. Desde ahí se pueden probar todas las rutas sin el backoffice.
 
 ```powershell
-python -m unittest discover -s tests     # pruebas, con el venv activo
+uv run python -m unittest discover -s tests     # pruebas
 ```
+
+### Dependencias
+
+Se declaran en [`pyproject.toml`](./pyproject.toml) y sus versiones exactas, incluidas las indirectas, quedan fijadas en [`uv.lock`](./uv.lock). Los dos se versionan: así todo el equipo instala exactamente lo mismo. Para añadir una, `uv add <paquete>`, que actualiza ambos. Añadir una dependencia es una decisión de arquitectura y se consulta antes (ver [`AGENTS.md`](../../AGENTS.md) §7).
+
+El paquete compartido [`packages/incident-analysis/`](../../packages/incident-analysis/) se instala en modo editable (`[tool.uv.sources]`): un cambio en él se ve en la API sin reinstalar.
 
 ## Configuración
 

@@ -31,6 +31,8 @@ Las carpetas `data/`, `agents/`, `mcps/`, `workflows/`, `infra/` e `internal/` e
 | FastAPI | 0.162.0 | `services/api` |
 | uvicorn | 0.54.0 | `services/api` |
 | python-multipart | 0.0.33 | `services/api` |
+| TinyDB | 4.9.0 | `services/api` |
+| uv | 0.13 o superior | gestor del entorno de `services/api` |
 
 ## API de datos
 
@@ -83,7 +85,7 @@ Funciones puras sin estado, probadas con el runner de `node:test` (112 pruebas).
 `packages/incident-analysis/` es la **única** implementación de la validación y las métricas del CSV de tickets. El script `scripts/analyze.py` y la API la importan, no la copian. Es un criterio de evaluación del proyecto, y si estuviera duplicada, el día que cambiara una regla los dos darían números distintos. Mismo papel que `talent-core` en TypeScript.
 
 - **Librería estándar, sin pandas.** Se lee el CSV en streaming con `csv.DictReader`: la memoria no crece con el tamaño del fichero, que en producción puede llegar al millón de líneas.
-- **El script no exige instalar el paquete**: añade su carpeta a `sys.path`. La API sí lo instala (`pip install -e`).
+- **El script no exige instalar el paquete**: añade su carpeta a `sys.path`. La API sí lo instala, en modo editable, desde su `pyproject.toml`.
 - **El email del cliente no sale del validador.** `AnalysisResult` contiene solo números y códigos de regla. Hay una prueba que lo comprueba.
 - **Prueba de aceptación**: `test_briefing.py` fija los valores esperados del briefing contra `scripts/incidents-nexova.csv`.
 
@@ -118,6 +120,15 @@ Decidido en el hito 5 y razonado por extenso en [`docs/ARCHITECTURE_PROPOSAL.md`
 > - **La configuración se valida con `pydantic`, el que ya trae FastAPI, y no con `pydantic-settings` (D-03).** Hoy no hay secretos ni `.env` que cargar.
 > - **Las pruebas usan `unittest` sobre el `service`, no `pytest` con el cliente de pruebas (D-08).** Ese cliente necesita `httpx`. Las rutas se verifican con el servidor arrancado.
 
+### `services/api` se gestiona con uv y `pyproject.toml`
+
+Decidido el 11/11/2026, con el directorio de proveedores. Sustituye a `pip` + `requirements.txt`.
+
+- **Por qué.** El enunciado de proveedores exige que el seeder corra con `uv run seed`. Eso pide un `pyproject.toml` que declare el comando. Mantener a la vez `requirements.txt` dejaría las dependencias en dos listas que acabarían desincronizadas, así que se retira.
+- **`uv.lock` se versiona.** Fija la versión exacta de cada paquete, también los indirectos. Con `requirements.txt` solo se fijaban los directos.
+- **La API es un paquete instalable** (`nexova-api`, backend `setuptools`, el mismo que `incident-analysis`). Es lo que permite declarar comandos en `[project.scripts]`.
+- **Las versiones directas se siguen fijando con `==`** en `pyproject.toml`, como hasta ahora. Una actualización es un cambio deliberado, no algo que pasa al reinstalar.
+
 ### CI acotada por rutas
 
 Cada workflow se dispara solo cuando cambia su carpeta. Ver [`.github/workflows/`](../.github/workflows/):
@@ -140,7 +151,7 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 | `packages/talent-core/` | `npm run typecheck` · `npm test` · `npm run demo` · `npm run build` |
 | `packages/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
 | `scripts/` | `python analyze.py incidents-nexova.csv` |
-| `services/api/` | `pip install -r requirements.txt` (en su `.venv`) · `uvicorn app.main:app --reload --port 8000` · `python -m unittest discover -s tests` |
+| `services/api/` | `uv sync` · `uv run uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
 
 ## Restricciones técnicas
 

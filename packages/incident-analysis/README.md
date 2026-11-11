@@ -34,7 +34,8 @@ Desde esta carpeta:
 
 ```powershell
 python -m unittest discover -s tests -t tests   # 44 pruebas
-pip install -e .                                # instalarlo en el entorno de la API
 ```
+
+No hace falta instalarlo a mano en la API: `uv sync` desde [`services/api/`](../../services/api/) lo instala en modo editable.
 
 La prueba [`test_briefing.py`](./tests/test_briefing.py) comprueba los valores esperados del briefing contra [`scripts/incidents-nexova.csv`](../../scripts/incidents-nexova.csv). Si falla, el análisis no se entrega.
