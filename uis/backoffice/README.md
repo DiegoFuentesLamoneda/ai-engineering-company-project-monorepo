@@ -3,11 +3,13 @@
 La **aplicación interna** de Nexova: el sitio donde el equipo trabaja, frente a
 [`uis/website`](../website/), que es la cara pública de la empresa.
 
-Hoy cubre las **operaciones de selección** y el **análisis de incidencias de soporte**. A medida que avancen los hitos irá albergando el
+Hoy cubre las **operaciones de selección**, el **análisis de incidencias de soporte** y el
+**directorio de proveedores**. A medida que avancen los hitos irá albergando el
 resto de capacidades internas —formación, soporte, RR. HH.— como secciones nuevas, en lugar de
 crear una aplicación por cada una.
 
-Hitos 3 y 4 y proyecto «Analizador de Incidencias» del proyecto transversal de AI Engineering · 4Geeks Academy.
+Hitos 3 y 4 y proyectos «Analizador de Incidencias» y «Directorio de Proveedores» del proyecto
+transversal de AI Engineering · 4Geeks Academy.
 
 ---
 
@@ -50,6 +52,24 @@ Análisis de la exportación CSV del helpdesk de soporte al cliente:
 
 El análisis lo hace la API propia, [`services/api`](../../services/api/), que debe estar
 arrancada (ver su README). El email de los clientes no aparece en ninguna parte del resultado.
+
+### Proveedores (`/suppliers`)
+
+El directorio de proveedores externos de las dos oficinas, que sustituye la hoja de cálculo de
+Patricia:
+
+- **Tabla** con nombre, país, categorías, tarifa mensual, renovación del contrato y estado.
+- **Filtros** por país y por categoría, combinables y sin recargar la página.
+- **Cambio de tarifa** en la propia fila, con la fecha del último cambio debajo.
+- **Suspender y reactivar** desde la fila. Los suspendidos se ven atenuados y con la etiqueta en
+  rojo.
+- **Aviso de renovación**: los contratos que renuevan en los próximos 60 días llevan una marca y
+  el contador de arriba dice cuántos son.
+- **Alta** de proveedores (`/suppliers/new`) con validación en el navegador y los errores de la
+  API bajo su campo.
+
+Los datos los guarda la API propia, [`services/api`](../../services/api/), en TinyDB. Para
+tener datos de ejemplo, `uv run seed` desde `services/api` (ver su README).
 
 ---
 
@@ -111,21 +131,28 @@ app/                         Rutas (App Router)
   candidates/[id]/           Detalle
   candidates/[id]/edit/      Edición
   incidents/                 Análisis de incidencias
+  suppliers/                 Directorio de proveedores
+  suppliers/new/             Alta de proveedor
 components/
   AppNav.tsx                 Navegación entre secciones
   BrandLogo.tsx              Logotipo de Nexova, en línea
   PipelineSummary.tsx        Estado del proceso en vivo
   Candidate*.tsx             Interfaz del tracker
   Incident*.tsx              Subida, resultado y descarga del análisis de incidencias
+  Supplier*.tsx              Filtros, tabla, edición por fila y alta de proveedores
 hooks/                       Lógica de datos reutilizable
   useIncidentAnalysis.ts     Estado del análisis: fichero, carga, error y resultado
+  useSupplierFilters.ts      Filtros de proveedores leídos de la URL y validados
+  useSuppliers.ts            Listado de proveedores: carga, error y refresco de una fila
 lib/
   api.ts                     Cliente único de las dos APIs (tracker y services/api)
   company.ts                 Datos de empresa tomados de CONTEXT.md
   labels.ts                  Etiquetas de dominio en español
-  format.ts                  Formato de fechas, números y porcentajes
+  format.ts                  Formato de fechas, importes, números y porcentajes
+  suppliers.ts               Reglas del BRIEFING: moneda por país y aviso de renovación
 types/candidate.ts           Contrato de la API del tracker en TypeScript
 types/incident.ts            Contrato de la API de incidencias en TypeScript
+types/supplier.ts            Contrato de la API de proveedores en TypeScript
 ```
 
 Las páginas son Server Components; `"use client"` se aplica solo en los componentes que
@@ -135,7 +162,7 @@ necesitan interacción, para reducir el JavaScript enviado al navegador.
 
 ## Contrato de la API
 
-Esta sección describe la API del tracker. La de incidencias está documentada en
+Esta sección describe la API del tracker. Las de incidencias y proveedores están documentadas en
 [`services/api/README.md`](../../services/api/README.md).
 
 Explorado con Postman antes de escribir código. Lo relevante:
@@ -236,3 +263,32 @@ caída se muestran como un mensaje en pantalla, y no como una pestaña con un JS
 (`closed_without_score`, `invalid_email`…) se traducen en `lib/labels.ts`, como los estados del
 tracker. La excepción consciente es el error de columnas que faltan: nombra las columnas tal y
 como se llaman en la cabecera del CSV, porque es lo que hay que corregir en el fichero.
+
+**Proveedores: etiquetas aprobadas, no inventadas.** El BRIEFING define los valores de país,
+categoría y estado, pero no su texto en español. Las etiquetas de `lib/labels.ts` las aprobó Diego
+el 11/11/2026 antes de escribirlas. La excepción consciente es la moneda: se muestra `EUR` o
+`USD`, el código ISO que usa contabilidad, y en los importes el símbolo (`450,00 €`).
+
+**La moneda no se elige: la fija el país.** El formulario no tiene campo de moneda. España
+factura en EUR y EE. UU. en USD (BRIEFING), así que el formulario la deduce y la API rechaza una
+combinación que no cuadre. Un campo que solo admite una respuesta correcta es un error esperando
+a pasar.
+
+**El aviso de renovación se calcula en hora local.** `contract_renewal_date` llega como
+`YYYY-MM-DD`. `new Date("2026-12-01")` lo interpreta como medianoche UTC, que en Miami es el día
+anterior, así que [`lib/suppliers.ts`](./lib/suppliers.ts) construye la fecha con año, mes y día.
+Los proveedores del seed renuevan todos en 2025: para ver el aviso hay que dar de alta uno con
+la fecha a menos de 60 días.
+
+**Los errores de Pydantic se traducen, no se muestran.** Los mensajes que genera Pydantic llegan
+en inglés (`Input should be greater than 0`). El formulario muestra un texto en español por cada
+campo rechazado. Las reglas propias de la API ya están en español: `lib/api.ts` solo les quita
+el prefijo `Value error, ` que añade Pydantic.
+
+**Sin borrado de proveedores en la interfaz.** El enunciado no lo pide y suspender ya cubre el
+caso de uso: el proveedor deja de usarse, pero su historial sigue ahí. La API sí tiene
+`DELETE /suppliers/{id}`, y rechaza con 409 borrar uno suspendido.
+
+**La edición por fila no recarga la lista.** Los `PATCH` devuelven el proveedor completo y
+`useSuppliers` sustituye esa fila. Ni la tarifa ni el estado cambian el país o las categorías,
+así que la fila sigue cumpliendo el filtro activo.

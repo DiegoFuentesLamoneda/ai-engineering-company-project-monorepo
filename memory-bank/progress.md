@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 11 de noviembre de 2026 (directorio de proveedores, fase 4)._
+_Última actualización: 11 de noviembre de 2026 (directorio de proveedores, fase 5)._
 
 ## Entregado
 
@@ -79,7 +79,7 @@ Rama `feature/supplier-directory`, **apilada sobre `feature/incidents-analyzer`*
 | 2 — Modelo de datos: [`schemas.py`](../services/api/app/domains/suppliers/schemas.py) con enums de país, moneda, categoría y estado, tarifa > 0 (y finita), moneda según el país, entrada y salida separadas, `extra="forbid"` en la entrada. 19 pruebas | ✅ |
 | 3 — Base de datos y seeder: [`database.py`](../services/api/app/domains/suppliers/database.py) (TinyDB en `services/api/storage/suppliers.json`, ignorado por git, con filtros por país y categoría) y [`seed.py`](../services/api/app/seed.py) (`uv run seed`: 15 insertados la primera vez, 0 la segunda). 55 pruebas en total | ✅ |
 | 4 — Endpoints `/suppliers`: [`router.py`](../services/api/app/domains/suppliers/router.py) y [`service.py`](../services/api/app/domains/suppliers/service.py). Alta `201`, listado con filtros, detalle, tarifa (renueva `updated_at`), estado y baja; `404`/`422` y `409` al borrar un suspendido (decisión de Diego, 11/11/2026). Probado a mano con curl y tras reiniciar. 70 pruebas | ✅ |
-| 5 — Página `/suppliers` en el backoffice | ⬜ |
+| 5 — Página [`/suppliers`](../uis/backoffice/app/suppliers/page.tsx) en el backoffice, en el menú: tabla, filtros por país y categoría en la URL, tarifa y estado editables por fila, suspendidos atenuados, aviso de renovación a 60 días y alta en `/suppliers/new` con validación y errores de la API en español. Etiquetas aprobadas por Diego (11/11/2026). Typecheck, lint y build en verde, y 20 comprobaciones en el navegador | ✅ |
 | 6 — Cierre: capturas, banco de memoria y PR | ⬜ |
 
 **Estructura:** dominio `app/domains/suppliers/`, no los archivos sueltos que propone el enunciado (`models.py`, `routes/suppliers.py`…). Lo decidió la propuesta de arquitectura del hito 5. La PR llevará una tabla con la equivalencia entre los dos.
