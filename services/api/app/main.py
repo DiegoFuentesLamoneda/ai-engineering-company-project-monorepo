@@ -17,9 +17,11 @@ from .domains.auth.router import router as auth_router
 from .domains.incidents.router import router as incidents_router
 from .domains.incidents.service import ResultsStore
 from .domains.profiles.database import ProfileRepository
+from .domains.profiles.router import router as profiles_router
 from .domains.suppliers.database import SupplierRepository
 from .domains.suppliers.router import router as suppliers_router
 from .domains.users.database import UserRepository
+from .domains.users.router import router as users_router
 
 
 @asynccontextmanager
@@ -66,6 +68,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.include_router(auth_router)
+    app.include_router(users_router)
+    app.include_router(profiles_router)
     app.include_router(incidents_router)
     app.include_router(suppliers_router)
     return app

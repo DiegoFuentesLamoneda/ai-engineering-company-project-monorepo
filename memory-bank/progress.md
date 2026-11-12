@@ -98,7 +98,7 @@ Rama `feature/auth-api`, **apilada sobre `feature/supplier-directory`** (PR #7 a
 | 2 — Modelos `User` y `Profile` y su repositorio en TinyDB: [`users/`](../services/api/app/domains/users/) y [`profiles/`](../services/api/app/domains/profiles/), dos ficheros de TinyDB. `id` UUID (TinyDB reutiliza sus números), email único en minúsculas, contraseña de 8 caracteres a 72 bytes, `role` fuera del alta, `UserPublic` sin hash. 33 pruebas | ✅ |
 | 3 — Service de usuarios: [`users/service.py`](../services/api/app/domains/users/service.py) (bcrypt, alta con perfil y marcha atrás si el perfil falla, permisos: tú mismo o admin, rol solo admin, login sin pistas) y [`create_admin.py`](../services/api/app/create_admin.py) (`uv run create-admin`). 137 pruebas | ✅ |
 | 4 — Token: [`auth/`](../services/api/app/domains/auth/) con `POST /auth/login` (formulario OAuth2, el email en `username`), `get_current_user` (401 sin token, caducado, manipulado o de cuenta borrada o desactivada; el usuario se relee en cada petición) y `GET /auth/me`. JWT HS256 con solo `sub` y fechas. 156 pruebas | ✅ |
-| 5 — Rutas `/users` y `/profiles` con `401` y `403` | ⬜ |
+| 5 — Rutas: [`users/router.py`](../services/api/app/domains/users/router.py) (`POST /users` pública con perfil; el resto con token, tú o admin, `403` antes que `404`, `409` email repetido) y [`profiles/router.py`](../services/api/app/domains/profiles/router.py) (`/profiles/me`). Pruebas HTTP de verdad con un cliente ASGI propio ([`http_client.py`](../services/api/tests/http_client.py)), sin `httpx`. 185 pruebas | ✅ |
 | 6 — Proteger las rutas existentes | ⬜ |
 | 7 — Verificación: pruebas y recorrido en `/docs` | ⬜ |
 | 8 — Cierre: banco de memoria, PR y ficha de la biblioteca | ⬜ |

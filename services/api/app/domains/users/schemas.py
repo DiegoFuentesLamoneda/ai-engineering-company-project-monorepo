@@ -23,7 +23,7 @@ from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
 
-from ..profiles.schemas import ProfileFields
+from ..profiles.schemas import Profile, ProfileFields
 
 
 class Role(StrEnum):
@@ -102,6 +102,12 @@ class UserPublic(BaseModel):
     role: Role
     is_active: bool
     created_at: datetime
+
+
+class UserCreated(UserPublic):
+    """Respuesta de `POST /users`: la cuenta y el perfil que nace con ella."""
+
+    profile: Profile
 
 
 class User(UserPublic):

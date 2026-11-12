@@ -18,6 +18,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from ...config import Settings
 from ...dependencies import get_settings
+from ...schemas import ErrorResponse
 from ..users import service as users_service
 from ..users.database import UserRepository
 from ..users.dependencies import get_user_repository
@@ -30,6 +31,9 @@ from .security import decode_access_token
 # hacer login con el botón *Authorize*. `auto_error=False`: sin cabecera
 # devuelve None y el 401 lo damos nosotros, con un mensaje en español.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+# El 401 en la documentación de `/docs`, para las rutas protegidas.
+UNAUTHORIZED = {401: {"model": ErrorResponse, "description": "Sin token, o token no válido o caducado"}}
 
 
 def unauthorized(detail: str) -> HTTPException:

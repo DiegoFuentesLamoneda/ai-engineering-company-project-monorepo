@@ -84,19 +84,22 @@ app/
    │  ├─ dependencies.py
    │  └─ seed_data.py   los 15 proveedores del BRIEFING, copiados literalmente
    ├─ users/            cuentas: solo credenciales y rol
+   │  ├─ router.py      HTTP: /users. Traduce los errores del service a 403, 404 y 409
    │  ├─ service.py     contraseñas (bcrypt), alta con perfil, permisos: tú mismo o admin
    │  ├─ schemas.py     UserCreate/UserUpdate (entrada), User (se guarda), UserPublic (sale, sin hash)
    │  ├─ database.py    TinyDB. Email único: se comprueba dentro del cerrojo de la escritura
    │  ├─ exceptions.py
    │  └─ dependencies.py
    └─ profiles/         nombre y contacto, uno por usuario (user_id)
+      ├─ router.py      HTTP: /profiles/me. El perfil sale del token, nunca de la URL
       ├─ service.py     editar solo los campos enviados; null borra
       ├─ schemas.py
       ├─ database.py    TinyDB. Uno a uno: un segundo perfil del mismo usuario se rechaza
       ├─ exceptions.py
       └─ dependencies.py
 storage/                base de datos de TinyDB (no se versiona)
-tests/                  pruebas de los services, los modelos, la base de datos, los tokens y la configuración
+tests/                  pruebas de los services, los modelos, la base de datos, los tokens, las rutas y la configuración
+└─ http_client.py       cliente HTTP mínimo por ASGI para probar las rutas (hace de TestClient sin httpx)
 ```
 
 ## Rutas de `auth`
@@ -109,6 +112,22 @@ tests/                  pruebas de los services, los modelos, la base de datos, 
 Las rutas protegidas piden la cabecera `Authorization: Bearer <token>`. En `/docs`, el botón **Authorize** hace el login y la añade a cada petición: en *username* va el email. Sin token, o con uno caducado, manipulado o de una cuenta borrada o desactivada, la respuesta es `401` con la cabecera `WWW-Authenticate: Bearer`.
 
 Para probar con curl en Windows (Git Bash), una contraseña con tildes o `ñ` puede llegar mal codificada y dar `401`. En `/docs` no pasa.
+
+## Rutas de `users` y `profiles`
+
+Todas piden token salvo el registro. Quién puede qué: **tu propia cuenta, o cualquiera si eres `admin`**.
+
+| Método y ruta | Quién | Qué hace | Respuestas |
+| --- | --- | --- | --- |
+| `POST /users` | **Pública** | Registro: `email`, `password` y, opcionales, `name`, `phone` y `address`. Crea la cuenta (siempre `user`) y su perfil | `201` con la cuenta, el perfil y la cabecera `Location` · `409` email ya registrado · `422` (también si llega `role`) |
+| `GET /users` | Solo admin | Lista las cuentas, sin hash | `200` · `401` · `403` |
+| `GET /users/{id}` | Tú o admin | Una cuenta | `200` · `401` · `403` · `404` |
+| `PUT /users/{id}` | Tú o admin | Cambia `email` o `password`; `role`, solo un admin. Solo cambia lo enviado | `200` · `401` · `403` · `404` · `409` · `422` |
+| `DELETE /users/{id}` | Tú o admin | Borra la cuenta y su perfil | `204` · `401` · `403` · `404` |
+| `GET /profiles/me` | Tú | Tu perfil | `200` · `401` |
+| `PUT /profiles/me` | Tú | Cambia `name`, `phone` o `address`. Lo no enviado se queda; `null` lo borra | `200` · `401` · `422` |
+
+El `404` solo lo ve un admin. A cualquier otro, una cuenta ajena le da `403` exista o no: el permiso se comprueba antes que la existencia.
 
 ## Rutas de `incidents`
 
@@ -174,6 +193,10 @@ Los `404` y `409` llevan `{"detail": "mensaje en español"}`. Los `422` son los 
 - **El token solo lleva el `id` (`sub`) y las fechas, no el rol.** `get_current_user` lee el usuario de la base de datos en cada petición: un cambio de rol, una cuenta desactivada o borrada cuentan desde la petición siguiente, no cuando caduque el token. Cuesta una lectura de TinyDB por petición.
 - **Solo se acepta HS256.** `algorithms=["HS256"]` al verificar rechaza los tokens sin firma (`alg: none`), el truco clásico para colar uno falso.
 - **El campo del login se llama `username` aunque lleve un email.** Es el nombre que fija el estándar OAuth2, y respetarlo es lo que hace funcionar el botón *Authorize* de `/docs`.
+
+- **`/profiles/me` y no `/profiles/{id}`.** El perfil sale del token, así que no hay forma de pedir el de otra persona: el `403` no hace falta porque no se puede ni intentar.
+- **Borrar una cuenta devuelve `204` sin cuerpo**, y no `200` con lo borrado como los proveedores. Quien borra es casi siempre el dueño, que ya sabe qué cuenta era, y así no viajan otra vez sus datos.
+- **Las rutas se prueban por HTTP sin `httpx`.** El `TestClient` de FastAPI lo necesita, y añadir una dependencia es una decisión aparte. [`tests/http_client.py`](./tests/http_client.py) habla con la app por ASGI, como uvicorn, en unas 40 líneas de biblioteca estándar: las pruebas ven los mismos códigos que vería el backoffice.
 
 ## Limitaciones conocidas
 

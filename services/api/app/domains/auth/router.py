@@ -25,13 +25,11 @@ from ..profiles.exceptions import ProfileNotFoundError
 from ..users import service as users_service
 from ..users.database import UserRepository
 from ..users.dependencies import get_user_repository
-from .dependencies import CurrentUser, unauthorized
+from .dependencies import UNAUTHORIZED, CurrentUser, unauthorized
 from .schemas import Me, Token
 from .security import create_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-UNAUTHORIZED = {401: {"model": ErrorResponse, "description": "Sin token, o token no válido o caducado"}}
 
 
 @router.post(
