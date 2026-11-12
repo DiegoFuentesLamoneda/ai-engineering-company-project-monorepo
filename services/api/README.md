@@ -43,7 +43,8 @@ Se lee del entorno **una sola vez, al arrancar** ([`app/config.py`](./app/config
 | `NEXOVA_API_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Orígenes que pueden llamar a la API desde el navegador, separados por comas. Nunca `*` |
 | `NEXOVA_API_MAX_UPLOAD_MB` | `200` | Tamaño máximo del CSV subido. La exportación de producción puede llegar al millón de filas (~150 MB) |
 | `NEXOVA_API_SUPPLIERS_DB_PATH` | `storage/suppliers.json` (dentro de esta carpeta) | Fichero de TinyDB del directorio de proveedores. La API y `uv run seed` leen la misma variable, así que siempre abren el mismo fichero |
-| `NEXOVA_API_USERS_DB_PATH` | `storage/users.json` (dentro de esta carpeta) | Fichero de TinyDB de usuarios y perfiles |
+| `NEXOVA_API_USERS_DB_PATH` | `storage/users.json` (dentro de esta carpeta) | Fichero de TinyDB de usuarios (solo credenciales) |
+| `NEXOVA_API_PROFILES_DB_PATH` | `storage/profiles.json` (dentro de esta carpeta) | Fichero de TinyDB de perfiles (nombre y contacto) |
 | `NEXOVA_API_JWT_SECRET_KEY` | — (obligatoria para arrancar) | **Secreta.** Clave con la que se firman los tokens. Al menos 32 caracteres. Va en `.env`, nunca en el código |
 | `NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Minutos de validez de un token, de 1 a 1440 |
 
@@ -64,14 +65,24 @@ app/
    │  ├─ schemas.py     contrato de salida (lo que publica /docs)
    │  ├─ exceptions.py  errores del dominio, sin HTTP
    │  └─ dependencies.py
-   └─ suppliers/
-      ├─ router.py      HTTP: valida la entrada, llama al service, traduce errores a códigos
-      ├─ service.py     reglas: quién pone updated_at, qué se puede borrar. No importa fastapi
-      ├─ schemas.py     modelos Pydantic: entrada y salida separadas, reglas del BRIEFING
-      ├─ database.py    TinyDB. El único módulo que la conoce
-      ├─ exceptions.py  errores del dominio, sin HTTP
-      ├─ dependencies.py
-      └─ seed_data.py   los 15 proveedores del BRIEFING, copiados literalmente
+   ├─ suppliers/
+   │  ├─ router.py      HTTP: valida la entrada, llama al service, traduce errores a códigos
+   │  ├─ service.py     reglas: quién pone updated_at, qué se puede borrar. No importa fastapi
+   │  ├─ schemas.py     modelos Pydantic: entrada y salida separadas, reglas del BRIEFING
+   │  ├─ database.py    TinyDB. El único módulo que la conoce
+   │  ├─ exceptions.py  errores del dominio, sin HTTP
+   │  ├─ dependencies.py
+   │  └─ seed_data.py   los 15 proveedores del BRIEFING, copiados literalmente
+   ├─ users/            cuentas: solo credenciales y rol
+   │  ├─ schemas.py     UserCreate/UserUpdate (entrada), User (se guarda), UserPublic (sale, sin hash)
+   │  ├─ database.py    TinyDB. Email único: se comprueba dentro del cerrojo de la escritura
+   │  ├─ exceptions.py
+   │  └─ dependencies.py
+   └─ profiles/         nombre y contacto, uno por usuario (user_id)
+      ├─ schemas.py
+      ├─ database.py    TinyDB. Uno a uno: un segundo perfil del mismo usuario se rechaza
+      ├─ exceptions.py
+      └─ dependencies.py
 storage/                base de datos de TinyDB (no se versiona)
 tests/                  pruebas de los services, los modelos, la base de datos y la configuración
 ```

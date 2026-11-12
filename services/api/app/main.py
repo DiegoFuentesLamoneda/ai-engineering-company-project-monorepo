@@ -7,7 +7,7 @@ Arranque, desde services/api:
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import ExitStack, asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,21 +15,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import Settings, load_settings
 from .domains.incidents.router import router as incidents_router
 from .domains.incidents.service import ResultsStore
+from .domains.profiles.database import ProfileRepository
 from .domains.suppliers.database import SupplierRepository
 from .domains.suppliers.router import router as suppliers_router
+from .domains.users.database import UserRepository
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Comprueba el secreto y abre la base de datos al arrancar; la cierra al parar.
+    """Comprueba el secreto y abre las bases de datos al arrancar; las cierra al parar.
 
     Se hace aquí y no al importar el módulo: crear la app (en las pruebas,
     o para leer el OpenAPI) no necesita secreto ni toca el fichero de TinyDB.
     Arrancar el servidor sí: sin secreto no hay forma de firmar un token.
     """
-    app.state.settings.require_jwt_secret()
-    with SupplierRepository(app.state.settings.suppliers_db_path) as repo:
-        app.state.suppliers = repo
+    settings: Settings = app.state.settings
+    settings.require_jwt_secret()
+    # ExitStack: si falla la apertura de una, se cierran las ya abiertas.
+    with ExitStack() as stack:
+        app.state.suppliers = stack.enter_context(SupplierRepository(settings.suppliers_db_path))
+        app.state.users = stack.enter_context(UserRepository(settings.users_db_path))
+        app.state.profiles = stack.enter_context(ProfileRepository(settings.profiles_db_path))
         yield
 
 
