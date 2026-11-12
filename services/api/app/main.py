@@ -21,11 +21,13 @@ from .domains.suppliers.router import router as suppliers_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Abre la base de datos de proveedores al arrancar y la cierra al parar.
+    """Comprueba el secreto y abre la base de datos al arrancar; la cierra al parar.
 
-    Se abre aquí y no al importar el módulo: crear la app (en las pruebas,
-    o para leer el OpenAPI) no toca el fichero de TinyDB.
+    Se hace aquí y no al importar el módulo: crear la app (en las pruebas,
+    o para leer el OpenAPI) no necesita secreto ni toca el fichero de TinyDB.
+    Arrancar el servidor sí: sin secreto no hay forma de firmar un token.
     """
+    app.state.settings.require_jwt_secret()
     with SupplierRepository(app.state.settings.suppliers_db_path) as repo:
         app.state.suppliers = repo
         yield
@@ -49,8 +51,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        # Authorization: el token viaja en `Authorization: Bearer <token>`.
+        allow_headers=["Content-Type", "Authorization"],
         # Para que el frontend pueda leer el nombre del fichero descargado.
         expose_headers=["Content-Disposition"],
     )

@@ -23,6 +23,11 @@ dependencies = [
     "nexova-incident-analysis",
     # Base de datos documental en un fichero JSON: directorio de proveedores.
     "tinydb==4.9.0",
+    # Firma y verificación de los tokens JWT de la autenticación.
+    "python-jose[cryptography]==3.5.0",
+    # Hash de contraseñas con bcrypt. Fork mantenido de passlib: se importa
+    # igual (`from passlib.hash import bcrypt`).
+    "libpass[bcrypt]==1.9.4",
 ]
 
 [project.scripts]

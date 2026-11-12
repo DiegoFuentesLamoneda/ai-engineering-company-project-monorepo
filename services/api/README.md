@@ -15,10 +15,11 @@ Python 3.11 o superior y [uv](https://docs.astral.sh/uv/). Desde esta carpeta:
 
 ```powershell
 uv sync                                         # crea .venv e instala lo que fija uv.lock
-uv run uvicorn app.main:app --reload --port 8000
+Copy-Item .env.example .env                     # solo la primera vez: rellena el secreto
+uv run --env-file .env uvicorn app.main:app --reload --port 8000
 ```
 
-`uv run` ejecuta el comando dentro de `.venv` sin tener que activarlo. La documentación interactiva queda en http://localhost:8000/docs. Desde ahí se pueden probar todas las rutas sin el backoffice.
+`uv run` ejecuta el comando dentro de `.venv` sin tener que activarlo, y `--env-file .env` carga antes las variables del `.env`. Sin `NEXOVA_API_JWT_SECRET_KEY` la API **no arranca**: no tendría con qué firmar los tokens. La documentación interactiva queda en http://localhost:8000/docs. Desde ahí se pueden probar todas las rutas sin el backoffice.
 
 ```powershell
 uv run python -m unittest discover -s tests     # pruebas
@@ -42,8 +43,11 @@ Se lee del entorno **una sola vez, al arrancar** ([`app/config.py`](./app/config
 | `NEXOVA_API_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Orígenes que pueden llamar a la API desde el navegador, separados por comas. Nunca `*` |
 | `NEXOVA_API_MAX_UPLOAD_MB` | `200` | Tamaño máximo del CSV subido. La exportación de producción puede llegar al millón de filas (~150 MB) |
 | `NEXOVA_API_SUPPLIERS_DB_PATH` | `storage/suppliers.json` (dentro de esta carpeta) | Fichero de TinyDB del directorio de proveedores. La API y `uv run seed` leen la misma variable, así que siempre abren el mismo fichero |
+| `NEXOVA_API_USERS_DB_PATH` | `storage/users.json` (dentro de esta carpeta) | Fichero de TinyDB de usuarios y perfiles |
+| `NEXOVA_API_JWT_SECRET_KEY` | — (obligatoria para arrancar) | **Secreta.** Clave con la que se firman los tokens. Al menos 32 caracteres. Va en `.env`, nunca en el código |
+| `NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Minutos de validez de un token, de 1 a 1440 |
 
-Ninguna es secreta, así que no hay `.env`. Se cambian para una sesión con `$env:NEXOVA_API_MAX_UPLOAD_MB = "5"`.
+El secreto va en `.env`, que no se versiona. [`.env.example`](./.env.example) es la plantilla: lleva las variables, sin el valor, y el comando para generar uno. El seeder no necesita el secreto, porque no firma tokens. Las demás variables no son secretas y se pueden cambiar para una sesión con `$env:NEXOVA_API_MAX_UPLOAD_MB = "5"`.
 
 ## Estructura
 

@@ -32,6 +32,8 @@ Las carpetas `data/`, `agents/`, `mcps/`, `workflows/`, `infra/` e `internal/` e
 | uvicorn | 0.54.0 | `services/api` |
 | python-multipart | 0.0.33 | `services/api` |
 | TinyDB | 4.9.0 | `services/api` |
+| python-jose[cryptography] | 3.5.0 | `services/api` (firma de los JWT) |
+| libpass[bcrypt] | 1.9.4 | `services/api` (hash de contraseñas) |
 | uv | 0.13 o superior | gestor del entorno de `services/api` |
 
 ## API de datos
@@ -161,7 +163,7 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 | `packages/talent-core/` | `npm run typecheck` · `npm test` · `npm run demo` · `npm run build` |
 | `packages/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
 | `scripts/` | `python analyze.py incidents-nexova.csv` |
-| `services/api/` | `uv sync` · `uv run seed` · `uv run uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
+| `services/api/` | `uv sync` · `uv run seed` · `uv run --env-file .env uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
 
 ## Restricciones técnicas
 

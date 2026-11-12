@@ -6,7 +6,15 @@ import unittest
 
 from pydantic import ValidationError
 
-from app.config import DEFAULT_CORS_ORIGINS, DEFAULT_MAX_UPLOAD_MB, load_settings
+from app.config import (
+    DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES,
+    DEFAULT_CORS_ORIGINS,
+    DEFAULT_MAX_UPLOAD_MB,
+    MissingJwtSecretError,
+    load_settings,
+)
+
+SECRET = "s" * 32
 
 
 class LoadSettingsTests(unittest.TestCase):
@@ -35,6 +43,43 @@ class LoadSettingsTests(unittest.TestCase):
             {"NEXOVA_API_CORS_ORIGINS": ","},
             {"NEXOVA_API_MAX_UPLOAD_MB": "diez"},
             {"NEXOVA_API_MAX_UPLOAD_MB": "0"},
+        ]
+        for env in cases:
+            with self.subTest(env=env), self.assertRaises(ValidationError):
+                load_settings(env)
+
+
+class JwtSettingsTests(unittest.TestCase):
+    def test_secret_is_optional_until_the_api_needs_it(self):
+        # El seeder carga la configuración y no firma tokens: no debe exigirlo.
+        for env in ({}, {"NEXOVA_API_JWT_SECRET_KEY": ""}):
+            with self.subTest(env=env):
+                settings = load_settings(env)
+                self.assertIsNone(settings.jwt_secret_key)
+                with self.assertRaises(MissingJwtSecretError):
+                    settings.require_jwt_secret()
+
+    def test_reads_secret_and_expiry_from_the_environment(self):
+        settings = load_settings(
+            {"NEXOVA_API_JWT_SECRET_KEY": SECRET, "NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES": "15"}
+        )
+        self.assertEqual(settings.require_jwt_secret().get_secret_value(), SECRET)
+        self.assertEqual(settings.access_token_expire_minutes, 15)
+
+    def test_default_expiry(self):
+        self.assertEqual(load_settings({}).access_token_expire_minutes, DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    def test_secret_never_shows_in_logs(self):
+        settings = load_settings({"NEXOVA_API_JWT_SECRET_KEY": SECRET})
+        self.assertNotIn(SECRET, repr(settings))
+        self.assertNotIn(SECRET, str(settings))
+
+    def test_rejects_weak_secret_and_impossible_expiry(self):
+        cases = [
+            {"NEXOVA_API_JWT_SECRET_KEY": "corto"},
+            {"NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES": "0"},
+            {"NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES": "1441"},
+            {"NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES": "media hora"},
         ]
         for env in cases:
             with self.subTest(env=env), self.assertRaises(ValidationError):

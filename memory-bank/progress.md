@@ -86,6 +86,23 @@ Rama `feature/supplier-directory`, **apilada sobre `feature/incidents-analyzer`*
 
 **La PR de proveedores incluye los commits de la #6**, porque la rama está apilada. Cuando se fusione la #6, su diff se queda solo con lo de proveedores.
 
+## En curso — Autenticación de la API
+
+Rama `feature/auth-api`, **apilada sobre `feature/supplier-directory`** (PR #7 abierta). Proyecto «Asegurando la API: Autenticación y Restricción de Rutas en FastAPI», ticket **AUTH-01**: usuarios (solo credenciales) y perfiles en TinyDB, login con JWT y `get_current_user` en toda ruta que no sea pública. El enunciado no está en `docs/contexts/`: lo pegó Diego el 12/11/2026.
+
+**Decisiones de Diego (12/11/2026):** las dependencias del enunciado (`python-jose`, `libpass`); se protegen las 8 rutas de `incidents` y `suppliers`; `GET /users` solo para `admin`; el primer admin se crea con un comando, `uv run create-admin`.
+
+| Fase | Estado |
+| --- | --- |
+| 1 — Preparación: `python-jose[cryptography]==3.5.0` y `libpass[bcrypt]==1.9.4`; secreto, caducidad y fichero de usuarios en [`config.py`](../services/api/app/config.py); [`.env.example`](../services/api/.env.example); sin secreto la API no arranca (el seeder sí). 75 pruebas | ✅ |
+| 2 — Modelos `User` y `Profile` y su repositorio en TinyDB | ⬜ |
+| 3 — Service de usuarios: hash de contraseñas, CRUD y `uv run create-admin` | ⬜ |
+| 4 — Token: `POST /auth/login`, `get_current_user` y `GET /auth/me` | ⬜ |
+| 5 — Rutas `/users` y `/profiles` con `401` y `403` | ⬜ |
+| 6 — Proteger las rutas existentes | ⬜ |
+| 7 — Verificación: pruebas y recorrido en `/docs` | ⬜ |
+| 8 — Cierre: banco de memoria, PR y ficha de la biblioteca | ⬜ |
+
 ## Próximo
 
 Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), memoria y harness de agentes (8), workflows agénticos (9) y tiempo real (10).
