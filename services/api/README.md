@@ -131,6 +131,8 @@ El `404` solo lo ve un admin. A cualquier otro, una cuenta ajena le da `403` exi
 
 ## Rutas de `incidents`
 
+Las dos piden token (`Authorization: Bearer <token>`). Sin él, o con uno que no vale, `401` antes de leer la subida.
+
 ### `POST /api/incidents/analyze`
 
 Subida `multipart/form-data` con el campo `file`. Devuelve el análisis en JSON (ver `AnalysisResponse` en `/docs`):
@@ -146,6 +148,7 @@ Los valores son **códigos** (`TECHNICAL`, `CLOSED`, `invalid_email`…). La tra
 | Código | Cuándo |
 | --- | --- |
 | `200` | Analizado. Pasa a ser el último análisis |
+| `401` | Sin token, o token no válido o caducado |
 | `400` | Vacío, solo la cabecera o faltan columnas obligatorias |
 | `413` | Supera `NEXOVA_API_MAX_UPLOAD_MB` |
 | `415` | No tiene extensión `.csv` o no está en UTF-8 |
@@ -160,6 +163,8 @@ El último análisis como CSV descargable (`results.csv`, una métrica por fila)
 ## Rutas de `suppliers`
 
 Las rutas son las del enunciado, sin el prefijo `/api` de `incidents`. Antes de probarlas, `uv run seed`.
+
+**Todas piden token.** Sin él, o con uno que no vale, cualquiera de ellas responde `401` y no toca nada. Con token se comportan igual que antes: cualquier cuenta activa puede usarlas, sea cual sea su rol.
 
 | Método y ruta | Qué hace | Respuestas |
 | --- | --- | --- |
@@ -196,6 +201,7 @@ Los `404` y `409` llevan `{"detail": "mensaje en español"}`. Los `422` son los 
 
 - **`/profiles/me` y no `/profiles/{id}`.** El perfil sale del token, así que no hay forma de pedir el de otra persona: el `403` no hace falta porque no se puede ni intentar.
 - **Borrar una cuenta devuelve `204` sin cuerpo**, y no `200` con lo borrado como los proveedores. Quien borra es casi siempre el dueño, que ya sabe qué cuenta era, y así no viajan otra vez sus datos.
+- **El candado de `incidents` y `suppliers` va en el router, no en cada ruta.** `APIRouter(dependencies=[Depends(get_current_user)])` lo aplica a todas las rutas del módulo, y una ruta nueva nace protegida sin que nadie se acuerde. Ninguna de estas rutas decide nada según quién llama, así que no reciben el usuario como parámetro. En `users`, en cambio, va ruta a ruta: el registro es público y las demás sí necesitan saber quién eres.
 - **Las rutas se prueban por HTTP sin `httpx`.** El `TestClient` de FastAPI lo necesita, y añadir una dependencia es una decisión aparte. [`tests/http_client.py`](./tests/http_client.py) habla con la app por ASGI, como uvicorn, en unas 40 líneas de biblioteca estándar: las pruebas ven los mismos códigos que vería el backoffice.
 
 ## Limitaciones conocidas
@@ -209,4 +215,5 @@ Los `404` y `409` llevan `{"detail": "mensaje en español"}`. Los `422` son los 
 - **El límite de tamaño se comprueba después de recibir el fichero.** Protege el análisis, pero no la red. En producción el límite también va en el proxy (`client_max_body_size` en nginx).
 - **TinyDB puede reutilizar un ID borrado.** Calcula el siguiente ID como el mayor que existe más uno. Si se borra el último proveedor y se reinicia el servidor, el siguiente que se cree recibe su ID, y un enlace antiguo abriría otro proveedor. Postgres, con secuencias, no tiene este problema.
 - **Si se borra un proveedor del BRIEFING, `uv run seed` lo vuelve a crear.** El seeder decide por nombre qué falta y no puede distinguir un proveedor borrado a propósito de uno que nunca se cargó.
-- **Las rutas se prueban a mano**, con el servidor arrancado. Las pruebas automáticas del router necesitan el cliente de pruebas de FastAPI, y este depende de `httpx`, que todavía no es una dependencia aprobada.
+- **El backoffice todavía no hace login.** Desde que `incidents` y `suppliers` piden token, sus pantallas de análisis de incidencias y de proveedores reciben `401` y muestran el mensaje de la API. Hasta que tenga pantalla de login, esas rutas se usan desde `/docs` con *Authorize*.
+- **Todas las cuentas tienen los mismos permisos sobre proveedores e incidencias.** El candado pide estar identificado, no un rol. Dar o quitar permisos por rol (que solo un `manager` cambie tarifas, por ejemplo) es una decisión de negocio que el enunciado no fija.

@@ -1,7 +1,7 @@
 """Rutas HTTP del analizador de incidencias.
 
 El router no calcula nada: recibe la subida, llama al `service` y traduce
-cada error a su código HTTP. Todos los errores salen con la misma forma,
+cada error a su código HTTP. Todas las rutas piden token (401 sin él). Todos los errores salen con la misma forma,
 `{"detail": "..."}`, la que ya usa FastAPI para sus 422.
 """
 
@@ -15,13 +15,22 @@ from incident_analysis import FileEncodingError, IncidentFileError
 from ...config import Settings
 from ...dependencies import get_settings
 from ...schemas import ErrorResponse
+from ..auth.dependencies import UNAUTHORIZED, get_current_user
 from . import service
 from .dependencies import get_results_store
 from .exceptions import FileTooLargeError, NoAnalysisYetError, UnsupportedFileTypeError
 from .schemas import AnalysisResponse
 from .service import ResultsStore
 
-router = APIRouter(prefix="/api/incidents", tags=["incidents"])
+# El candado, una vez para todo el router: cada ruta de aquí pide token, y
+# una ruta nueva nace protegida sin acordarse de nada. Las rutas no usan el
+# usuario, así que va en `dependencies` y no como parámetro.
+router = APIRouter(
+    prefix="/api/incidents",
+    tags=["incidents"],
+    dependencies=[Depends(get_current_user)],
+    responses=UNAUTHORIZED,
+)
 
 
 @router.post(
