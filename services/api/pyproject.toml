@@ -33,6 +33,8 @@ dependencies = [
 [project.scripts]
 # `uv run seed` carga en TinyDB los proveedores del BRIEFING (app/seed.py).
 seed = "app.seed:main"
+# `uv run create-admin` crea el primer admin o asciende una cuenta (app/create_admin.py).
+create-admin = "app.create_admin:main"
 
 [tool.uv.sources]
 # Paquete del propio monorepo. editable: la API ve los cambios sin reinstalar.

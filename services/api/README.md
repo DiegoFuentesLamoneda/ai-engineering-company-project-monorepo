@@ -24,9 +24,12 @@ uv run --env-file .env uvicorn app.main:app --reload --port 8000
 ```powershell
 uv run python -m unittest discover -s tests     # pruebas
 uv run seed                                     # carga los proveedores del BRIEFING
+uv run create-admin                             # crea el primer admin (o asciende una cuenta)
 ```
 
 `uv run seed` ([`app/seed.py`](./app/seed.py)) mete en la base de datos de TinyDB los 15 proveedores del [BRIEFING del directorio](../../docs/contexts/proyectos/supplier-directory.es.md). Se puede repetir sin miedo: salta los que ya están (por nombre) y dice cuántos ha insertado, cuántos ha saltado y cuántos hay en total. La base de datos es un fichero JSON en `storage/suppliers.json`. No se versiona: cada entorno crea la suya.
+
+`uv run create-admin` ([`app/create_admin.py`](./app/create_admin.py)) pide un email. Si es nuevo, pide la contraseña dos veces sin mostrarla y crea una cuenta `admin` con su perfil vacío. Si el email ya tiene cuenta, la asciende a `admin` sin tocar su contraseña. Hace falta porque `POST /users` crea siempre cuentas `user` y solo un admin puede cambiar roles: sin el comando, el primer admin no podría existir. Aplica las mismas reglas que el alta por la API (email válido, contraseña de 8 caracteres a 72 bytes).
 
 ### Dependencias
 
@@ -58,6 +61,7 @@ app/
 ├─ config.py            configuración tipada, validada al arrancar
 ├─ dependencies.py      dependencias transversales (get_settings)
 ├─ seed.py              `uv run seed`: carga los proveedores del BRIEFING
+├─ create_admin.py      `uv run create-admin`: el primer admin
 └─ domains/
    ├─ incidents/
    │  ├─ router.py      HTTP: recibe la subida, llama al service, elige el código
@@ -74,11 +78,13 @@ app/
    │  ├─ dependencies.py
    │  └─ seed_data.py   los 15 proveedores del BRIEFING, copiados literalmente
    ├─ users/            cuentas: solo credenciales y rol
+   │  ├─ service.py     contraseñas (bcrypt), alta con perfil, permisos: tú mismo o admin
    │  ├─ schemas.py     UserCreate/UserUpdate (entrada), User (se guarda), UserPublic (sale, sin hash)
    │  ├─ database.py    TinyDB. Email único: se comprueba dentro del cerrojo de la escritura
    │  ├─ exceptions.py
    │  └─ dependencies.py
    └─ profiles/         nombre y contacto, uno por usuario (user_id)
+      ├─ service.py     editar solo los campos enviados; null borra
       ├─ schemas.py
       ├─ database.py    TinyDB. Uno a uno: un segundo perfil del mismo usuario se rechaza
       ├─ exceptions.py
@@ -142,6 +148,10 @@ Los `404` y `409` llevan `{"detail": "mensaje en español"}`. Los `422` son los 
 - **Solo la tarifa mueve `updated_at`.** Patricia lo usa para justificar variaciones de presupuesto, y suspender no cambia el precio. Una tarifa repetida sí lo renueva: confirma ese precio en esa fecha.
 - **`DELETE` devuelve `200` con el proveedor borrado**, no `204` sin cuerpo. Así el frontend puede decir qué ha borrado sin haberlo guardado antes.
 - **La base de datos se abre al arrancar el servidor, no al importar** (`lifespan` en [`main.py`](./app/main.py)), y se cierra al pararlo. Crear la app para las pruebas o para leer el OpenAPI no toca el fichero.
+- **El `id` de un usuario es un UUID**, no el número de TinyDB. TinyDB reutiliza los números borrados, y el token de una cuenta eliminada identificaría a la siguiente que se registrase.
+- **Quién puede hacer qué lo decide el service**, no el router ([`users/service.py`](./app/domains/users/service.py)). Cada uno ve, edita y borra su propia cuenta. Un `admin`, cualquiera, y es el único que lista usuarios y cambia roles. `manager` todavía no tiene permisos propios. La comprobación de permiso va antes que la de existencia: así quien no es admin no puede averiguar qué IDs existen.
+- **El login no dice qué ha fallado.** Un email desconocido, una contraseña incorrecta y una cuenta desactivada dan la misma respuesta. Con un email desconocido se verifica igualmente contra un hash de relleno, para que tarde lo mismo y el tiempo de respuesta no delate qué emails tienen cuenta.
+- **Alta en dos ficheros, sin transacciones.** `POST /users` crea primero la cuenta y luego el perfil. Si el perfil falla, se borra la cuenta recién creada. Al borrar va primero la cuenta: si el perfil fallase después, quedaría huérfano, pero no daría acceso a nada.
 
 ## Limitaciones conocidas
 

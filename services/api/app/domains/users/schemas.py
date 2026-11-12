@@ -80,6 +80,9 @@ class UserCreate(ProfileFields):
 class UserUpdate(BaseModel):
     """`PUT /users/{id}`: solo los campos que lleguen cambian.
 
+    Un campo a `null` se ignora: una cuenta no puede quedarse sin email,
+    contraseña ni rol.
+
     `role` lo puede cambiar únicamente un admin. Esa regla depende de quién
     llama, así que la comprueba el service, no el modelo.
     """

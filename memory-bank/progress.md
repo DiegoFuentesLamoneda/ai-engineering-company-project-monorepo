@@ -96,7 +96,7 @@ Rama `feature/auth-api`, **apilada sobre `feature/supplier-directory`** (PR #7 a
 | --- | --- |
 | 1 — Preparación: `python-jose[cryptography]==3.5.0` y `libpass[bcrypt]==1.9.4`; secreto, caducidad y fichero de usuarios en [`config.py`](../services/api/app/config.py); [`.env.example`](../services/api/.env.example); sin secreto la API no arranca (el seeder sí). 75 pruebas | ✅ |
 | 2 — Modelos `User` y `Profile` y su repositorio en TinyDB: [`users/`](../services/api/app/domains/users/) y [`profiles/`](../services/api/app/domains/profiles/), dos ficheros de TinyDB. `id` UUID (TinyDB reutiliza sus números), email único en minúsculas, contraseña de 8 caracteres a 72 bytes, `role` fuera del alta, `UserPublic` sin hash. 33 pruebas | ✅ |
-| 3 — Service de usuarios: hash de contraseñas, CRUD y `uv run create-admin` | ⬜ |
+| 3 — Service de usuarios: [`users/service.py`](../services/api/app/domains/users/service.py) (bcrypt, alta con perfil y marcha atrás si el perfil falla, permisos: tú mismo o admin, rol solo admin, login sin pistas) y [`create_admin.py`](../services/api/app/create_admin.py) (`uv run create-admin`). 137 pruebas | ✅ |
 | 4 — Token: `POST /auth/login`, `get_current_user` y `GET /auth/me` | ⬜ |
 | 5 — Rutas `/users` y `/profiles` con `401` y `403` | ⬜ |
 | 6 — Proteger las rutas existentes | ⬜ |

@@ -14,3 +14,10 @@ class EmailAlreadyRegisteredError(Exception):
 class UserNotFoundError(Exception):
     def __init__(self) -> None:
         super().__init__("No existe ningún usuario con ese ID.")
+
+
+class NotAllowedError(Exception):
+    """Quien llama está autenticado, pero el recurso no es suyo (403)."""
+
+    def __init__(self) -> None:
+        super().__init__("No tienes permiso para esta operación.")
