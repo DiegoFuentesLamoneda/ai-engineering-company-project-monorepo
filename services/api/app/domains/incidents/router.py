@@ -1,8 +1,9 @@
 """Rutas HTTP del analizador de incidencias.
 
 El router no calcula nada: recibe la subida, llama al `service` y traduce
-cada error a su código HTTP. Todas las rutas piden token (401 sin él). Todos los errores salen con la misma forma,
-`{"detail": "..."}`, la que ya usa FastAPI para sus 422.
+cada error a su código HTTP. Todos los errores salen con la misma forma,
+`{"detail": "..."}`, la que ya usa FastAPI para sus 422. Todas las rutas
+piden token: sin él, 401.
 """
 
 from __future__ import annotations
