@@ -17,7 +17,8 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.162.0",
     "uvicorn==0.54.0",
-    # Lo necesita FastAPI para leer formularios multipart (subida de ficheros).
+    # Lo necesita FastAPI para leer formularios: la subida de ficheros y el
+    # formulario de login de OAuth2 (`POST /auth/login`).
     "python-multipart==0.0.33",
     # Lógica de análisis de tickets: la misma que usa scripts/analyze.py.
     "nexova-incident-analysis",

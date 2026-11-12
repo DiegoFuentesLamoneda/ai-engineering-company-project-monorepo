@@ -1,7 +1,7 @@
 """Punto de entrada de la API de Nexova: compone la app y nada más.
 
 Arranque, desde services/api:
-    uv run uvicorn app.main:app --reload --port 8000
+    uv run --env-file .env uvicorn app.main:app --reload --port 8000
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, load_settings
+from .domains.auth.router import router as auth_router
 from .domains.incidents.router import router as incidents_router
 from .domains.incidents.service import ResultsStore
 from .domains.profiles.database import ProfileRepository
@@ -64,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         expose_headers=["Content-Disposition"],
     )
 
+    app.include_router(auth_router)
     app.include_router(incidents_router)
     app.include_router(suppliers_router)
     return app

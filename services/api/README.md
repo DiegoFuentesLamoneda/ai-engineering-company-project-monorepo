@@ -63,6 +63,12 @@ app/
 ├─ seed.py              `uv run seed`: carga los proveedores del BRIEFING
 ├─ create_admin.py      `uv run create-admin`: el primer admin
 └─ domains/
+   ├─ auth/             login y el candado de las rutas protegidas
+   │  ├─ router.py      POST /auth/login y GET /auth/me
+   │  ├─ dependencies.py  get_current_user: token → usuario de la base de datos, o 401
+   │  ├─ security.py    firmar y verificar el JWT (HS256). El único módulo que importa jose
+   │  ├─ schemas.py     Token y Me
+   │  └─ exceptions.py
    ├─ incidents/
    │  ├─ router.py      HTTP: recibe la subida, llama al service, elige el código
    │  ├─ service.py     reglas de la subida y el último análisis. No importa fastapi
@@ -90,8 +96,19 @@ app/
       ├─ exceptions.py
       └─ dependencies.py
 storage/                base de datos de TinyDB (no se versiona)
-tests/                  pruebas de los services, los modelos, la base de datos y la configuración
+tests/                  pruebas de los services, los modelos, la base de datos, los tokens y la configuración
 ```
+
+## Rutas de `auth`
+
+| Método y ruta | Qué hace | Respuestas |
+| --- | --- | --- |
+| `POST /auth/login` | Formulario OAuth2 (`application/x-www-form-urlencoded`): **el email va en `username`**, y `password`. Devuelve `{"access_token", "token_type": "bearer", "expires_in"}` (segundos) | `200` · `401` si el email o la contraseña no valen · `422` si falta un campo |
+| `GET /auth/me` | Quién soy: `id`, `email`, `role` y el perfil | `200` · `401` |
+
+Las rutas protegidas piden la cabecera `Authorization: Bearer <token>`. En `/docs`, el botón **Authorize** hace el login y la añade a cada petición: en *username* va el email. Sin token, o con uno caducado, manipulado o de una cuenta borrada o desactivada, la respuesta es `401` con la cabecera `WWW-Authenticate: Bearer`.
+
+Para probar con curl en Windows (Git Bash), una contraseña con tildes o `ñ` puede llegar mal codificada y dar `401`. En `/docs` no pasa.
 
 ## Rutas de `incidents`
 
@@ -152,6 +169,11 @@ Los `404` y `409` llevan `{"detail": "mensaje en español"}`. Los `422` son los 
 - **Quién puede hacer qué lo decide el service**, no el router ([`users/service.py`](./app/domains/users/service.py)). Cada uno ve, edita y borra su propia cuenta. Un `admin`, cualquiera, y es el único que lista usuarios y cambia roles. `manager` todavía no tiene permisos propios. La comprobación de permiso va antes que la de existencia: así quien no es admin no puede averiguar qué IDs existen.
 - **El login no dice qué ha fallado.** Un email desconocido, una contraseña incorrecta y una cuenta desactivada dan la misma respuesta. Con un email desconocido se verifica igualmente contra un hash de relleno, para que tarde lo mismo y el tiempo de respuesta no delate qué emails tienen cuenta.
 - **Alta en dos ficheros, sin transacciones.** `POST /users` crea primero la cuenta y luego el perfil. Si el perfil falla, se borra la cuenta recién creada. Al borrar va primero la cuenta: si el perfil fallase después, quedaría huérfano, pero no daría acceso a nada.
+
+- **JWT sin estado, sin cookies.** El servidor no guarda sesiones: el token lleva su firma y su caducidad, y el cliente lo envía en cada petición. Cerrar sesión es tirar el token; hasta que caduque sigue valiendo, por eso la caducidad es corta (30 minutos por defecto, `NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES`).
+- **El token solo lleva el `id` (`sub`) y las fechas, no el rol.** `get_current_user` lee el usuario de la base de datos en cada petición: un cambio de rol, una cuenta desactivada o borrada cuentan desde la petición siguiente, no cuando caduque el token. Cuesta una lectura de TinyDB por petición.
+- **Solo se acepta HS256.** `algorithms=["HS256"]` al verificar rechaza los tokens sin firma (`alg: none`), el truco clásico para colar uno falso.
+- **El campo del login se llama `username` aunque lleve un email.** Es el nombre que fija el estándar OAuth2, y respetarlo es lo que hace funcionar el botón *Authorize* de `/docs`.
 
 ## Limitaciones conocidas
 
