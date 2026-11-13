@@ -177,6 +177,33 @@ Las rutas son las del enunciado, sin el prefijo `/api` de `incidents`. Antes de 
 
 Los `404` y `409` llevan `{"detail": "mensaje en español"}`. Los `422` son los de FastAPI: `detail` es una lista de errores por campo (`loc`, `msg`).
 
+## Verificación manual en `/docs`
+
+Con el servidor arrancado (el `uvicorn` de [Puesta en marcha](#puesta-en-marcha)), en <http://localhost:8000/docs>, con una cuenta de prueba (`user`, nunca un email real):
+
+| # | Paso | Resultado esperado |
+| --- | --- | --- |
+| 1 | `GET /suppliers` sin haber pulsado *Authorize* | `401` "Falta el token. Inicia sesión en POST /auth/login." y la cabecera `www-authenticate: Bearer` |
+| 2 | `POST /users` con email, contraseña y nombre | `201` con `role: "user"`, el perfil creado a la vez, la cabecera `location` y **sin** `hashed_password` |
+| 3 | *Authorize*: el email en `username` y la contraseña | El candado de cada ruta se cierra |
+| 4 | `GET /auth/me` | `200` con la cuenta y su perfil |
+| 5 | `GET /suppliers` otra vez | `200` con el directorio, igual que antes del candado. El curl ya lleva `Authorization: Bearer …` |
+| 6 | `GET /users` | `403` "No tienes permiso para esta operación.": la API sabe quién eres, pero solo un `admin` lista usuarios |
+| 7 | `DELETE /users/{id}` con el propio `id` (opcional, para limpiar) | `204`, y el mismo token pasa a dar `401` |
+
+`401` es "no sé quién eres"; `403`, "sé quién eres y no puedes". Los dos se ven en el recorrido.
+
+Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampliado, se ejecutó también con un script contra el servidor real: 29 de 29 comprobaciones bien. Incluye, además de lo anterior:
+
+- un email repetido (`409`);
+- una contraseña mala (`401`);
+- las 8 rutas de `incidents` y `suppliers` sin token (`401`);
+- un token caducado, uno manipulado y uno firmado con otro secreto (`401`);
+- cinco `403` distintos: listar, ver, editar y borrar a otro, y hacerse admin;
+- el admin cambiando un rol;
+- `PUT /profiles/me`;
+- el token de una cuenta borrada (`401`).
+
 ## Decisiones
 
 - **La API no calcula.** Toda la validación y las métricas están en `incident_analysis`. Aquí solo se añade lo propio de recibir un fichero por la red: extensión, tamaño y la conversión de bytes a texto.

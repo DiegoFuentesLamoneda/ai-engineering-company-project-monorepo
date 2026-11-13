@@ -100,7 +100,7 @@ Rama `feature/auth-api`, **apilada sobre `feature/supplier-directory`** (PR #7 a
 | 4 — Token: [`auth/`](../services/api/app/domains/auth/) con `POST /auth/login` (formulario OAuth2, el email en `username`), `get_current_user` (401 sin token, caducado, manipulado o de cuenta borrada o desactivada; el usuario se relee en cada petición) y `GET /auth/me`. JWT HS256 con solo `sub` y fechas. 156 pruebas | ✅ |
 | 5 — Rutas: [`users/router.py`](../services/api/app/domains/users/router.py) (`POST /users` pública con perfil; el resto con token, tú o admin, `403` antes que `404`, `409` email repetido) y [`profiles/router.py`](../services/api/app/domains/profiles/router.py) (`/profiles/me`). Pruebas HTTP de verdad con un cliente ASGI propio ([`http_client.py`](../services/api/tests/http_client.py)), sin `httpx`. 185 pruebas | ✅ |
 | 6 — Candado en las 8 rutas que ya existían: las 2 de `incidents` y las 6 de `suppliers`, con `dependencies=[Depends(get_current_user)]` en cada router. Sin token, `401` y nada cambia; con token, igual que antes. Pruebas en [`test_protected_routes.py`](../services/api/tests/test_protected_routes.py). 194 pruebas. El backoffice aún no hace login: esas pantallas reciben `401` (limitación conocida en el README de la API) | ✅ |
-| 7 — Verificación: pruebas y recorrido en `/docs` | ⬜ |
+| 7 — Verificación: 194 pruebas en verde; recorrido en `/docs` con una cuenta de prueba (`401` sin token, alta `201`, *Authorize*, `/auth/me`, `200` con token, `403` en `GET /users`), con 5 capturas para la PR; y un script contra el servidor real, 29/29. Pasos en la sección "Verificación manual en `/docs`" del [README de la API](../services/api/README.md) | ✅ |
 | 8 — Cierre: banco de memoria, PR y ficha de la biblioteca | ⬜ |
 
 ## Próximo
