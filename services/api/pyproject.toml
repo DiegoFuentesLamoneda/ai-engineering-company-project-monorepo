@@ -1,0 +1,45 @@
+# Proyecto Python de la API de Nexova. Lo gestiona uv:
+#   uv sync          crea .venv e instala exactamente lo que fija uv.lock
+#   uv run <cmd>     ejecuta un comando dentro de ese entorno, sin activarlo
+#
+# Las versiones exactas viven en uv.lock, que se versiona: así todo el equipo
+# y la CI instalan lo mismo. Aquí solo se declara qué necesita la API.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexova-api"
+version = "0.1.0"
+description = "Backend de Nexova Solutions: un monolito modular por dominios sobre FastAPI"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.162.0",
+    "uvicorn==0.54.0",
+    # Lo necesita FastAPI para leer formularios: la subida de ficheros y el
+    # formulario de login de OAuth2 (`POST /auth/login`).
+    "python-multipart==0.0.33",
+    # Lógica de análisis de tickets: la misma que usa scripts/analyze.py.
+    "nexova-incident-analysis",
+    # Base de datos documental en un fichero JSON: directorio de proveedores.
+    "tinydb==4.9.0",
+    # Firma y verificación de los tokens JWT de la autenticación.
+    "python-jose[cryptography]==3.5.0",
+    # Hash de contraseñas con bcrypt. Fork mantenido de passlib: se importa
+    # igual (`from passlib.hash import bcrypt`).
+    "libpass[bcrypt]==1.9.4",
+]
+
+[project.scripts]
+# `uv run seed` carga en TinyDB los proveedores del BRIEFING (app/seed.py).
+seed = "app.seed:main"
+# `uv run create-admin` crea el primer admin o asciende una cuenta (app/create_admin.py).
+create-admin = "app.create_admin:main"
+
+[tool.uv.sources]
+# Paquete del propio monorepo. editable: la API ve los cambios sin reinstalar.
+nexova-incident-analysis = { path = "../../packages/incident-analysis", editable = true }
+
+[tool.setuptools.packages.find]
+include = ["app*"]

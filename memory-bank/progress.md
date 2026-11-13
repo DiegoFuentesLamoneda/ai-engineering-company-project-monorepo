@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 16 de septiembre de 2026 (hito 5 en curso)._
+_Última actualización: 13 de noviembre de 2026 (autenticación de la API, cierre)._
 
 ## Entregado
 
@@ -46,7 +46,7 @@ Documento técnico, no código: [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHIT
 **Decisiones propuestas en el documento** (pasan a [`techContext.md`](./techContext.md) cuando se implementen):
 
 - **Monolito modular por dominios** sobre FastAPI, no microservicios ni serverless. Justificado por el tamaño del equipo de Tecnología (6 personas), la ausencia de telemetría hasta el hito 6, el acoplamiento natural entre dominios y un volumen de cientos de usuarios.
-- **Un servicio, `services/nexova-api/`**, con paquetes por dominio (`app/domains/<dominio>/`) y tres capas: `router` → `service` → `models`.
+- **Un servicio, `services/nexova-api/`** —ubicado finalmente en `services/api/`, ver [`techContext.md`](./techContext.md)—, con paquetes por dominio (`app/domains/<dominio>/`) y tres capas: `router` → `service` → `models`.
 - **Estructura por dominio, no por tipo de archivo**, siguiendo la convención de `fastapi-best-practices` (inspirada en Netflix Dispatch) sobre la base del tutorial oficial *Bigger Applications*.
 - **El motor de scoring se porta a Python.** Ver la deuda técnica más abajo.
 - **CORS con lista explícita de orígenes** —`localhost` y `127.0.0.1` incluidos desde el primer commit— y ninguna credencial en variables `NEXT_PUBLIC_`.
@@ -54,6 +54,54 @@ Documento técnico, no código: [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHIT
 ### 5b — API de inventario (siguiente)
 
 Implementación del ticket **NXV-0201**: `Asset`, `AssetEntry`, `AssetExit`, stock calculado como entradas menos salidas y todas las rutas bajo `/inventory`. Especificación literal en [`docs/contexts/05-backend-development.es.md`](../docs/contexts/05-backend-development.es.md). Es el hito en el que [`services/`](../services/) deja de estar vacío.
+
+**Estado a 04/11/2026:** la PR #5 (propuesta de arquitectura) está fusionada en `main`. La API de inventario **no está empezada**: se pospone para hacer antes el analizador de incidencias, y entrará como otro dominio del mismo servicio `services/api/`.
+
+## En curso — Analizador de incidencias
+
+Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/contexts/proyectos/incidents-file-analysis.es.md`](../docs/contexts/proyectos/incidents-file-analysis.es.md). Script de análisis del CSV de tickets de soporte de Roberto Díaz, y después la misma lógica en la API y en el backoffice.
+
+| Paso | Estado |
+| --- | --- |
+| Lógica compartida en [`packages/incident-analysis/`](../packages/incident-analysis/): validación, métricas, exportación e informe. 44 pruebas, incluida la de aceptación contra el briefing | ✅ |
+| Script [`scripts/analyze.py`](../scripts/analyze.py): 100 / 96 / 4 y todos los desgloses coinciden con el briefing | ✅ |
+| API en [`services/api/`](../services/api/): `POST /api/incidents/analyze` y `GET /api/incidents/results/export`. 18 pruebas del service y la configuración; rutas, errores y CORS verificados con el servidor arrancado; la exportación es idéntica byte a byte a la del script | ✅ |
+| Página [`/incidents`](../uis/backoffice/app/incidents/) en el backoffice: subida por arrastre o selector, totales, desglose por categoría y estado, índice de satisfacción, registros inválidos por regla con sus filas y descarga del CSV. Verificada en el navegador con la API arrancada: cifras del briefing, CSV descargado idéntico byte a byte al del script, y errores 400 y 415 mostrados con el mensaje de la API | ✅ |
+| Capturas (consola e interfaz) y PR hacia `main`: [#6](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/6), abierta el 04/11/2026 para la evaluación del campus | ✅ |
+
+## En curso — Directorio de proveedores
+
+Rama `feature/supplier-directory`, **apilada sobre `feature/incidents-analyzer`**, porque `services/api/` todavía no está en `main` (PR #6 abierta). Especificación: [`docs/contexts/proyectos/supplier-directory.es.md`](../docs/contexts/proyectos/supplier-directory.es.md). API de proveedores sobre FastAPI + TinyDB + Pydantic, con seeder y página en el backoffice. Lo pide Patricia Solís (HR Manager) para sustituir su hoja de cálculo.
+
+| Fase | Estado |
+| --- | --- |
+| 1 — Montaje: `services/api` pasa a `pyproject.toml` + uv, TinyDB 4.9.0 añadido, `requirements.txt` retirado. 18 pruebas en verde y la API arranca con `uv run` | ✅ |
+| 2 — Modelo de datos: [`schemas.py`](../services/api/app/domains/suppliers/schemas.py) con enums de país, moneda, categoría y estado, tarifa > 0 (y finita), moneda según el país, entrada y salida separadas, `extra="forbid"` en la entrada. 19 pruebas | ✅ |
+| 3 — Base de datos y seeder: [`database.py`](../services/api/app/domains/suppliers/database.py) (TinyDB en `services/api/storage/suppliers.json`, ignorado por git, con filtros por país y categoría) y [`seed.py`](../services/api/app/seed.py) (`uv run seed`: 15 insertados la primera vez, 0 la segunda). 55 pruebas en total | ✅ |
+| 4 — Endpoints `/suppliers`: [`router.py`](../services/api/app/domains/suppliers/router.py) y [`service.py`](../services/api/app/domains/suppliers/service.py). Alta `201`, listado con filtros, detalle, tarifa (renueva `updated_at`), estado y baja; `404`/`422` y `409` al borrar un suspendido (decisión de Diego, 11/11/2026). Probado a mano con curl y tras reiniciar. 70 pruebas | ✅ |
+| 5 — Página [`/suppliers`](../uis/backoffice/app/suppliers/page.tsx) en el backoffice, en el menú: tabla, filtros por país y categoría en la URL, tarifa y estado editables por fila, suspendidos atenuados, aviso de renovación a 60 días y alta en `/suppliers/new` con validación y errores de la API en español. Etiquetas aprobadas por Diego (11/11/2026). Typecheck, lint y build en verde, y 20 comprobaciones en el navegador | ✅ |
+| 6 — Cierre: capturas del seeder, de Swagger con un filtro y de la interfaz con un filtro; banco de memoria ([`techContext.md`](./techContext.md): TinyDB detrás de un repositorio y el `409`) y PR hacia `main`: [#7](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/7), abierta el 11/11/2026 para la evaluación del campus | ✅ |
+
+**Estructura:** dominio `app/domains/suppliers/`, no los archivos sueltos que propone el enunciado (`models.py`, `routes/suppliers.py`…). Lo decidió la propuesta de arquitectura del hito 5. La PR lleva una tabla con la equivalencia entre los dos.
+
+**La PR de proveedores incluye los commits de la #6**, porque la rama está apilada. Cuando se fusione la #6, su diff se queda solo con lo de proveedores.
+
+## En curso — Autenticación de la API
+
+Rama `feature/auth-api`, **apilada sobre `feature/supplier-directory`** (PR #7 abierta). Proyecto «Asegurando la API: Autenticación y Restricción de Rutas en FastAPI», ticket **AUTH-01**: usuarios (solo credenciales) y perfiles en TinyDB, login con JWT y `get_current_user` en toda ruta que no sea pública. El enunciado no está en `docs/contexts/`: lo pegó Diego el 12/11/2026.
+
+**Decisiones de Diego (12/11/2026):** las dependencias del enunciado (`python-jose`, `libpass`); se protegen las 8 rutas de `incidents` y `suppliers`; `GET /users` solo para `admin`; el primer admin se crea con un comando, `uv run create-admin`.
+
+| Fase | Estado |
+| --- | --- |
+| 1 — Preparación: `python-jose[cryptography]==3.5.0` y `libpass[bcrypt]==1.9.4`; secreto, caducidad y fichero de usuarios en [`config.py`](../services/api/app/config.py); [`.env.example`](../services/api/.env.example); sin secreto la API no arranca (el seeder sí). 75 pruebas | ✅ |
+| 2 — Modelos `User` y `Profile` y su repositorio en TinyDB: [`users/`](../services/api/app/domains/users/) y [`profiles/`](../services/api/app/domains/profiles/), dos ficheros de TinyDB. `id` UUID (TinyDB reutiliza sus números), email único en minúsculas, contraseña de 8 caracteres a 72 bytes, `role` fuera del alta, `UserPublic` sin hash. 33 pruebas | ✅ |
+| 3 — Service de usuarios: [`users/service.py`](../services/api/app/domains/users/service.py) (bcrypt, alta con perfil y marcha atrás si el perfil falla, permisos: tú mismo o admin, rol solo admin, login sin pistas) y [`create_admin.py`](../services/api/app/create_admin.py) (`uv run create-admin`). 137 pruebas | ✅ |
+| 4 — Token: [`auth/`](../services/api/app/domains/auth/) con `POST /auth/login` (formulario OAuth2, el email en `username`), `get_current_user` (401 sin token, caducado, manipulado o de cuenta borrada o desactivada; el usuario se relee en cada petición) y `GET /auth/me`. JWT HS256 con solo `sub` y fechas. 156 pruebas | ✅ |
+| 5 — Rutas: [`users/router.py`](../services/api/app/domains/users/router.py) (`POST /users` pública con perfil; el resto con token, tú o admin, `403` antes que `404`, `409` email repetido) y [`profiles/router.py`](../services/api/app/domains/profiles/router.py) (`/profiles/me`). Pruebas HTTP de verdad con un cliente ASGI propio ([`http_client.py`](../services/api/tests/http_client.py)), sin `httpx`. 185 pruebas | ✅ |
+| 6 — Candado en las 8 rutas que ya existían: las 2 de `incidents` y las 6 de `suppliers`, con `dependencies=[Depends(get_current_user)]` en cada router. Sin token, `401` y nada cambia; con token, igual que antes. Pruebas en [`test_protected_routes.py`](../services/api/tests/test_protected_routes.py). 194 pruebas. El backoffice aún no hace login: esas pantallas reciben `401` (limitación conocida en el README de la API) | ✅ |
+| 7 — Verificación: 194 pruebas en verde; recorrido en `/docs` con una cuenta de prueba (`401` sin token, alta `201`, *Authorize*, `/auth/me`, `200` con token, `403` en `GET /users`), con 5 capturas para la PR; y un script contra el servidor real, 29/29. Pasos en la sección "Verificación manual en `/docs`" del [README de la API](../services/api/README.md) | ✅ |
+| 8 — Cierre: banco de memoria ([`techContext.md`](./techContext.md): decisión de autenticación y dos correcciones; [`projectbrief.md`](./projectbrief.md): vocabulario de cuentas), ficha en la biblioteca y PR hacia `main`: [#8](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/8), abierta el 13/11/2026 para la evaluación del campus, con las 8 rutas protegidas y cómo se verificaron | ✅ |
 
 ## Próximo
 
@@ -69,4 +117,8 @@ Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), m
 | **npm workspaces** | Aplazado. Cada proyecto se instala por separado. Se reevalúa cuando dos aplicaciones consuman el mismo paquete a la vez |
 | **`packages/shared/`** | Viene de la plantilla y está prácticamente vacío. Decidir si se usa o se retira cuando haya tipos que compartir de verdad |
 | **Ambigüedad en `CONTEXT.md`** | El responsable de Ventas aparece con dos nombres distintos. Sin resolver — ver [`projectbrief.md`](./projectbrief.md). Bloqueará el dominio de ventas cuando llegue |
+| **Regla de ramas desfasada** | [`AGENTS.md`](../AGENTS.md) §9 y [`.agents/rules/commits-y-entrega.md`](../.agents/rules/commits-y-entrega.md) siguen diciendo que cada rama sale de la del hito anterior. Desde el 16/09/2026 salen de `main` (ver arriba). Corregir al cerrar el analizador de incidencias |
+| **API de inventario (NXV-0201) pendiente** | Pospuesta el 04/11/2026 para hacer antes el analizador de incidencias. A 11/11/2026 **su enunciado todavía no está publicado** en la web del curso, que marca el orden de los proyectos: probablemente se ha movido más adelante. Su contexto está en `docs/contexts/` porque `sync_contexts.py` descarga todos. Se hará cuando salga |
+| **"El último análisis" en memoria** | `GET /api/incidents/results/export` exporta el último análisis del proceso: se pierde al reiniciar, es común a todos los usuarios y no funciona con varios workers. Solución prevista: un `analysis_id` en la respuesta del `POST`. Cambia el contrato del enunciado, así que se aplaza hasta que haya más de un usuario |
+| **Pruebas automáticas de las rutas HTTP** | Necesitan el cliente de pruebas de FastAPI, que depende de `httpx`, y `httpx` no está aprobado como dependencia. Hoy se prueban el service y la configuración, y las rutas se verifican a mano |
 | **Dependencia de una API mock compartida** | Los datos los escriben también otros alumnos. Ninguna funcionalidad puede asumir que un registro concreto sigue existiendo. El backend propio **no la envuelve**: convivirán |

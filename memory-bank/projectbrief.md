@@ -74,6 +74,33 @@ Lo fija el ticket **NXV-0201** ([`docs/contexts/05-backend-development.es.md`](.
 | **Stock** | Resultado neto de entradas menos salidas. **Se calcula, nunca se almacena ni se establece a mano** | `current_stock` |
 | **Oficina** | `"Valencia"` o `"Miami"`. Ambas conviven en las mismas tablas y se filtran por este campo | `office` |
 
+### Vocabulario de tickets de soporte — analizador de incidencias
+
+Lo fija el briefing [`incidents-file-analysis.es.md`](../docs/contexts/proyectos/incidents-file-analysis.es.md). Interlocutor: **Roberto Díaz** (Customer Support Lead). Los valores se usan literalmente:
+
+| Término | Qué significa aquí | Valores en el código |
+| --- | --- | --- |
+| **Ticket** | Una incidencia registrada en el helpdesk legado. ID con formato `NXV-XXXXXX` | `ticket_id` |
+| **Categoría** | Tipo de incidencia | `TECHNICAL`, `BILLING`, `ACCESS`, `HR_QUERY`, `COMPLAINT` |
+| **Estado** | Situación del ticket | `OPEN`, `CLOSED`, `DISCARDED` |
+| **Agente** | Agente de soporte que lo atendió (de los 30 del servicio). Formato `AGT-XX` | `agent_id` |
+| **Puntuación de satisfacción** | Entero de 1 a 5. **Obligatoria si el ticket está `CLOSED`** | `satisfaction_score` |
+| **Registro inválido** | Fila a la que le falta un campo obligatorio o que trae un valor no permitido. Se cuenta y se excluye de las métricas, nunca se ignora en silencio | — |
+
+**`customer_email` es un dato personal**: nunca se imprime, se registra ni se exporta, ni siquiera en un mensaje de error. Por eso el fichero no puede enviarse a herramientas de IA externas.
+
+### Vocabulario de cuentas — autenticación de la API (AUTH-01)
+
+Lo fija el enunciado del ticket **AUTH-01**. Los valores se usan literalmente:
+
+| Término | Qué significa aquí | Nombre en el código |
+| --- | --- | --- |
+| **Cuenta** | Las credenciales con las que alguien entra: email, contraseña (solo su hash), si está activa y su rol | `User` |
+| **Perfil** | Los datos personales de esa cuenta, uno por cuenta: nombre, teléfono y dirección | `Profile` |
+| **Rol** | Qué puede hacer la cuenta. Hoy solo `admin` tiene permisos propios: lista cuentas y cambia roles | `admin`, `manager`, `user` |
+
+**El perfil y el email son datos personales**, como `customer_email`: las capturas y las pruebas usan cuentas inventadas (`ana@nexova.es`, `prueba@nexova.es`), nunca la de una persona real.
+
 ### Etiquetas de dominio — regla dura
 
 Los valores crudos de la API (`in_progress`, `personal_interview`, `offer_presented`…) **no aparecen nunca en la interfaz**. La traducción vive en un único mapa por aplicación. El detalle y la verificación, en [`.agents/rules/backoffice-nextjs.md`](../.agents/rules/backoffice-nextjs.md) y en la skill [`verificar-etiquetas-de-dominio`](../.agents/skills/verificar-etiquetas-de-dominio/SKILL.md).
@@ -101,4 +128,5 @@ Es el caso real que soportan las herramientas construidas hasta ahora:
 
 Anotadas para que nadie invente una respuesta:
 
+- El briefing del analizador de incidencias dice en su introducción que el fichero de prueba tiene **1,000 filas**, y en "Distribución de datos" que tiene **100**. El fichero entregado tiene 100 y los valores esperados son de 100.
 - `CONTEXT.md` nombra a **Megan Clarke** como responsable de Ventas en la descripción de la organización y a **Marcos Ibáñez** en la ficha del departamento. No está resuelto cuál es el vigente. Si un entregable necesita ese nombre, hay que preguntar antes de elegir.

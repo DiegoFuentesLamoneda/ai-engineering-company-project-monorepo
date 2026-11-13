@@ -13,6 +13,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Panel", hint: "Resumen de operaciones" },
   { href: "/candidates", label: "Candidaturas", hint: "Seguimiento del proceso activo" },
+  { href: "/incidents", label: "Incidencias", hint: "Análisis de tickets de soporte" },
+  { href: "/suppliers", label: "Proveedores", hint: "Directorio de proveedores externos" },
 ];
 
 interface Props {
