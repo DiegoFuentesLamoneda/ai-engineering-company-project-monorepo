@@ -15,7 +15,7 @@
 | [`packages/incident-analysis/`](../packages/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte. Lógica única que comparten el script y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias |
 | [`scripts/analyze.py`](../scripts/analyze.py) | Analizador de tickets por consola, con exportación a `results.csv` | Python 3, usa `incident-analysis` | Analizador de incidencias |
 | [`scripts/sync_contexts.py`](../scripts/sync_contexts.py) | Descarga los contextos del syllabus y los coloca en `docs/contexts/` | Python 3, solo stdlib | — |
-| [`services/api/`](../services/api/) | Backend de Nexova. Dos dominios: `incidents` (análisis del CSV subido y exportación del último análisis) y `suppliers` (directorio de proveedores con su seeder, `uv run seed`) | Python 3.11+, FastAPI, Pydantic 2, uvicorn, TinyDB, uv | Analizador de incidencias · Directorio de proveedores |
+| [`services/api/`](../services/api/) | Backend de Nexova. Dominios: `incidents` (análisis del CSV subido y exportación del último análisis), `suppliers` (directorio de proveedores con su seeder, `uv run seed`), `users` y `profiles` (cuentas y sus datos personales, con `uv run create-admin`) y `auth` (login con JWT). Todo menos el registro y el login pide token | Python 3.11+, FastAPI, Pydantic 2, uvicorn, TinyDB, python-jose, libpass, uv | Analizador de incidencias · Directorio de proveedores · Autenticación (AUTH-01) |
 
 Las carpetas `data/`, `agents/`, `mcps/`, `workflows/`, `infra/` e `internal/` existen con su README pero **están vacías a propósito**. Se llenarán en los hitos que las necesiten. No se crean subcarpetas "por si acaso".
 
@@ -49,6 +49,8 @@ Consecuencias prácticas: los datos que devuelve **pueden cambiar o desaparecer*
 El prefijo `NEXT_PUBLIC_` incrusta la variable en el bundle del navegador — **es pública**. Nunca debe usarse para credenciales.
 
 El backoffice habla además con la API propia, `services/api/`, para el análisis de incidencias y el directorio de proveedores: variable **`NEXT_PUBLIC_NEXOVA_API_URL`** (`http://localhost:8000` en local). Las dos APIs pasan por el mismo `request()` de `lib/api.ts`, cada una con su URL base.
+
+> **Desde AUTH-01 (13/11/2026), la API propia pide token y el backoffice todavía no hace login.** Sus pantallas de incidencias y proveedores reciben `401` y muestran el mensaje de la API. Mientras no tenga pantalla de login, esas rutas se usan desde `/docs`. El token irá en la cabecera `Authorization`, y nunca en `localStorage` sin pensarlo antes: es una decisión pendiente para cuando se haga el login.
 
 ## Decisiones de arquitectura tomadas
 
@@ -121,6 +123,11 @@ Decidido en el hito 5 y razonado por extenso en [`docs/ARCHITECTURE_PROPOSAL.md`
 >
 > - **La configuración se valida con `pydantic`, el que ya trae FastAPI, y no con `pydantic-settings` (D-03).** Hoy no hay secretos ni `.env` que cargar.
 > - **Las pruebas usan `unittest` sobre el `service`, no `pytest` con el cliente de pruebas (D-08).** Ese cliente necesita `httpx`. Las rutas se verifican con el servidor arrancado.
+>
+> **Corregido el 13/11/2026, con AUTH-01.** Las dos notas siguen en pie, pero ya no son exactas:
+>
+> - **Ya hay un secreto.** `NEXOVA_API_JWT_SECRET_KEY` vive en `services/api/.env` (no se versiona; la plantilla es `.env.example`) y lo carga `uv run --env-file .env`. Se sigue validando con `pydantic` en `app/config.py`, sin `pydantic-settings`, y como `SecretStr`, para que no salga en un log. Sin secreto la API no arranca.
+> - **Las rutas ya se prueban por HTTP**, sin `httpx`: [`tests/http_client.py`](../services/api/tests/http_client.py) habla con la app por ASGI, como uvicorn, en unas 40 líneas de biblioteca estándar. Si un día entra `httpx`, se sustituye por el `TestClient` sin tocar las pruebas más que en el import.
 
 ### `services/api` se gestiona con uv y `pyproject.toml`
 
@@ -140,6 +147,19 @@ Decidido el 11/11/2026, con el directorio de proveedores. El enunciado pide alma
 - **El seeder no duplica.** Decide por nombre qué falta y valida cada entrada con el mismo modelo que `POST /suppliers`.
 - **Códigos de error del dominio:** `404` si no existe y `409` al borrar un suspendido. El BRIEFING dice que los suspendidos se quedan en el directorio por el historial, y la API lo hace cumplir aunque alguien la llame sin pasar por el backoffice. Amplía la tabla de errores de arriba: `409` para una operación que no se permite en el estado actual del recurso.
 - **El backoffice no deja escribir la moneda.** La deduce del país (España → EUR, EE. UU. → USD, según el BRIEFING), y la API rechaza una combinación que no cuadre.
+
+### Autenticación: JWT sin estado y candado por router
+
+Decidido el 12–13/11/2026, con AUTH-01. Lo fija el enunciado: `python-jose` para el token, `libpass[bcrypt]` para las contraseñas, JWT sin estado, sin cookies.
+
+- **El token solo lleva `sub` (el `id`), `iat` y `exp`. HS256 y nada más.** `get_current_user` relee el usuario de TinyDB en cada petición. Un cambio de rol, o una cuenta desactivada o borrada, cuentan desde la petición siguiente, no cuando caduque el token. Caducidad corta: 30 minutos (`NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES`).
+- **El `id` de un usuario es un UUID**, no el número de TinyDB. TinyDB reutiliza los números borrados, y el token de una cuenta eliminada identificaría a la siguiente. Los proveedores siguen con el número de TinyDB (limitación conocida).
+- **Cuenta y perfil en dos ficheros** (`users.json` y `profiles.json`), uno a uno por `user_id`. El perfil son datos personales que la cuenta no necesita para autenticar, y así nunca viajan junto al hash.
+- **Los permisos los decide el `service`**, no el router: cada uno ve, edita y borra lo suyo, y un `admin`, cualquier cosa. Solo un `admin` lista usuarios y cambia roles. La comprobación de permiso va antes que la de existencia, para que nadie averigüe qué IDs existen.
+- **El candado de `incidents` y `suppliers` va en el `APIRouter`** (`dependencies=[Depends(get_current_user)]`), no ruta a ruta. Una ruta nueva nace protegida. En `users` va ruta a ruta, porque `POST /users` es público.
+- **El primer admin sale de `uv run create-admin`.** `POST /users` crea siempre cuentas `user`, y solo un admin cambia roles.
+- **El login no dice qué ha fallado.** Email desconocido, contraseña mala y cuenta desactivada dan el mismo `401`, en el mismo tiempo (se verifica contra un hash de relleno).
+- **Amplía la tabla de errores:** `401` para quien no está identificado, con la cabecera `WWW-Authenticate: Bearer`; `403` para quien está identificado pero no tiene permiso.
 
 ### CI acotada por rutas
 
@@ -163,7 +183,7 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 | `packages/talent-core/` | `npm run typecheck` · `npm test` · `npm run demo` · `npm run build` |
 | `packages/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
 | `scripts/` | `python analyze.py incidents-nexova.csv` |
-| `services/api/` | `uv sync` · `uv run seed` · `uv run --env-file .env uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
+| `services/api/` | `uv sync` · `uv run seed` · `uv run create-admin` · `uv run --env-file .env uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
 
 ## Restricciones técnicas
 

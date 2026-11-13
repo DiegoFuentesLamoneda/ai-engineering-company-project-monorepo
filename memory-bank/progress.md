@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 11 de noviembre de 2026 (directorio de proveedores, cierre)._
+_Última actualización: 13 de noviembre de 2026 (autenticación de la API, cierre)._
 
 ## Entregado
 
