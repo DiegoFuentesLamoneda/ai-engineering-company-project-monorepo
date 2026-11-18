@@ -66,6 +66,7 @@ app/
 ├─ main.py              compone la app: configuración, CORS y routers. Nada más
 ├─ config.py            configuración tipada, validada al arrancar
 ├─ dependencies.py      dependencias transversales (get_settings)
+├─ mailer.py            envío de emails: Resend si hay API key, el log si no. El único que habla con Resend
 ├─ seed.py              `uv run seed`: carga los proveedores del BRIEFING
 ├─ create_admin.py      `uv run create-admin`: el primer admin
 └─ domains/
@@ -77,6 +78,7 @@ app/
    │  └─ exceptions.py
    ├─ password_resets/  restablecimiento de contraseña (AUTH-03): enlaces de un solo uso
    │  ├─ service.py     emitir un token (aleatorio, 256 bits) y gastarlo: existe, sin usar, sin caducar
+   │  ├─ emails.py      el email del enlace: HTML con tablas y estilos en línea (legible en el móvil) y versión en texto
    │  ├─ schemas.py     ResetToken: se guarda el SHA-256 del token, nunca el token
    │  ├─ database.py    TinyDB. Marcar como usado comprueba y escribe dentro del mismo cerrojo
    │  └─ exceptions.py  InvalidResetTokenError: un solo mensaje, el motivo aparte para la auditoría
@@ -241,6 +243,11 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 - **Borrar una cuenta devuelve `204` sin cuerpo**, y no `200` con lo borrado como los proveedores. Quien borra es casi siempre el dueño, que ya sabe qué cuenta era, y así no viajan otra vez sus datos.
 - **El candado de `incidents` y `suppliers` va en el router, no en cada ruta.** `APIRouter(dependencies=[Depends(get_current_user)])` lo aplica a todas las rutas del módulo, y una ruta nueva nace protegida sin que nadie se acuerde. Ninguna de estas rutas decide nada según quién llama, así que no reciben el usuario como parámetro. En `users`, en cambio, va ruta a ruta: el registro es público y las demás sí necesitan saber quién eres.
 - **Las rutas se prueban por HTTP sin `httpx`.** El `TestClient` de FastAPI lo necesita, y añadir una dependencia es una decisión aparte. [`tests/http_client.py`](./tests/http_client.py) habla con la app por ASGI, como uvicorn, en unas 40 líneas de biblioteca estándar: las pruebas ven los mismos códigos que vería el backoffice.
+
+- **Resend sobre `urllib`, sin su SDK.** Enviar un email es una sola petición `POST https://api.resend.com/emails`, y no compensa una dependencia para eso. Hay que mandar un `User-Agent` propio: Resend está detrás de Cloudflare, que rechaza el de urllib con un `403`.
+- **Sin API key, el email va al log.** `build_mailer` elige `LogMailer` y la API arranca igual: se puede desarrollar y probar el flujo entero copiando el enlace de la consola. En los logs el destinatario sale enmascarado (`d***@nexova.es`).
+- **El HTML del email es de tablas y estilos en línea.** Gmail borra las etiquetas `<style>` y Outlook ignora el flexbox. Ancho máximo de 480 px, botón de 48 px de alto y el enlace también en texto, por si el cliente de correo no pinta el botón.
+- **Prueba de envío real:** `uv run --env-file .env python -m app.mailer <tu-email>`. Con el remitente de pruebas (`onboarding@resend.dev`) solo llega al email con el que se creó la cuenta de Resend.
 
 ## Limitaciones conocidas
 

@@ -137,7 +137,7 @@ Rama `feature/password-reset`, **apilada sobre `feature/auth-frontend`** (PR #9 
 | --- | --- |
 | 1 — Configuración: API key de Resend, remitente, URL del backoffice, caducidad del enlace (15–60 min) y solicitudes por hora en [`config.py`](../services/api/app/config.py) y [`.env.example`](../services/api/.env.example). Sin API key la API arranca y el enlace va al log. 199 pruebas | ✅ |
 | 2 — Tokens de restablecimiento: dominio [`password_resets/`](../services/api/app/domains/password_resets/). Token aleatorio de 256 bits; en TinyDB solo su SHA-256, la caducidad y cuándo se usó. Pedir otro anula el anterior; usarlo dos veces, caducado o inventado da el mismo error (el motivo, aparte, para la auditoría). De dos usos simultáneos solo gana uno. 215 pruebas | ✅ |
-| 3 — Envío de correo con Resend y plantilla HTML legible en móvil | ⬜ |
+| 3 — Envío de correo: [`mailer.py`](../services/api/app/mailer.py) (Resend con `urllib`, sin SDK; sin API key, el email va al log y la API arranca igual; los errores nunca llevan la clave) y [`emails.py`](../services/api/app/domains/password_resets/emails.py) (HTML de tablas y estilos en línea, 480 px, botón y enlace en texto, más versión en texto). Prueba real: `python -m app.mailer <email>`. 231 pruebas | ✅ |
 | 4 — Rutas `forgot-password`, `reset-password` y `change-password` | ⬜ |
 | 5 — *Rate limiting* y registro de auditoría | ⬜ |
 | 6 — `/forgot-password`, `/reset-password` y enlace en `/login` | ⬜ |
