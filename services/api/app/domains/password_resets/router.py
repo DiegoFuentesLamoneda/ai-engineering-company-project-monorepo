@@ -32,7 +32,7 @@ from ..users.database import UserRepository
 from ..users.dependencies import get_user_repository
 from . import service
 from .database import PasswordResetRepository
-from .dependencies import get_mailer, get_password_reset_repository
+from .dependencies import ClientIp, get_mailer, get_password_reset_repository
 from .exceptions import InvalidResetTokenError, SamePasswordError, WrongCurrentPasswordError
 from .schemas import ChangePasswordRequest, ForgotPasswordRequest, Message, ResetPasswordRequest
 
@@ -54,14 +54,16 @@ def forgot_password(
     resets: Resets,
     mailer: Annotated[Mailer, Depends(get_mailer)],
     settings: Annotated[Settings, Depends(get_settings)],
+    ip: ClientIp,
 ) -> Message:
     """Responde siempre lo mismo, y enseguida.
 
-    Buscar la cuenta y enviar el email va en una tarea que FastAPI ejecuta
-    **después** de responder: así ni el texto ni el tiempo de la respuesta
-    dicen si el email tiene cuenta.
+    Buscar la cuenta, aplicar el límite por hora y enviar el email va en una
+    tarea que FastAPI ejecuta **después** de responder: así ni el texto ni
+    el tiempo de la respuesta dicen si el email tiene cuenta. La IP se lee
+    aquí, con la petición aún viva, y se le pasa a la tarea.
     """
-    background.add_task(service.request_reset, users, resets, mailer, settings, data.email)
+    background.add_task(service.request_reset, users, resets, mailer, settings, data.email, ip=ip)
     return Message(message=service.FORGOT_PASSWORD_MESSAGE)
 
 
@@ -71,9 +73,11 @@ def forgot_password(
     summary="Elegir una contraseña nueva con el enlace del email",
     responses={400: {"model": ErrorResponse, "description": "Enlace no válido, caducado o ya usado"}},
 )
-def reset_password(data: ResetPasswordRequest, users: Users, resets: Resets) -> Message:
+def reset_password(
+    data: ResetPasswordRequest, users: Users, resets: Resets, ip: ClientIp
+) -> Message:
     try:
-        service.reset_password(users, resets, data.token, data.new_password)
+        service.reset_password(users, resets, data.token, data.new_password, ip=ip)
     except InvalidResetTokenError as error:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(error)) from None
     return Message(message="Contraseña actualizada. Ya puedes iniciar sesión.")
@@ -94,6 +98,7 @@ def change_password(
     users: Users,
     resets: Resets,
     settings: Annotated[Settings, Depends(get_settings)],
+    ip: ClientIp,
 ) -> Token:
     """Devuelve un token nuevo.
 
@@ -102,7 +107,9 @@ def change_password(
     cualquier otra sesión abierta con la contraseña vieja se cierra.
     """
     try:
-        service.change_password(users, resets, caller, data.current_password, data.new_password)
+        service.change_password(
+            users, resets, caller, data.current_password, data.new_password, ip=ip
+        )
     except (WrongCurrentPasswordError, SamePasswordError) as error:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(error)) from None
     minutes = settings.access_token_expire_minutes

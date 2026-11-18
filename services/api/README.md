@@ -54,7 +54,7 @@ Se lee del entorno **una sola vez, al arrancar** ([`app/config.py`](./app/config
 | `NEXOVA_API_EMAIL_FROM` | `Nexova Solutions <onboarding@resend.dev>` | Remitente. El de pruebas de Resend no necesita dominio propio, pero solo entrega al email con el que se creó la cuenta de Resend |
 | `NEXOVA_API_FRONTEND_URL` | `http://localhost:3000` | URL del backoffice. El email enlaza a `<URL>/reset-password?token=…` |
 | `NEXOVA_API_RESET_TOKEN_EXPIRE_MINUTES` | `30` | Minutos de validez del enlace de restablecimiento, de 15 a 60 |
-| `NEXOVA_API_RESET_REQUESTS_PER_HOUR` | `3` | Solicitudes de restablecimiento por email y hora. Las de más reciben el mismo `200`, pero no envían email |
+| `NEXOVA_API_RESET_REQUESTS_PER_HOUR` | `3` | Enlaces de restablecimiento por cuenta y hora, de 1 a 20. Las solicitudes de más reciben el mismo `200`, pero no envían email |
 | `NEXOVA_API_PASSWORD_RESETS_DB_PATH` | `storage/password_resets.json` (dentro de esta carpeta) | Fichero de TinyDB de los tokens de restablecimiento y su registro de auditoría |
 
 Los dos secretos (el del JWT y la API key de Resend) van en `.env`, que no se versiona. [`.env.example`](./.env.example) es la plantilla: lleva las variables, sin el valor, y el comando para generar uno. El seeder no necesita el secreto, porque no firma tokens. Las demás variables no son secretas y se pueden cambiar para una sesión con `$env:NEXOVA_API_MAX_UPLOAD_MB = "5"`.
@@ -78,12 +78,12 @@ app/
    │  └─ exceptions.py
    ├─ password_resets/  restablecimiento y cambio de contraseña (AUTH-03): enlaces de un solo uso
    │  ├─ router.py      HTTP: /auth/forgot-password, /auth/reset-password y /auth/change-password
-   │  ├─ service.py     tokens (aleatorios, 256 bits) y las tres operaciones: pedir enlace, restablecer, cambiar
+   │  ├─ service.py     tokens (aleatorios, 256 bits), auditoría y las tres operaciones: pedir enlace (con el límite por hora), restablecer, cambiar
    │  ├─ emails.py      el email del enlace: HTML con tablas y estilos en línea (legible en el móvil) y versión en texto
-   │  ├─ schemas.py     ResetToken (se guarda el SHA-256, nunca el token) y los cuerpos de las tres rutas
-   │  ├─ database.py    TinyDB. Marcar como usado comprueba y escribe dentro del mismo cerrojo
+   │  ├─ schemas.py     ResetToken (se guarda el SHA-256, nunca el token), AuditEntry y los cuerpos de las tres rutas
+   │  ├─ database.py    TinyDB, tablas tokens y audit. Marcar como usado, y contar y anotar para el límite, dentro del mismo cerrojo
    │  ├─ exceptions.py  InvalidResetTokenError (un solo mensaje, el motivo aparte), contraseña actual mal o repetida
-   │  └─ dependencies.py  el repositorio de tokens y el mailer, de app.state
+   │  └─ dependencies.py  el repositorio de tokens, el mailer y la IP de quien llama
    ├─ incidents/
    │  ├─ router.py      HTTP: recibe la subida, llama al service, elige el código
    │  ├─ service.py     reglas de la subida y el último análisis. No importa fastapi
@@ -123,7 +123,7 @@ tests/                  pruebas de los services, los modelos, la base de datos, 
 | --- | --- | --- |
 | `POST /auth/login` | Formulario OAuth2 (`application/x-www-form-urlencoded`): **el email va en `username`**, y `password`. Devuelve `{"access_token", "token_type": "bearer", "expires_in"}` (segundos) | `200` · `401` si el email o la contraseña no valen · `422` si falta un campo |
 | `GET /auth/me` | Quién soy: `id`, `email`, `role` y el perfil | `200` · `401` |
-| `POST /auth/forgot-password` | **Pública.** `{"email"}`. Si la cuenta existe y está activa, le manda un enlace que caduca en `NEXOVA_API_RESET_TOKEN_EXPIRE_MINUTES` (30 por defecto). Pedir otro anula el anterior | `200` **siempre** con "Si esa dirección está registrada, recibirás un enlace en breve." · `422` si no es un email |
+| `POST /auth/forgot-password` | **Pública.** `{"email"}`. Si la cuenta existe y está activa, le manda un enlace que caduca en `NEXOVA_API_RESET_TOKEN_EXPIRE_MINUTES` (30 por defecto). Pedir otro anula el anterior. Como mucho `NEXOVA_API_RESET_REQUESTS_PER_HOUR` enlaces por cuenta y hora (3 por defecto) | `200` **siempre** con "Si esa dirección está registrada, recibirás un enlace en breve." · `422` si no es un email |
 | `POST /auth/reset-password` | **Pública.** `{"token", "new_password"}`. El token es el del enlace | `200` · `400` si el enlace no existe, ha caducado o ya se usó (el mismo mensaje en los tres casos) · `422` si la contraseña no cumple las reglas |
 | `POST /auth/change-password` | Con token. `{"current_password", "new_password"}`. Devuelve un token nuevo, como el login | `200` · `400` si la actual no es correcta o la nueva es igual · `401` · `422` |
 
@@ -257,6 +257,12 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 - **Cambiar la contraseña cierra las demás sesiones.** El usuario guarda `password_changed_at`, y `get_current_user` rechaza los tokens con un `iat` anterior. Quien cambia la contraseña porque sospecha que alguien entró, lo echa. Vale para las tres vías: el enlace del email, `change-password` y `PUT /users/{id}`. Como `iat` va en segundos enteros, se compara con el segundo del cambio redondeado hacia abajo: el token que se emite en el mismo segundo sigue valiendo.
 - **`change-password` devuelve un token nuevo.** El anterior deja de valer por la regla de arriba; el backoffice guarda el nuevo y la sesión de quien cambia sigue abierta. También borra los enlaces de restablecimiento pendientes.
 - **Una cuenta desactivada no recibe enlace**, y un enlace de una cuenta borrada o desactivada después de pedirlo da `400`, el mismo de un enlace inválido.
+- **El límite de `forgot-password` es por cuenta, y no se nota en la respuesta.** Como mucho 3 enlaces por cuenta en la última hora (ventana deslizante); la cuarta solicitud recibe el mismo `200` y no sale email. Es por cuenta y no por email porque solo hay buzón que inundar si la cuenta existe: a un email sin cuenta nunca se le envía nada. Solo cuentan los enlaces emitidos, no las solicitudes rechazadas, así que insistir no alarga el bloqueo. Responder `429` delataría qué emails están registrados.
+- **El registro de auditoría hace también de contador del límite.** Cada `reset_link_issued` de la última hora es un enlace enviado. Contar y anotar ocurren dentro del mismo cerrojo: dos solicitudes a la vez no pueden pasar las dos con "2 de 3".
+- **Qué guarda la auditoría** (tabla `audit` de `storage/password_resets.json`): una entrada por solicitud a las tres rutas, con la fecha, el evento, la IP, el `user_id` y el motivo si falló (`unknown_account`, `inactive_account`, `rate_limited`, `delivery_failed`, `used`, `expired`, `unknown`, `account_unavailable`, `wrong_current_password`, `same_password`). Un `422` no llega a la ruta y no deja entrada. Decidido con Diego el 18/11/2026, porque son datos de personas:
+  - **La cuenta va por `user_id`, nunca por el email.** Un email sin cuenta no se guarda: no acumulamos direcciones de terceros.
+  - **La IP va completa.** Es lo que sirve para ver un ataque desde una misma dirección.
+  - **Las entradas se borran a los 90 días**, cada vez que se escribe una nueva.
 
 ## Limitaciones conocidas
 
@@ -269,4 +275,7 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 - **El límite de tamaño se comprueba después de recibir el fichero.** Protege el análisis, pero no la red. En producción el límite también va en el proxy (`client_max_body_size` en nginx).
 - **TinyDB puede reutilizar un ID borrado.** Calcula el siguiente ID como el mayor que existe más uno. Si se borra el último proveedor y se reinicia el servidor, el siguiente que se cree recibe su ID, y un enlace antiguo abriría otro proveedor. Postgres, con secuencias, no tiene este problema.
 - **Si se borra un proveedor del BRIEFING, `uv run seed` lo vuelve a crear.** El seeder decide por nombre qué falta y no puede distinguir un proveedor borrado a propósito de uno que nunca se cargó.
+- **La IP de la auditoría es la de quien abre la conexión.** Detrás de un proxy o un balanceador sería la del proxy. No se lee `X-Forwarded-For` porque, sin un proxy de confianza delante, cualquiera puede escribir ahí la IP que quiera. Al desplegar detrás de uno, se arranca uvicorn con `--proxy-headers --forwarded-allow-ips <IP del proxy>`.
+- **Cambiar la contraseña con `PUT /users/{id}` no queda en la auditoría.** Solo se auditan las tres rutas de AUTH-03. `PUT /users/{id}` es la gestión de cuentas de AUTH-01 (la propia persona o un admin) y queda fuera del ticket.
+- **La purga de 90 días solo ocurre al escribir.** Si nadie usa las tres rutas en meses, las entradas viejas siguen en el fichero hasta la siguiente solicitud.
 - **Todas las cuentas tienen los mismos permisos sobre proveedores e incidencias.** El candado pide estar identificado, no un rol. Dar o quitar permisos por rol (que solo un `manager` cambie tarifas, por ejemplo) es una decisión de negocio que el enunciado no fija.

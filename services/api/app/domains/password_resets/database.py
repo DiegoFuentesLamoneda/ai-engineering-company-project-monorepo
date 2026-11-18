@@ -1,11 +1,13 @@
-"""Persistencia de los tokens de restablecimiento sobre TinyDB.
+"""Persistencia de los tokens de restablecimiento y su auditoría sobre TinyDB.
 
-Único módulo del dominio que conoce TinyDB. El resto trabaja con `ResetToken`.
+Único módulo del dominio que conoce TinyDB. El resto trabaja con
+`ResetToken` y `AuditEntry`. Dos tablas en el mismo fichero.
 """
 
 from __future__ import annotations
 
 import threading
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -14,9 +16,10 @@ from tinydb import Query, TinyDB
 from tinydb.storages import JSONStorage
 from tinydb.table import Document
 
-from .schemas import ResetToken
+from .schemas import AuditEntry, AuditEvent, ResetToken
 
 TOKENS_TABLE = "tokens"
+AUDIT_TABLE = "audit"
 
 
 class PasswordResetRepository:
@@ -37,6 +40,7 @@ class PasswordResetRepository:
             indent=2,
         )
         self._tokens = self._db.table(TOKENS_TABLE)
+        self._audit = self._db.table(AUDIT_TABLE)
         self._lock = threading.Lock()
 
     def close(self) -> None:
@@ -95,6 +99,63 @@ class PasswordResetRepository:
             )
         return len(removed)
 
+    # --- Auditoría ---------------------------------------------------------
+
+    def list_audit(self, user_id: UUID | None = None) -> list[AuditEntry]:
+        """Las entradas, de la más antigua a la más nueva. Con `user_id`, solo las suyas."""
+        with self._lock:
+            if user_id is None:
+                documents = self._audit.all()
+            else:
+                documents = self._audit.search(Query().user_id == str(user_id))
+        return sorted((_to_entry(doc) for doc in documents), key=lambda entry: entry.created_at)
+
+    def insert_audit(self, entry: AuditEntry, purge_before: datetime) -> None:
+        """Anota `entry` y borra las entradas anteriores a `purge_before` (la retención)."""
+        with self._lock:
+            self._purge_audit(purge_before)
+            self._audit.insert(entry.model_dump(mode="json"))
+
+    def insert_audit_if_under_limit(
+        self,
+        entry: AuditEntry,
+        since: datetime,
+        limit: int,
+        purge_before: datetime,
+    ) -> bool:
+        """Anota `entry` solo si su cuenta tiene menos de `limit` iguales desde `since`.
+
+        Es el *rate limiting*: el propio registro hace de contador. Contar y
+        anotar ocurren dentro del mismo cerrojo; si no, dos peticiones a la
+        vez contarían las dos "2 de 3" y pasarían las dos.
+        """
+        with self._lock:
+            self._purge_audit(purge_before)
+            if self._count(entry.user_id, [entry.event], since) >= limit:
+                return False
+            self._audit.insert(entry.model_dump(mode="json"))
+            return True
+
+    # Llamar con el cerrojo ya tomado.
+    def _count(self, user_id: UUID | None, events: Iterable[AuditEvent], since: datetime) -> int:
+        line = Query()
+        wanted = {str(event) for event in events}
+        return self._audit.count(
+            (line.user_id == (str(user_id) if user_id else None))
+            & line.event.one_of(list(wanted))
+            & line.created_at.test(lambda value: datetime.fromisoformat(value) >= since)
+        )
+
+    # Llamar con el cerrojo ya tomado.
+    def _purge_audit(self, before: datetime) -> None:
+        self._audit.remove(
+            Query().created_at.test(lambda value: datetime.fromisoformat(value) < before)
+        )
+
 
 def _to_token(document: Document) -> ResetToken:
     return ResetToken.model_validate(dict(document))
+
+
+def _to_entry(document: Document) -> AuditEntry:
+    return AuditEntry.model_validate(dict(document))

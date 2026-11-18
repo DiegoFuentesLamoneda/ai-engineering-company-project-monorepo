@@ -51,7 +51,7 @@ DEFAULT_RESET_TOKEN_EXPIRE_MINUTES = 30
 MIN_RESET_TOKEN_EXPIRE_MINUTES = 15
 MAX_RESET_TOKEN_EXPIRE_MINUTES = 60
 
-# Solicitudes de restablecimiento por email y hora. Por encima, la API sigue
+# Enlaces de restablecimiento por cuenta y hora. Por encima, la API sigue
 # respondiendo 200 pero no envía nada: así nadie usa el formulario para
 # inundar el buzón de otra persona ni gastar la cuota del servicio de correo.
 DEFAULT_RESET_REQUESTS_PER_HOUR = 3
@@ -149,7 +149,7 @@ def load_settings(env: Mapping[str, str] = os.environ) -> Settings:
       restablecimientos de contraseña y su auditoría.
     - `NEXOVA_API_RESET_TOKEN_EXPIRE_MINUTES`: minutos de validez del enlace
       de restablecimiento (de 15 a 60).
-    - `NEXOVA_API_RESET_REQUESTS_PER_HOUR`: solicitudes por email y hora.
+    - `NEXOVA_API_RESET_REQUESTS_PER_HOUR`: enlaces por cuenta y hora.
     - `NEXOVA_API_FRONTEND_URL`: URL del backoffice, para el enlace del email.
     - `NEXOVA_API_RESEND_API_KEY`: API key de Resend. Va en `.env`, nunca en
       el código.

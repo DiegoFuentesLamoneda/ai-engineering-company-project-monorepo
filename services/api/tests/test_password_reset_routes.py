@@ -54,6 +54,7 @@ class RoutesTestCase(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         directory = Path(tmp.name)
+        self.directory = directory
         self.users = UserRepository(directory / "users.json")
         self.addCleanup(self.users.close)
         self.profiles = ProfileRepository(directory / "profiles.json")

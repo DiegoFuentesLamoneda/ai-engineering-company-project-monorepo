@@ -6,6 +6,7 @@ No saben nada de HTTP: el `service` los lanza y el `router` decide el código.
 from __future__ import annotations
 
 from enum import StrEnum
+from uuid import UUID
 
 
 class InvalidResetReason(StrEnum):
@@ -14,6 +15,8 @@ class InvalidResetReason(StrEnum):
     UNKNOWN = "unknown"  # nunca se emitió, o se sustituyó por uno más nuevo
     EXPIRED = "expired"
     USED = "used"
+    # El token era bueno, pero la cuenta se borró o se desactivó después de pedirlo.
+    ACCOUNT_UNAVAILABLE = "account_unavailable"
 
 
 class InvalidResetTokenError(Exception):
@@ -21,12 +24,14 @@ class InvalidResetTokenError(Exception):
 
     El mensaje es el mismo sea cual sea el motivo: a quien tiene el enlace le
     basta con saber que tiene que pedir otro. El motivo concreto va en
-    `reason`, para la auditoría, no para la respuesta.
+    `reason`, y de quién era el token (si se sabe) en `user_id`: los dos para
+    la auditoría, no para la respuesta.
     """
 
-    def __init__(self, reason: InvalidResetReason) -> None:
+    def __init__(self, reason: InvalidResetReason, user_id: UUID | None = None) -> None:
         super().__init__("El enlace de restablecimiento no es válido o ha caducado. Pide uno nuevo.")
         self.reason = reason
+        self.user_id = user_id
 
 
 class WrongCurrentPasswordError(Exception):
