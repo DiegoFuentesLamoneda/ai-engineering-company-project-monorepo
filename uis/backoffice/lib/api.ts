@@ -382,6 +382,10 @@ export async function login(email: string, password: string): Promise<Token> {
  *
  * Si falla el alta (email repetido, datos no validos), no se intenta el
  * login y el ApiError trae los errores por campo.
+ *
+ * Si el alta sale bien y el login no (la API se cae justo entre las dos
+ * llamadas), la cuenta ya existe: el mensaje lo dice, para que la persona
+ * entre por /login y no intente registrarse otra vez con el mismo email.
  */
 export async function register(input: RegisterInput): Promise<UserCreated> {
   const cuenta = await request<UserCreated>(
@@ -389,7 +393,14 @@ export async function register(input: RegisterInput): Promise<UserCreated> {
     { method: "POST", body: JSON.stringify(input) },
     NEXOVA_PUBLIC_API,
   );
-  await login(input.email, input.password);
+  try {
+    await login(input.email, input.password);
+  } catch (e) {
+    throw new ApiError(
+      "La cuenta se ha creado, pero no se ha podido iniciar sesión. Entra con tu email y contraseña.",
+      e instanceof ApiError ? e.status : 0,
+    );
+  }
   return cuenta;
 }
 
