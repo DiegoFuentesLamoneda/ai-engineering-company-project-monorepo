@@ -16,12 +16,15 @@ from .config import Settings, load_settings
 from .domains.auth.router import router as auth_router
 from .domains.incidents.router import router as incidents_router
 from .domains.incidents.service import ResultsStore
+from .domains.password_resets.database import PasswordResetRepository
+from .domains.password_resets.router import router as password_resets_router
 from .domains.profiles.database import ProfileRepository
 from .domains.profiles.router import router as profiles_router
 from .domains.suppliers.database import SupplierRepository
 from .domains.suppliers.router import router as suppliers_router
 from .domains.users.database import UserRepository
 from .domains.users.router import router as users_router
+from .mailer import build_mailer
 
 
 @asynccontextmanager
@@ -39,6 +42,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.suppliers = stack.enter_context(SupplierRepository(settings.suppliers_db_path))
         app.state.users = stack.enter_context(UserRepository(settings.users_db_path))
         app.state.profiles = stack.enter_context(ProfileRepository(settings.profiles_db_path))
+        app.state.password_resets = stack.enter_context(
+            PasswordResetRepository(settings.password_resets_db_path)
+        )
+        # Sin API key de Resend avisa en el log y escribe ahí los emails.
+        app.state.mailer = build_mailer(settings)
         yield
 
 
@@ -68,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.include_router(auth_router)
+    app.include_router(password_resets_router)
     app.include_router(users_router)
     app.include_router(profiles_router)
     app.include_router(incidents_router)

@@ -27,3 +27,17 @@ class InvalidResetTokenError(Exception):
     def __init__(self, reason: InvalidResetReason) -> None:
         super().__init__("El enlace de restablecimiento no es válido o ha caducado. Pide uno nuevo.")
         self.reason = reason
+
+
+class WrongCurrentPasswordError(Exception):
+    """`POST /auth/change-password`: la contraseña actual no coincide."""
+
+    def __init__(self) -> None:
+        super().__init__("La contraseña actual no es correcta.")
+
+
+class SamePasswordError(Exception):
+    """`POST /auth/change-password`: la nueva es igual que la actual."""
+
+    def __init__(self) -> None:
+        super().__init__("La nueva contraseña tiene que ser distinta de la actual.")

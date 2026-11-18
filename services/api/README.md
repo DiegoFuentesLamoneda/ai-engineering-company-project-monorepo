@@ -76,12 +76,14 @@ app/
    │  ├─ security.py    firmar y verificar el JWT (HS256). El único módulo que importa jose
    │  ├─ schemas.py     Token y Me
    │  └─ exceptions.py
-   ├─ password_resets/  restablecimiento de contraseña (AUTH-03): enlaces de un solo uso
-   │  ├─ service.py     emitir un token (aleatorio, 256 bits) y gastarlo: existe, sin usar, sin caducar
+   ├─ password_resets/  restablecimiento y cambio de contraseña (AUTH-03): enlaces de un solo uso
+   │  ├─ router.py      HTTP: /auth/forgot-password, /auth/reset-password y /auth/change-password
+   │  ├─ service.py     tokens (aleatorios, 256 bits) y las tres operaciones: pedir enlace, restablecer, cambiar
    │  ├─ emails.py      el email del enlace: HTML con tablas y estilos en línea (legible en el móvil) y versión en texto
-   │  ├─ schemas.py     ResetToken: se guarda el SHA-256 del token, nunca el token
+   │  ├─ schemas.py     ResetToken (se guarda el SHA-256, nunca el token) y los cuerpos de las tres rutas
    │  ├─ database.py    TinyDB. Marcar como usado comprueba y escribe dentro del mismo cerrojo
-   │  └─ exceptions.py  InvalidResetTokenError: un solo mensaje, el motivo aparte para la auditoría
+   │  ├─ exceptions.py  InvalidResetTokenError (un solo mensaje, el motivo aparte), contraseña actual mal o repetida
+   │  └─ dependencies.py  el repositorio de tokens y el mailer, de app.state
    ├─ incidents/
    │  ├─ router.py      HTTP: recibe la subida, llama al service, elige el código
    │  ├─ service.py     reglas de la subida y el último análisis. No importa fastapi
@@ -121,6 +123,9 @@ tests/                  pruebas de los services, los modelos, la base de datos, 
 | --- | --- | --- |
 | `POST /auth/login` | Formulario OAuth2 (`application/x-www-form-urlencoded`): **el email va en `username`**, y `password`. Devuelve `{"access_token", "token_type": "bearer", "expires_in"}` (segundos) | `200` · `401` si el email o la contraseña no valen · `422` si falta un campo |
 | `GET /auth/me` | Quién soy: `id`, `email`, `role` y el perfil | `200` · `401` |
+| `POST /auth/forgot-password` | **Pública.** `{"email"}`. Si la cuenta existe y está activa, le manda un enlace que caduca en `NEXOVA_API_RESET_TOKEN_EXPIRE_MINUTES` (30 por defecto). Pedir otro anula el anterior | `200` **siempre** con "Si esa dirección está registrada, recibirás un enlace en breve." · `422` si no es un email |
+| `POST /auth/reset-password` | **Pública.** `{"token", "new_password"}`. El token es el del enlace | `200` · `400` si el enlace no existe, ha caducado o ya se usó (el mismo mensaje en los tres casos) · `422` si la contraseña no cumple las reglas |
+| `POST /auth/change-password` | Con token. `{"current_password", "new_password"}`. Devuelve un token nuevo, como el login | `200` · `400` si la actual no es correcta o la nueva es igual · `401` · `422` |
 
 Las rutas protegidas piden la cabecera `Authorization: Bearer <token>`. En `/docs`, el botón **Authorize** hace el login y la añade a cada petición: en *username* va el email. Sin token, o con uno caducado, manipulado o de una cuenta borrada o desactivada, la respuesta es `401` con la cabecera `WWW-Authenticate: Bearer`.
 
@@ -248,6 +253,10 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 - **Sin API key, el email va al log.** `build_mailer` elige `LogMailer` y la API arranca igual: se puede desarrollar y probar el flujo entero copiando el enlace de la consola. En los logs el destinatario sale enmascarado (`d***@nexova.es`).
 - **El HTML del email es de tablas y estilos en línea.** Gmail borra las etiquetas `<style>` y Outlook ignora el flexbox. Ancho máximo de 480 px, botón de 48 px de alto y el enlace también en texto, por si el cliente de correo no pinta el botón.
 - **Prueba de envío real:** `uv run --env-file .env python -m app.mailer <tu-email>`. Con el remitente de pruebas (`onboarding@resend.dev`) solo llega al email con el que se creó la cuenta de Resend.
+- **`forgot-password` no delata qué emails tienen cuenta, ni por el texto ni por el tiempo.** La respuesta sale antes de buscar al usuario: la búsqueda, el token y el envío van en una tarea en segundo plano (`BackgroundTasks`). Si Resend falla, se anota en el log y la respuesta sigue siendo `200`; la persona puede pedirlo otra vez.
+- **Cambiar la contraseña cierra las demás sesiones.** El usuario guarda `password_changed_at`, y `get_current_user` rechaza los tokens con un `iat` anterior. Quien cambia la contraseña porque sospecha que alguien entró, lo echa. Vale para las tres vías: el enlace del email, `change-password` y `PUT /users/{id}`. Como `iat` va en segundos enteros, se compara con el segundo del cambio redondeado hacia abajo: el token que se emite en el mismo segundo sigue valiendo.
+- **`change-password` devuelve un token nuevo.** El anterior deja de valer por la regla de arriba; el backoffice guarda el nuevo y la sesión de quien cambia sigue abierta. También borra los enlaces de restablecimiento pendientes.
+- **Una cuenta desactivada no recibe enlace**, y un enlace de una cuenta borrada o desactivada después de pedirlo da `400`, el mismo de un enlace inválido.
 
 ## Limitaciones conocidas
 

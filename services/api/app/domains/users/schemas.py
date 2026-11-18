@@ -120,3 +120,8 @@ class User(UserPublic):
     """
 
     hashed_password: str
+    # Última vez que cambió la contraseña (AUTH-03). Los tokens emitidos
+    # antes dejan de valer: quien cambia la contraseña porque sospecha que
+    # alguien entró en su cuenta, lo echa. `None`: nunca ha cambiado, y así
+    # las cuentas guardadas antes de este campo siguen valiendo.
+    password_changed_at: datetime | None = None

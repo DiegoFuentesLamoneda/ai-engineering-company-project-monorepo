@@ -14,6 +14,7 @@ No importa fastapi: recibe el secreto y devuelve datos o lanza errores.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -43,8 +44,18 @@ def create_access_token(
     return jwt.encode(claims, secret.get_secret_value(), algorithm=ALGORITHM)
 
 
-def decode_access_token(token: str, secret: SecretStr) -> UUID:
-    """El ID del usuario del token, o `InvalidTokenError` si no se puede confiar en él."""
+@dataclass(frozen=True)
+class AccessClaims:
+    """Lo que se puede creer de un token ya verificado."""
+
+    user_id: UUID
+    # `iat` (*issued at*): segundos desde 1970, cuándo se emitió. Sirve para
+    # rechazar los tokens de antes de un cambio de contraseña.
+    issued_at: int
+
+
+def decode_access_token_claims(token: str, secret: SecretStr) -> AccessClaims:
+    """De quién es el token y cuándo se emitió, o `InvalidTokenError` si no se puede confiar en él."""
     try:
         claims = jwt.decode(
             token,
@@ -52,9 +63,16 @@ def decode_access_token(token: str, secret: SecretStr) -> UUID:
             # Lista cerrada: un token con `"alg": "none"` (sin firma) o con
             # otro algoritmo se rechaza en vez de aceptarse sin comprobar.
             algorithms=[ALGORITHM],
-            # Sin `exp` el token valdría para siempre; sin `sub`, no es de nadie.
-            options={"require_exp": True, "require_sub": True},
+            # Sin `exp` el token valdría para siempre; sin `sub`, no es de
+            # nadie; sin `iat`, no se sabría si es de antes de un cambio de
+            # contraseña.
+            options={"require_exp": True, "require_sub": True, "require_iat": True},
         )
-        return UUID(claims["sub"])
+        return AccessClaims(user_id=UUID(claims["sub"]), issued_at=int(claims["iat"]))
     except (JWTError, KeyError, ValueError, TypeError) as error:
         raise InvalidTokenError() from error
+
+
+def decode_access_token(token: str, secret: SecretStr) -> UUID:
+    """El ID del usuario del token, o `InvalidTokenError` si no se puede confiar en él."""
+    return decode_access_token_claims(token, secret).user_id

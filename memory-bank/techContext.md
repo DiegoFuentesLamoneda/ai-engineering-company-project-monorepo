@@ -160,6 +160,8 @@ Decidido el 12–13/11/2026, con AUTH-01. Lo fija el enunciado: `python-jose` pa
 - **El primer admin sale de `uv run create-admin`.** `POST /users` crea siempre cuentas `user`, y solo un admin cambia roles.
 - **El login no dice qué ha fallado.** Email desconocido, contraseña mala y cuenta desactivada dan el mismo `401`, en el mismo tiempo (se verifica contra un hash de relleno).
 - **Amplía la tabla de errores:** `401` para quien no está identificado, con la cabecera `WWW-Authenticate: Bearer`; `403` para quien está identificado pero no tiene permiso.
+- **Cambiar la contraseña cierra las demás sesiones** (18/11/2026, con AUTH-03). Sigue la idea de arriba, que el cambio cuente desde la petición siguiente, y la amplía a la contraseña: el usuario guarda `password_changed_at` y `get_current_user` rechaza los tokens con un `iat` anterior (comparado al segundo, redondeando hacia abajo). Vale para el enlace del email, `change-password` y `PUT /users/{id}`. `change-password` devuelve un token nuevo para que quien cambia siga dentro. Las cuentas sin el campo (`None`) no cambian de comportamiento.
+- **`forgot-password` responde antes de buscar** (18/11/2026, con AUTH-03): la búsqueda del usuario, el token y el envío van en `BackgroundTasks`. Así ni el texto ni el tiempo de respuesta dicen qué emails tienen cuenta, el mismo principio que el login.
 
 ### Backoffice: sesión con el token en `localStorage` y guardia en el cliente
 
