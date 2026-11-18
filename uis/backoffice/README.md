@@ -170,7 +170,7 @@ components/
   AuthGuard.tsx              Sin sesión, a /login?next=…; cierra la sesión cuando caduca
   GuestGuard.tsx             Con sesión, fuera de /login y /register
   SessionMenu.tsx            Quién ha entrado y «Cerrar sesión»
-  SessionEndedNotice.tsx     Aviso en /login cuando la sesión terminó sola
+  LoginNotice.tsx            Avisos de /login según ?reason=
   LoginForm.tsx              Formulario de entrada
   RegisterForm.tsx           Formulario de alta de cuenta
   ProfileForm.tsx            Formulario de Mi perfil

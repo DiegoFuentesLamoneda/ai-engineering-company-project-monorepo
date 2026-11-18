@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import LoginForm from "@/components/LoginForm";
-import SessionEndedNotice from "@/components/SessionEndedNotice";
+import LoginNotice from "@/components/LoginNotice";
 
 export const metadata: Metadata = {
   title: "Iniciar sesión · Backoffice · Nexova Solutions",
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <>
-      <SessionEndedNotice />
+      <LoginNotice />
       <LoginForm />
     </>
   );

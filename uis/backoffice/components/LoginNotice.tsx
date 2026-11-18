@@ -18,7 +18,7 @@ function leerMotivo(): string | null {
  * obliga a envolver la página en <Suspense> y el formulario dejaría de salir
  * en el HTML. En el servidor no hay URL que leer y no se pinta nada.
  */
-export default function SessionEndedNotice() {
+export default function LoginNotice() {
   const motivo = useSyncExternalStore(sinSuscripcion, leerMotivo, () => null);
   if (motivo !== "ended") return null;
 
