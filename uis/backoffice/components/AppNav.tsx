@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/candidates", label: "Candidaturas", hint: "Seguimiento del proceso activo" },
   { href: "/incidents", label: "Incidencias", hint: "Análisis de tickets de soporte" },
   { href: "/suppliers", label: "Proveedores", hint: "Directorio de proveedores externos" },
+  { href: "/account/profile", label: "Mi perfil", hint: "Tu cuenta y datos de contacto" },
 ];
 
 interface Props {

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { subscribeToProfile } from "@/lib/account";
 import { getMe, logout } from "@/lib/api";
 import type { Me } from "@/types/auth";
 
@@ -29,15 +31,27 @@ export default function SessionMenu() {
     };
   }, []);
 
+  // Al guardar el perfil, el nombre de aquí cambia sin recargar.
+  useEffect(
+    () =>
+      subscribeToProfile((profile) => {
+        setMe((actual) => (actual ? { ...actual, profile } : actual));
+      }),
+    [],
+  );
+
   const nombre = me?.profile.name;
 
   return (
     <div className="flex items-center justify-end gap-4">
       {me && (
-        <p className="min-w-0 text-right text-sm leading-tight">
+        <Link
+          href="/account/profile"
+          className="min-w-0 rounded-md text-right text-sm leading-tight hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-400"
+        >
           <span className="block truncate font-medium text-white">{nombre ?? me.email}</span>
           {nombre && <span className="block truncate text-xs text-slate-400">{me.email}</span>}
-        </p>
+        </Link>
       )}
       <button
         type="button"

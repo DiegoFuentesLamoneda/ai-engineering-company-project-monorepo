@@ -7,6 +7,8 @@
  * Si cambian allí, cambian aquí.
  */
 
+import type { Profile } from "@/types/auth";
+
 const PATRON_EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const PATRON_TELEFONO = /^\+?[0-9 ()\-]{6,20}$/;
 
@@ -75,4 +77,23 @@ export const API_FIELD_MESSAGES: Record<string, string> = {
 export function textOrNull(valor: string): string | null {
   const limpio = valor.trim();
   return limpio ? limpio : null;
+}
+
+/** Evento con el que el perfil avisa de que ha cambiado, con el perfil nuevo. */
+const PROFILE_EVENT = "nexova:profile";
+
+/**
+ * Avisa de que el perfil se ha guardado. Lo escucha el menú de sesión, que
+ * muestra el nombre: así se actualiza sin volver a pedir GET /auth/me y sin
+ * un estado global para algo que solo comparten dos componentes.
+ */
+export function notifyProfileChange(profile: Profile): void {
+  window.dispatchEvent(new CustomEvent<Profile>(PROFILE_EVENT, { detail: profile }));
+}
+
+/** Escucha los cambios del perfil. Devuelve la función que deja de escuchar. */
+export function subscribeToProfile(onChange: (profile: Profile) => void): () => void {
+  const listener = (event: Event) => onChange((event as CustomEvent<Profile>).detail);
+  window.addEventListener(PROFILE_EVENT, listener);
+  return () => window.removeEventListener(PROFILE_EVENT, listener);
 }
