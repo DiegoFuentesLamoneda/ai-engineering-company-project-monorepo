@@ -53,3 +53,8 @@ export interface UserCreated {
   created_at: string;
   profile: Profile;
 }
+
+/** Respuesta de las rutas que solo confirman (forgot-password, reset-password). */
+export interface Message {
+  message: string;
+}

@@ -25,7 +25,7 @@ export const metadata: Metadata = {
  * Lo demás depende del grupo de rutas:
  * - app/(protected)/layout.tsx: barra lateral y navegación, para las vistas
  *   que exigen sesión.
- * - app/(auth)/layout.tsx: /login y /register, sin navegación.
+ * - app/(auth)/layout.tsx: las pantallas de acceso, sin navegación.
  *
  * Es un único layout raíz a propósito. Con uno por grupo, pasar de /login al
  * panel recargaría la página entera.

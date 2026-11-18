@@ -131,7 +131,7 @@ Rama `feature/auth-frontend`, salida de `main` después de fusionar #6, #7 y #8.
 
 Rama `feature/password-reset`, **apilada sobre `feature/auth-frontend`** (PR #9 abierta): necesita el `/login` del backoffice. Proyecto «La Pieza Que Faltaba: Flujo de Restablecimiento de Contraseña», ticket **AUTH-03**: `POST /auth/forgot-password`, `/auth/reset-password` y `/auth/change-password`, y sus tres pantallas en el backoffice. El enunciado no está en `docs/contexts/`: lo pegó Diego el 18/11/2026.
 
-**Decisiones de Diego (18/11/2026):** Resend como servicio de correo, y los tres extras opcionales: email en HTML, *rate limiting* por email y hora, y registro de auditoría.
+**Decisiones de Diego (18/11/2026):** Resend como servicio de correo, y los tres extras opcionales: email en HTML, *rate limiting* por cuenta y hora, y registro de auditoría.
 
 | Fase | Estado |
 | --- | --- |
@@ -140,7 +140,7 @@ Rama `feature/password-reset`, **apilada sobre `feature/auth-frontend`** (PR #9 
 | 3 — Envío de correo: [`mailer.py`](../services/api/app/mailer.py) (Resend con `urllib`, sin SDK; sin API key, el email va al log y la API arranca igual; los errores nunca llevan la clave) y [`emails.py`](../services/api/app/domains/password_resets/emails.py) (HTML de tablas y estilos en línea, 480 px, botón y enlace en texto, más versión en texto). Prueba real: `python -m app.mailer <email>`. 231 pruebas | ✅ |
 | 4 — Rutas: [`password_resets/router.py`](../services/api/app/domains/password_resets/router.py). `forgot-password` responde siempre lo mismo y busca y envía en segundo plano (ni el texto ni el tiempo delatan qué emails existen). `reset-password` da `400` con un enlace usado, caducado o inventado. `change-password` pide la actual y devuelve un token nuevo. Cambiar la contraseña por cualquier vía cierra las demás sesiones (`password_changed_at`). 257 pruebas | ✅ |
 | 5 — *Rate limiting* y registro de auditoría: tabla `audit` en `password_resets.json`. Una entrada por solicitud a las tres rutas (evento, IP, `user_id`, motivo). Como mucho 3 enlaces por **cuenta** y hora; la cuarta solicitud recibe el mismo `200` y no sale email. La auditoría hace de contador, y contar y anotar van en el mismo cerrojo. Decisión de Diego (18/11/2026): `user_id` y nunca el email, IP completa, se borra a los 90 días. 279 pruebas | ✅ |
-| 6 — `/forgot-password`, `/reset-password` y enlace en `/login` | ⬜ |
+| 6 — Pantallas sin sesión en el [backoffice](../uis/backoffice/): enlace «¿Olvidaste tu contraseña?» en `/login`; `/forgot-password` con el mensaje fijo del ticket y el formulario desactivado tras enviar (solo un fallo de red o de la API sale como error); `/reset-password?token=` con confirmación local, `no-referrer`, éxito a `/login?reason=password-reset` con `replace`, y con enlace no válido el error de la API y «Pedir un enlace nuevo». Ambas estáticas y detrás de `GuestGuard`. Prueba en el navegador con Playwright contra la API real: 26/26 comprobaciones | ✅ |
 | 7 — `/account/change-password` | ⬜ |
 | 8 — Verificación de extremo a extremo con un email real | ⬜ |
 | 9 — Cierre: banco de memoria, READMEs, ficha en la biblioteca y PR | ⬜ |

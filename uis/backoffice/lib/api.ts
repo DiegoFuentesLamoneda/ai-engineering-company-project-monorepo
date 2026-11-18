@@ -9,6 +9,7 @@ import type {
 } from "@/types/candidate";
 import type {
   Me,
+  Message,
   Profile,
   ProfileUpdate,
   RegisterInput,
@@ -58,8 +59,9 @@ const NEXOVA_API: ApiTarget = {
 };
 
 /**
- * Login y registro: la misma API, sin token. Un 401 aqui es "email o
- * contraseña incorrectos", no "la sesion ha caducado", y no debe cerrarla.
+ * Login, registro y recuperacion de contraseña: la misma API, sin token. Un
+ * 401 aqui es "email o contraseña incorrectos", no "la sesion ha caducado",
+ * y no debe cerrarla.
  */
 const NEXOVA_PUBLIC_API: ApiTarget = { ...NEXOVA_API, auth: false };
 
@@ -402,6 +404,32 @@ export async function register(input: RegisterInput): Promise<UserCreated> {
     );
   }
   return cuenta;
+}
+
+/**
+ * POST /auth/forgot-password. La API responde siempre el mismo 200, tenga
+ * cuenta el email o no, y envia el enlace despues de responder. Por eso aqui
+ * no hay nada que distinguir: si no lanza, se muestra el mensaje fijo.
+ */
+export function forgotPassword(email: string): Promise<Message> {
+  return request<Message>(
+    "/auth/forgot-password",
+    { method: "POST", body: JSON.stringify({ email }) },
+    NEXOVA_PUBLIC_API,
+  );
+}
+
+/**
+ * POST /auth/reset-password con el token del enlace. Un 400 es un enlace
+ * inventado, caducado o ya usado: la API da el mismo mensaje para los tres.
+ * No inicia sesion: despues se entra por /login con la contraseña nueva.
+ */
+export function resetPassword(token: string, newPassword: string): Promise<Message> {
+  return request<Message>(
+    "/auth/reset-password",
+    { method: "POST", body: JSON.stringify({ token, new_password: newPassword }) },
+    NEXOVA_PUBLIC_API,
+  );
 }
 
 /** Cierra la sesion. El JWT no tiene estado en la API: basta con olvidarlo. */

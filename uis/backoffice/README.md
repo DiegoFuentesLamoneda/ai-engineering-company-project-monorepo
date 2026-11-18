@@ -8,14 +8,15 @@ Hoy cubre las **operaciones de selección**, el **análisis de incidencias de so
 resto de capacidades internas —formación, soporte, RR. HH.— como secciones nuevas, en lugar de
 crear una aplicación por cada una.
 
-Hitos 3 y 4 y proyectos «Analizador de Incidencias», «Directorio de Proveedores» y «Conectando
-el Candado» (AUTH-02) del proyecto transversal de AI Engineering · 4Geeks Academy.
+Hitos 3 y 4 y proyectos «Analizador de Incidencias», «Directorio de Proveedores», «Conectando
+el Candado» (AUTH-02) y «La Pieza Que Faltaba» (AUTH-03) del proyecto transversal de AI
+Engineering · 4Geeks Academy.
 
 ---
 
 ## Qué hace
 
-### Acceso (`/login`, `/register`)
+### Acceso (`/login`, `/register`, `/forgot-password`, `/reset-password`)
 
 Todo el backoffice pide sesión. Las cuentas son las de la API propia,
 [`services/api`](../../services/api/), que debe estar arrancada.
@@ -26,7 +27,15 @@ Todo el backoffice pide sesión. Las cuentas son las de la API propia,
 - Los errores salen **bajo cada campo**. Un email ya registrado se marca en el campo email; un
   login fallido dice solo «Email o contraseña incorrectos.», sin aclarar cuál de los dos.
 - **Sin sesión**, cualquier vista protegida lleva a `/login?next=<ruta>` y, al entrar, vuelve
-  a esa ruta. Con sesión, `/login` y `/register` llevan al panel.
+  a esa ruta. Con sesión, las cuatro pantallas de acceso llevan al panel.
+- **Olvidé la contraseña** (enlace «¿Olvidaste tu contraseña?» en `/login`): `/forgot-password`
+  pide el email (`POST /auth/forgot-password`) y responde siempre «Si esa dirección está
+  registrada, recibirás un enlace en breve.», tenga cuenta o no. Después el formulario queda
+  desactivado. Solo un fallo de red o de la API sale como error.
+- **Contraseña nueva** con el enlace del email: `/reset-password?token=…` pide la contraseña dos
+  veces y no llama a la API si no coinciden (`POST /auth/reset-password`). Si sale bien, lleva a
+  `/login` con el aviso «Contraseña actualizada». Si el enlace no vale (inventado, caducado o ya
+  usado), muestra el error de la API y un enlace para pedir otro.
 - **Cerrar sesión** borra el token y lleva a `/login`. Si la sesión termina sola (caduca a los
   30 minutos, la API responde `401` o se cierra en otra pestaña), `/login` lo explica.
 
@@ -154,6 +163,8 @@ app/                         Rutas (App Router)
     layout.tsx               Tarjeta centrada con el logotipo y GuestGuard
     login/                   Entrar
     register/                Crear cuenta
+    forgot-password/         Pedir el enlace para restablecer la contraseña
+    reset-password/          Elegir la contraseña nueva con el enlace del email
   (protected)/               Vistas con sesión. El grupo no aparece en la URL
     layout.tsx               AuthGuard, barra lateral, cabecera con el menú de sesión y pie
     page.tsx                 Panel de entrada
@@ -168,11 +179,13 @@ app/                         Rutas (App Router)
 components/
   AppNav.tsx                 Navegación entre secciones
   AuthGuard.tsx              Sin sesión, a /login?next=…; cierra la sesión cuando caduca
-  GuestGuard.tsx             Con sesión, fuera de /login y /register
+  GuestGuard.tsx             Con sesión, fuera de las pantallas de acceso
   SessionMenu.tsx            Quién ha entrado y «Cerrar sesión»
   LoginNotice.tsx            Avisos de /login según ?reason=
   LoginForm.tsx              Formulario de entrada
   RegisterForm.tsx           Formulario de alta de cuenta
+  ForgotPasswordForm.tsx     Pedir el enlace de restablecimiento
+  ResetPasswordForm.tsx      Contraseña nueva con el token de ?token=
   ProfileForm.tsx            Formulario de Mi perfil
   FormField.tsx              Campo con etiqueta y error accesible, común a los formularios
   BrandLogo.tsx              Logotipo de Nexova, en línea
@@ -360,3 +373,17 @@ lo que llega a `null`. Si no hay cambios, no se llama a la API.
 **El login no dice qué ha fallado.** La API da el mismo `401` para un email desconocido y una
 contraseña mala, y el formulario lo respeta: decir «ese email no existe» enseñaría qué cuentas
 hay.
+
+**«Olvidé la contraseña» tampoco lo dice.** El mensaje tras pedir el enlace es una constante del
+frontend, literal del ticket AUTH-03, igual con cuenta o sin ella. Lo único que se muestra como
+error es lo que no depende de la cuenta (sin conexión, API caída): ahí decir «recibirás un
+enlace» sería mentir.
+
+**El token del enlace no sale de la página.** `/reset-password` lleva `referrer: no-referrer`,
+para que ninguna petición a otro sitio reciba la URL con el token en la cabecera `Referer`. Al
+acabar se navega con `router.replace`, así «atrás» no vuelve a la URL del token. El token se lee
+en el navegador con `useSyncExternalStore`, como `?reason=` en `/login`: la página sigue siendo
+estática y no necesita `<Suspense>`.
+
+**Las pantallas de recuperación son solo sin sesión.** Con sesión, `GuestGuard` lleva al panel:
+quien ha entrado cambia la contraseña desde su cuenta, sabiendo la actual.

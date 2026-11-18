@@ -5,6 +5,7 @@ import Link from "next/link";
 import FormField, { FormAlert, SUBMIT_CLASS } from "@/components/FormField";
 import { checkEmail } from "@/lib/account";
 import { ApiError, login } from "@/lib/api";
+import { FORGOT_PASSWORD_PATH } from "@/lib/auth-routes";
 
 type Campo = "email" | "password";
 
@@ -98,6 +99,15 @@ export default function LoginForm() {
         }}
         error={errores.password}
       />
+
+      <p className="-mt-2 text-right text-sm">
+        <Link
+          href={FORGOT_PASSWORD_PATH}
+          className="text-acento-400 underline underline-offset-4 hover:text-acento-300"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </p>
 
       <FormAlert texto={errorGeneral} />
 

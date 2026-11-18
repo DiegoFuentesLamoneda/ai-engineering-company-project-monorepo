@@ -3,7 +3,8 @@ import GuestGuard from "@/components/GuestGuard";
 import { COMPANY } from "@/lib/company";
 
 /**
- * Layout de /login y /register: una tarjeta centrada, sin barra lateral.
+ * Layout de /login, /register, /forgot-password y /reset-password: una
+ * tarjeta centrada, sin barra lateral.
  * Sin sesión, la navegación del backoffice solo llevaría a pantallas que
  * devuelven a /login.
  *

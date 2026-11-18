@@ -6,8 +6,9 @@ import { safeNextPath } from "@/lib/auth-routes";
 import { useSession } from "@/lib/useSession";
 
 /**
- * Guardia de /login y /register: con sesión no tiene sentido verlas, y se
- * manda a la página de ?next= o al panel.
+ * Guardia de las pantallas de acceso (login, registro y recuperación de la
+ * contraseña): con sesión no tiene sentido verlas, y se manda a la página de
+ * ?next= o al panel. Con sesión, la contraseña se cambia desde la cuenta.
  *
  * Es el único sitio que sale de estas pantallas. Los formularios solo
  * guardan el token; al cambiar la sesión, esta guardia navega. Así funciona

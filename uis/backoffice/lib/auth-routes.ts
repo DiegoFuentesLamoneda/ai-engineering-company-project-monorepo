@@ -11,8 +11,10 @@
 
 export const LOGIN_PATH = "/login";
 
+export const FORGOT_PASSWORD_PATH = "/forgot-password";
+
 /** Páginas a las que no tiene sentido volver con sesión. */
-const AUTH_PATHS = [LOGIN_PATH, "/register"];
+const AUTH_PATHS = [LOGIN_PATH, "/register", FORGOT_PASSWORD_PATH, "/reset-password"];
 
 /**
  * La ruta de ?next= si es segura, o null.
