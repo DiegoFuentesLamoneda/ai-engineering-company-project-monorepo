@@ -406,7 +406,7 @@ export async function register(input: RegisterInput): Promise<UserCreated> {
 
 /** Cierra la sesion. El JWT no tiene estado en la API: basta con olvidarlo. */
 export function logout(): void {
-  clearToken();
+  clearToken("logout");
 }
 
 /** GET /auth/me: email y rol de la cuenta, con su perfil. */

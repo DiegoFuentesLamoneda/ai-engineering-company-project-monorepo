@@ -38,13 +38,29 @@ export function getToken(): string | null {
   return storage()?.getItem(TOKEN_KEY) ?? null;
 }
 
+/**
+ * Por qué terminó la última sesión en esta pestaña:
+ * - "logout": la persona pulsó "Cerrar sesión". Se vuelve a /login sin más.
+ * - "ended": caducó, la API la rechazó (401) o se cerró en otra pestaña. Se
+ *   vuelve a /login con un aviso y con la página en la que estaba.
+ */
+export type SessionEndReason = "logout" | "ended";
+
+let ultimoCierre: SessionEndReason | null = null;
+
+export function lastSessionEnd(): SessionEndReason | null {
+  return ultimoCierre;
+}
+
 export function saveToken(token: string): void {
   storage()?.setItem(TOKEN_KEY, token);
+  ultimoCierre = null;
   notifyChange();
 }
 
-export function clearToken(): void {
+export function clearToken(reason: SessionEndReason = "ended"): void {
   storage()?.removeItem(TOKEN_KEY);
+  ultimoCierre = reason;
   notifyChange();
 }
 
@@ -118,7 +134,11 @@ function notifyChange(): void {
  */
 export function subscribeToSession(onChange: () => void): () => void {
   const onStorage = (event: StorageEvent) => {
-    if (event.key === TOKEN_KEY || event.key === null) onChange();
+    if (event.key !== TOKEN_KEY && event.key !== null) return;
+    // Para esta pestaña, un cierre en otra pestaña es una sesión que terminó
+    // sin que aquí se pidiera ("ended"); un login en otra, una sesión nueva.
+    ultimoCierre = event.newValue ? null : "ended";
+    onChange();
   };
 
   window.addEventListener(SESSION_EVENT, onChange);

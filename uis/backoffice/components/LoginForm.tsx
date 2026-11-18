@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import FormField, { FormAlert, SUBMIT_CLASS } from "@/components/FormField";
 import { checkEmail } from "@/lib/account";
 import { ApiError, login } from "@/lib/api";
@@ -11,15 +10,14 @@ type Campo = "email" | "password";
 
 /**
  * Inicio de sesión: POST /auth/login con email y contraseña. Si sale bien,
- * login() guarda el token y se entra al panel.
+ * login() guarda el token y GuestGuard, al ver la sesión, lleva a la página
+ * de ?next= o al panel. El formulario no navega por su cuenta.
  *
  * Un error de credenciales no se marca en un campo concreto: decir "este
  * email no existe" le confirmaría a un atacante qué cuentas hay. La API
  * responde lo mismo en los dos casos, y aquí también.
  */
 export default function LoginForm() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errores, setErrores] = useState<Partial<Record<Campo, string>>>({});
@@ -54,8 +52,6 @@ export default function LoginForm() {
 
     try {
       await login(email.trim(), password);
-      // replace y no push: con "atrás" no se vuelve al formulario de login.
-      router.replace("/");
     } catch (e) {
       setErrorGeneral(
         e instanceof ApiError ? e.message : "No se ha podido iniciar sesión. Inténtalo de nuevo.",
@@ -65,7 +61,7 @@ export default function LoginForm() {
       setEnviando(false);
     }
     // Si sale bien, enviando se queda a true: el botón sigue desactivado
-    // hasta que carga el panel y no se puede enviar dos veces.
+    // hasta que GuestGuard navega y no se puede enviar dos veces.
   }
 
   return (

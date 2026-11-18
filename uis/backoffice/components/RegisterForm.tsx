@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import FormField, { FormAlert, SUBMIT_CLASS } from "@/components/FormField";
 import {
   API_FIELD_MESSAGES,
@@ -54,11 +53,9 @@ function validar(valores: Valores): Partial<Record<Campo, string>> {
 /**
  * Registro: POST /users con las credenciales y el perfil opcional, y después
  * POST /auth/login con las mismas credenciales (lo hace register()). Si todo
- * sale bien hay sesión y se entra al panel.
+ * sale bien hay sesión, y GuestGuard lleva al panel.
  */
 export default function RegisterForm() {
-  const router = useRouter();
-
   const [valores, setValores] = useState<Valores>(VALORES_INICIALES);
   const [errores, setErrores] = useState<Partial<Record<Campo, string>>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
@@ -97,7 +94,6 @@ export default function RegisterForm() {
         phone: textOrNull(valores.phone),
         address: textOrNull(valores.address),
       });
-      router.replace("/");
     } catch (e) {
       setEnviando(false);
 

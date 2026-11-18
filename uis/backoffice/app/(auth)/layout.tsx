@@ -1,10 +1,13 @@
 import BrandLogo from "@/components/BrandLogo";
+import GuestGuard from "@/components/GuestGuard";
 import { COMPANY } from "@/lib/company";
 
 /**
  * Layout de /login y /register: una tarjeta centrada, sin barra lateral.
  * Sin sesión, la navegación del backoffice solo llevaría a pantallas que
  * devuelven a /login.
+ *
+ * GuestGuard hace lo contrario que AuthGuard: con sesión, saca de aquí.
  */
 export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
@@ -16,7 +19,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         </div>
 
         <main className="rounded-lg border border-marca-800 bg-marca-900 p-6 shadow-lg">
-          {children}
+          <GuestGuard>{children}</GuestGuard>
         </main>
 
         <p className="mt-6 text-center text-xs text-slate-500">
