@@ -6,6 +6,7 @@ Arranque, desde services/api:
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import ExitStack, asynccontextmanager
 
@@ -27,6 +28,24 @@ from .domains.users.router import router as users_router
 from .mailer import build_mailer
 
 
+def configure_logging() -> None:
+    """Que los mensajes INFO de la API (`nexova.*`) salgan en la consola.
+
+    Uvicorn solo configura sus propios loggers. Sin esto, los de la API se
+    quedan en el nivel por defecto de Python (WARNING): se ve cuándo falla un
+    envío de email, pero no cuándo sale bien, y al diagnosticar «no me llega
+    el correo» no hay forma de saber si llegó a salir.
+    """
+    logger = logging.getLogger("nexova")
+    logger.setLevel(logging.INFO)
+    if not logger.handlers:  # --reload vuelve a importar: un solo handler
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)-9s %(name)s - %(message)s"))
+        logger.addHandler(handler)
+        # Ya escribe aquí; sin esto, un handler en la raíz lo duplicaría.
+        logger.propagate = False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Comprueba el secreto y abre las bases de datos al arrancar; las cierra al parar.
@@ -37,6 +56,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """
     settings: Settings = app.state.settings
     settings.require_jwt_secret()
+    configure_logging()
     # ExitStack: si falla la apertura de una, se cierran las ya abiertas.
     with ExitStack() as stack:
         app.state.suppliers = stack.enter_context(SupplierRepository(settings.suppliers_db_path))
