@@ -89,6 +89,18 @@ Lo fija el briefing [`incidents-file-analysis.es.md`](../docs/contexts/proyectos
 
 **`customer_email` es un dato personal**: nunca se imprime, se registra ni se exporta, ni siquiera en un mensaje de error. Por eso el fichero no puede enviarse a herramientas de IA externas.
 
+### Vocabulario de cuentas — autenticación de la API (AUTH-01)
+
+Lo fija el enunciado del ticket **AUTH-01**. Los valores se usan literalmente:
+
+| Término | Qué significa aquí | Nombre en el código |
+| --- | --- | --- |
+| **Cuenta** | Las credenciales con las que alguien entra: email, contraseña (solo su hash), si está activa y su rol | `User` |
+| **Perfil** | Los datos personales de esa cuenta, uno por cuenta: nombre, teléfono y dirección | `Profile` |
+| **Rol** | Qué puede hacer la cuenta. Hoy solo `admin` tiene permisos propios: lista cuentas y cambia roles | `admin`, `manager`, `user` |
+
+**El perfil y el email son datos personales**, como `customer_email`: las capturas y las pruebas usan cuentas inventadas (`ana@nexova.es`, `prueba@nexova.es`), nunca la de una persona real.
+
 ### Etiquetas de dominio — regla dura
 
 Los valores crudos de la API (`in_progress`, `personal_interview`, `offer_presented`…) **no aparecen nunca en la interfaz**. La traducción vive en un único mapa por aplicación. El detalle y la verificación, en [`.agents/rules/backoffice-nextjs.md`](../.agents/rules/backoffice-nextjs.md) y en la skill [`verificar-etiquetas-de-dominio`](../.agents/skills/verificar-etiquetas-de-dominio/SKILL.md).

@@ -1,8 +1,7 @@
 """Pruebas de las reglas del directorio de proveedores (service).
 
-Las rutas HTTP se prueban a mano con el servidor arrancado: el cliente de
-pruebas de FastAPI necesita httpx, que no es una dependencia aprobada. Aquí
-se prueba todo lo que decide algo, sobre un fichero temporal de TinyDB.
+Aquí se prueba todo lo que decide algo, sobre un fichero temporal de TinyDB.
+Las rutas HTTP, con su candado, están en `test_protected_routes.py`.
 
 Se ejecutan desde services/api:
     uv run python -m unittest discover -s tests

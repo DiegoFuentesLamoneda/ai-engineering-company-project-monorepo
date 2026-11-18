@@ -7,6 +7,7 @@ El router no decide reglas: valida la entrada con los modelos, llama al
 | --- | --- |
 | 200 | Lectura, cambio o borrado correcto (el borrado devuelve el proveedor) |
 | 201 | Proveedor creado |
+| 401 | Sin token, o token no válido o caducado (todas las rutas) |
 | 404 | El ID no existe |
 | 409 | Borrar un proveedor suspendido |
 | 422 | El cuerpo o los filtros no cumplen el BRIEFING (lo responde FastAPI) |
@@ -22,13 +23,20 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from ...schemas import ErrorResponse
+from ..auth.dependencies import UNAUTHORIZED, get_current_user
 from . import service
 from .database import SupplierRepository
 from .dependencies import get_supplier_repository
 from .exceptions import SupplierNotFoundError, SuspendedSupplierDeletionError
 from .schemas import Category, Country, RateUpdate, StatusUpdate, Supplier, SupplierCreate
 
-router = APIRouter(prefix="/suppliers", tags=["suppliers"])
+# El candado, una vez para todo el router: cada ruta de aquí pide token.
+router = APIRouter(
+    prefix="/suppliers",
+    tags=["suppliers"],
+    dependencies=[Depends(get_current_user)],
+    responses=UNAUTHORIZED,
+)
 
 Repo = Annotated[SupplierRepository, Depends(get_supplier_repository)]
 
