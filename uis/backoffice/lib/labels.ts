@@ -5,6 +5,7 @@ import type {
   IncidentStatus,
   SatisfactionScore,
 } from "@/types/incident";
+import type { Category, Country, SupplierStatus } from "@/types/supplier";
 
 /**
  * Etiquetas visibles en la interfaz.
@@ -93,3 +94,51 @@ export const SATISFACTION_SCORE_LABELS: Record<SatisfactionScore, string> = {
   4: "Satisfecho",
   5: "Muy satisfecho",
 };
+
+// --- Directorio de proveedores (docs/contexts/proyectos/supplier-directory.es.md) ---
+// El BRIEFING solo da los valores en ingles. Estas etiquetas las aprobo Diego
+// el 11/11/2026; "activo" y "suspendido" son las palabras del propio BRIEFING.
+
+export const COUNTRY_LABELS: Record<Country, string> = {
+  Spain: "España",
+  USA: "Estados Unidos",
+};
+
+export const CATEGORY_LABELS: Record<Category, string> = {
+  job_boards: "Portales de empleo",
+  ats_software: "Software ATS",
+  assessment_tools: "Herramientas de evaluación",
+  training_platforms: "Plataformas de formación",
+  payroll_and_hr_software: "Nóminas y software de RR. HH.",
+  video_interview: "Entrevistas por vídeo",
+  background_check: "Verificación de antecedentes",
+  office_and_facilities: "Oficina e instalaciones",
+  it_and_software_licenses: "Licencias de IT y software",
+};
+
+export const SUPPLIER_STATUS_LABELS: Record<SupplierStatus, string> = {
+  active: "Activo",
+  suspended: "Suspendido",
+};
+
+export const SUPPLIER_STATUS_BADGE_STYLES: Record<SupplierStatus, string> = {
+  active: "bg-emerald-700 text-emerald-50",
+  suspended: "bg-red-900 text-red-100",
+};
+
+/** Orden en desplegables y casillas: el del BRIEFING. */
+export const COUNTRY_VALUES: Country[] = ["Spain", "USA"];
+
+export const CATEGORY_VALUES: Category[] = [
+  "job_boards",
+  "ats_software",
+  "assessment_tools",
+  "training_platforms",
+  "payroll_and_hr_software",
+  "video_interview",
+  "background_check",
+  "office_and_facilities",
+  "it_and_software_licenses",
+];
+
+export const SUPPLIER_STATUS_VALUES: SupplierStatus[] = ["active", "suspended"];

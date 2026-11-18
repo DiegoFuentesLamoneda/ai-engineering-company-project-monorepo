@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
+from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -20,10 +21,16 @@ DEFAULT_CORS_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
 # La exportación de producción puede llegar al millón de filas (~150 MB).
 DEFAULT_MAX_UPLOAD_MB = 200
 
+# Fichero de TinyDB del directorio de proveedores. Relativo a services/api y
+# no a la carpeta desde la que se lanza el comando: la API y el seeder
+# tienen que abrir siempre el mismo fichero.
+DEFAULT_SUPPLIERS_DB_PATH = Path(__file__).resolve().parents[1] / "storage" / "suppliers.json"
+
 
 class Settings(BaseModel):
     cors_origins: list[str] = Field(min_length=1)
     max_upload_mb: int = Field(gt=0)
+    suppliers_db_path: Path = DEFAULT_SUPPLIERS_DB_PATH
 
     @field_validator("cors_origins")
     @classmethod
@@ -44,6 +51,7 @@ def load_settings(env: Mapping[str, str] = os.environ) -> Settings:
 
     - `NEXOVA_API_CORS_ORIGINS`: orígenes permitidos, separados por comas.
     - `NEXOVA_API_MAX_UPLOAD_MB`: tamaño máximo del CSV subido, en MB.
+    - `NEXOVA_API_SUPPLIERS_DB_PATH`: fichero JSON de TinyDB de proveedores.
     """
     raw_origins = env.get("NEXOVA_API_CORS_ORIGINS")
     origins = (
@@ -54,4 +62,5 @@ def load_settings(env: Mapping[str, str] = os.environ) -> Settings:
     return Settings(
         cors_origins=origins,
         max_upload_mb=env.get("NEXOVA_API_MAX_UPLOAD_MB", DEFAULT_MAX_UPLOAD_MB),
+        suppliers_db_path=env.get("NEXOVA_API_SUPPLIERS_DB_PATH") or DEFAULT_SUPPLIERS_DB_PATH,
     )

@@ -8,6 +8,12 @@ import type {
   Status,
 } from "@/types/candidate";
 import type { IncidentAnalysis } from "@/types/incident";
+import type {
+  Supplier,
+  SupplierFilters,
+  SupplierInput,
+  SupplierStatus,
+} from "@/types/supplier";
 
 /**
  * El backoffice habla con dos APIs:
@@ -58,6 +64,7 @@ interface ErrorBody {
 const MENSAJES_POR_ESTADO: Record<number, string> = {
   400: "La peticion no es valida.",
   404: "No se ha encontrado el recurso.",
+  409: "La operación no está permitida en el estado actual.",
   413: "El fichero es demasiado grande.",
   415: "El tipo de fichero no es valido.",
   422: "Hay datos que no son validos.",
@@ -81,14 +88,24 @@ async function construirError(res: Response): Promise<ApiError> {
   }
 
   // Formato B (FastAPI) -> { detail: [{ loc: ["body", "email"], msg: "..." }] }
+  // Una regla que relaciona dos campos (moneda segun el pais) llega con
+  // loc: ["body"]: no es de ningun campo, asi que va al mensaje general.
+  let errorDelCuerpo: string | undefined;
   if (Array.isArray(body?.detail)) {
     for (const item of body.detail) {
+      // Pydantic antepone "Value error, " a los mensajes de nuestras reglas.
+      const msg = item.msg.replace(/^Value error, /, "");
+      if (item.loc.length === 1 && item.loc[0] === "body") {
+        errorDelCuerpo = msg;
+        continue;
+      }
       const campo = String(item.loc[item.loc.length - 1]);
-      fieldErrors[campo] = item.msg;
+      fieldErrors[campo] = msg;
     }
   }
 
   const mensaje =
+    errorDelCuerpo ??
     body?.error ??
     (typeof body?.detail === "string" ? body.detail : undefined) ??
     MENSAJES_POR_ESTADO[res.status] ??
@@ -248,4 +265,42 @@ export function analyzeIncidents(file: File): Promise<IncidentAnalysis> {
 export async function downloadIncidentResults(): Promise<Blob> {
   const res = await send(NEXOVA_API, "/api/incidents/results/export");
   return res.blob();
+}
+
+// --- Directorio de proveedores (services/api) ---
+// Sin prefijo /api: son las rutas literales del enunciado.
+
+/** El directorio, ya ordenado por nombre. Los filtros vacios no viajan. */
+export function getSuppliers(filters: SupplierFilters = {}): Promise<Supplier[]> {
+  const params = new URLSearchParams();
+  if (filters.country) params.set("country", filters.country);
+  if (filters.category) params.set("category", filters.category);
+  const query = params.toString();
+
+  return request<Supplier[]>(`/suppliers${query ? `?${query}` : ""}`, {}, NEXOVA_API);
+}
+
+export function createSupplier(input: SupplierInput): Promise<Supplier> {
+  return request<Supplier>(
+    "/suppliers",
+    { method: "POST", body: JSON.stringify(input) },
+    NEXOVA_API,
+  );
+}
+
+/** Cambia la tarifa. La API renueva updated_at. */
+export function updateSupplierRate(id: number, monthlyRate: number): Promise<Supplier> {
+  return request<Supplier>(
+    `/suppliers/${id}/rate`,
+    { method: "PATCH", body: JSON.stringify({ monthly_rate: monthlyRate }) },
+    NEXOVA_API,
+  );
+}
+
+export function updateSupplierStatus(id: number, status: SupplierStatus): Promise<Supplier> {
+  return request<Supplier>(
+    `/suppliers/${id}/status`,
+    { method: "PATCH", body: JSON.stringify({ status }) },
+    NEXOVA_API,
+  );
 }
