@@ -40,7 +40,8 @@ Todo el backoffice pide sesión. Las cuentas son las de la API propia,
   30 minutos, la API responde `401` o se cierra en otra pestaña), `/login` lo explica.
 
 Vistas protegidas: `/`, `/candidates`, `/candidates/new`, `/candidates/[id]`,
-`/candidates/[id]/edit`, `/incidents`, `/suppliers`, `/suppliers/new` y `/account/profile`.
+`/candidates/[id]/edit`, `/incidents`, `/suppliers`, `/suppliers/new`, `/account/profile` y
+`/account/change-password`.
 
 ### Mi perfil (`/account/profile`)
 
@@ -48,6 +49,17 @@ Vistas protegidas: `/`, `/candidates`, `/candidates/new`, `/candidates/[id]`,
 - **Nombre, teléfono y dirección**, editables (`PUT /profiles/me`). Dejar un campo vacío lo
   borra.
 - El nombre del menú de sesión, arriba a la derecha, se actualiza al guardar, sin recargar.
+- Un enlace a **Cambiar la contraseña**.
+
+### Cambiar la contraseña (`/account/change-password`)
+
+- Pide la contraseña actual, la nueva y la nueva otra vez (`POST /auth/change-password`).
+- Antes de llamar a la API comprueba que la confirmación coincide, la longitud mínima y que la
+  nueva no sea igual que la actual. Si algo falla, no se envía nada.
+- Si la actual no es correcta, el mensaje de la API sale bajo ese campo y la sesión sigue igual.
+- Si sale bien, se guarda el token nuevo que devuelve la API y se sigue dentro. Las sesiones
+  abiertas en otros navegadores o equipos se cierran en su siguiente petición.
+- En el menú lateral sigue marcado «Mi perfil»: es parte de la cuenta.
 
 ### Panel (`/`)
 
@@ -176,6 +188,7 @@ app/                         Rutas (App Router)
     suppliers/               Directorio de proveedores
     suppliers/new/           Alta de proveedor
     account/profile/         Mi perfil
+    account/change-password/ Cambiar la contraseña con la actual
 components/
   AppNav.tsx                 Navegación entre secciones
   AuthGuard.tsx              Sin sesión, a /login?next=…; cierra la sesión cuando caduca
@@ -187,6 +200,7 @@ components/
   ForgotPasswordForm.tsx     Pedir el enlace de restablecimiento
   ResetPasswordForm.tsx      Contraseña nueva con el token de ?token=
   ProfileForm.tsx            Formulario de Mi perfil
+  ChangePasswordForm.tsx     Cambiar la contraseña con la actual
   FormField.tsx              Campo con etiqueta y error accesible, común a los formularios
   BrandLogo.tsx              Logotipo de Nexova, en línea
   PipelineSummary.tsx        Estado del proceso en vivo

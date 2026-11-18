@@ -8,6 +8,8 @@ interface NavItem {
   label: string;
   /** Descripcion breve, solo visible en la barra lateral. */
   hint: string;
+  /** Prefijo de las rutas que lo marcan como activo, si no es el propio href. */
+  section?: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -15,7 +17,13 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/candidates", label: "Candidaturas", hint: "Seguimiento del proceso activo" },
   { href: "/incidents", label: "Incidencias", hint: "Análisis de tickets de soporte" },
   { href: "/suppliers", label: "Proveedores", hint: "Directorio de proveedores externos" },
-  { href: "/account/profile", label: "Mi perfil", hint: "Tu cuenta y datos de contacto" },
+  {
+    href: "/account/profile",
+    label: "Mi perfil",
+    hint: "Tu cuenta y datos de contacto",
+    // También en /account/change-password: es parte de la cuenta.
+    section: "/account",
+  },
 ];
 
 interface Props {
@@ -35,7 +43,7 @@ export default function AppNav({ orientation = "vertical" }: Props) {
       {NAV_ITEMS.map((item) => {
         // "/" solo esta activo en la raiz; el resto tambien en sus subrutas.
         const activo =
-          item.href === "/" ? ruta === "/" : ruta.startsWith(item.href);
+          item.href === "/" ? ruta === "/" : ruta.startsWith(item.section ?? item.href);
 
         return (
           <Link

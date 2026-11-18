@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import ProfileForm from "@/components/ProfileForm";
 
 export const metadata: Metadata = {
@@ -14,6 +15,24 @@ export default function ProfilePage() {
       </header>
 
       <ProfileForm />
+
+      <section
+        aria-labelledby="password-heading"
+        className="mt-6 max-w-lg rounded-lg border border-marca-800 bg-marca-900 p-6"
+      >
+        <h2 id="password-heading" className="text-sm font-semibold text-white">
+          Contraseña
+        </h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Al cambiarla se cierran las sesiones abiertas en otros navegadores o equipos.
+        </p>
+        <Link
+          href="/account/change-password"
+          className="mt-4 inline-block rounded-md border border-marca-700 px-3 py-1.5 text-sm text-slate-200 transition-colors hover:bg-marca-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-400"
+        >
+          Cambiar la contraseña
+        </Link>
+      </section>
     </div>
   );
 }

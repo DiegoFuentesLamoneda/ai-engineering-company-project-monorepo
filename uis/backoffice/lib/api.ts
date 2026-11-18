@@ -432,6 +432,33 @@ export function resetPassword(token: string, newPassword: string): Promise<Messa
   );
 }
 
+/**
+ * POST /auth/change-password, con la sesion iniciada, y guarda el token nuevo.
+ *
+ * Cambiar la contraseña invalida todos los tokens emitidos antes, tambien el
+ * de esta sesion: sin guardar el que devuelve la API, la siguiente peticion
+ * daria 401 y se cerraria la sesion de quien acaba de cambiarla. Las demas
+ * sesiones (otro navegador, otro equipo) se quedan con el viejo y se cierran.
+ *
+ * Un 400 es "la actual no es correcta" o "la nueva es igual que la actual",
+ * con el mensaje de la API. Si falla, el token de ahora no se toca.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<Token> {
+  const token = await request<Token>(
+    "/auth/change-password",
+    {
+      method: "POST",
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    },
+    NEXOVA_API,
+  );
+  saveToken(token.access_token);
+  return token;
+}
+
 /** Cierra la sesion. El JWT no tiene estado en la API: basta con olvidarlo. */
 export function logout(): void {
   clearToken("logout");
