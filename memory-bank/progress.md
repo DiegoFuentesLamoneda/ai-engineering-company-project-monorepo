@@ -131,6 +131,10 @@ Rama `feature/auth-frontend`, salida de `main` después de fusionar #6, #7 y #8.
 
 Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), memoria y harness de agentes (8), workflows agénticos (9) y tiempo real (10).
 
+**Qué proyecto toca lo marca la web de 4Geeks**, y Diego pega el enunciado al empezar. Que un contexto esté en `docs/contexts/` no lo convierte en el siguiente.
+
+**Rama del siguiente proyecto (18/11/2026):** la PR #9 sigue abierta, a la espera de la revisión del campus. Si el siguiente proyecto necesita el login del backoffice o algo de AUTH-02, su rama sale de `feature/auth-frontend` y se apila, como #7 y #8. Si no lo necesita, sale de `main`.
+
 ## Deuda técnica y decisiones aplazadas
 
 | Asunto | Estado |
