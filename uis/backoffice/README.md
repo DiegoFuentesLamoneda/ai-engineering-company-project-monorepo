@@ -3,11 +3,11 @@
 La **aplicación interna** de Nexova: el sitio donde el equipo trabaja, frente a
 [`uis/website`](../website/), que es la cara pública de la empresa.
 
-Hoy cubre las **operaciones de selección**. A medida que avancen los hitos irá albergando el
+Hoy cubre las **operaciones de selección** y el **análisis de incidencias de soporte**. A medida que avancen los hitos irá albergando el
 resto de capacidades internas —formación, soporte, RR. HH.— como secciones nuevas, en lugar de
 crear una aplicación por cada una.
 
-Hitos 3 y 4 del proyecto transversal de AI Engineering · 4Geeks Academy.
+Hitos 3 y 4 y proyecto «Analizador de Incidencias» del proyecto transversal de AI Engineering · 4Geeks Academy.
 
 ---
 
@@ -35,6 +35,21 @@ el proceso de **Asistente de Dirección** (sede de Valencia):
 - **Cambio de estado y etapa** desde el detalle (`PATCH`).
 - **Notas internas**: listar, añadir y eliminar.
 - **Alta** de nuevas candidaturas (`POST`) y **edición** de las existentes (`PUT`).
+
+### Incidencias (`/incidents`)
+
+Análisis de la exportación CSV del helpdesk de soporte al cliente:
+
+- **Subida** del CSV arrastrándolo a la zona de carga o eligiéndolo con el selector de archivos.
+- **Totales**: registros leídos, válidos e inválidos.
+- **Registros no válidos por tipo**: cuántos incumplen cada regla y, desplegable, en qué línea
+  del fichero está cada uno.
+- **Desglose por categoría y por estado**, con número de tickets y porcentaje sobre los válidos.
+- **Índice de satisfacción**: media de los tickets cerrados y reparto de puntuaciones del 1 al 5.
+- **Descarga** de `results.csv`, el mismo fichero que genera `scripts/analyze.py`.
+
+El análisis lo hace la API propia, [`services/api`](../../services/api/), que debe estar
+arrancada (ver su README). El email de los clientes no aparece en ninguna parte del resultado.
 
 ---
 
@@ -66,6 +81,7 @@ La app queda en `http://localhost:3000`.
 | Variable | Descripción |
 | --- | --- |
 | `NEXT_PUBLIC_API_URL` | URL base de la API del tracker |
+| `NEXT_PUBLIC_NEXOVA_API_URL` | URL base de la API propia, [`services/api`](../../services/api/) (`http://localhost:8000` en local) |
 
 `.env.local` **no se versiona**. `.env.example` sí, como plantilla.
 
@@ -94,18 +110,22 @@ app/                         Rutas (App Router)
   candidates/new/            Alta
   candidates/[id]/           Detalle
   candidates/[id]/edit/      Edición
+  incidents/                 Análisis de incidencias
 components/
   AppNav.tsx                 Navegación entre secciones
   BrandLogo.tsx              Logotipo de Nexova, en línea
   PipelineSummary.tsx        Estado del proceso en vivo
   Candidate*.tsx             Interfaz del tracker
+  Incident*.tsx              Subida, resultado y descarga del análisis de incidencias
 hooks/                       Lógica de datos reutilizable
+  useIncidentAnalysis.ts     Estado del análisis: fichero, carga, error y resultado
 lib/
-  api.ts                     Cliente único de la API
+  api.ts                     Cliente único de las dos APIs (tracker y services/api)
   company.ts                 Datos de empresa tomados de CONTEXT.md
   labels.ts                  Etiquetas de dominio en español
-  format.ts                  Formato de fechas
-types/candidate.ts           Contrato de la API en TypeScript
+  format.ts                  Formato de fechas, números y porcentajes
+types/candidate.ts           Contrato de la API del tracker en TypeScript
+types/incident.ts            Contrato de la API de incidencias en TypeScript
 ```
 
 Las páginas son Server Components; `"use client"` se aplica solo en los componentes que
@@ -114,6 +134,9 @@ necesitan interacción, para reducir el JavaScript enviado al navegador.
 ---
 
 ## Contrato de la API
+
+Esta sección describe la API del tracker. La de incidencias está documentada en
+[`services/api/README.md`](../../services/api/README.md).
 
 Explorado con Postman antes de escribir código. Lo relevante:
 
@@ -193,3 +216,23 @@ distintas, así que la interfaz lo dice en vez de elegir.
 hubiera más, el reparto por estado y etapa sería el de esa muestra, no el total, y el panel lo
 dice en pantalla. Un panel que enseña números parciales como si fueran totales miente, y a
 partir de ahí nadie se fía de ninguno.
+
+**Incidencias: el navegador no calcula nada.** Totales, porcentajes y media llegan hechos de la
+API, que usa el mismo paquete que el script (`packages/incident-analysis`). Si el front volviera a
+calcular, habría dos implementaciones que con el tiempo darían cifras distintas.
+
+**El análisis no vive en la URL.** A diferencia de los filtros del tracker, un fichero no cabe en
+un enlace. El resultado está en el estado del componente: al recargar la página hay que volver a
+subir el CSV.
+
+**La subida va en `FormData` sin `Content-Type` a mano.** El navegador pone
+`multipart/form-data` con su *boundary*, la marca que separa las partes del cuerpo. Fijar la
+cabecera a mano la pierde y la API no sabría leer el fichero.
+
+**La descarga pasa por `fetch`, no por un enlace directo.** Así un 404 (no hay análisis) o la API
+caída se muestran como un mensaje en pantalla, y no como una pestaña con un JSON de error.
+
+**Las reglas de validación, con etiqueta en español.** Los códigos de la API
+(`closed_without_score`, `invalid_email`…) se traducen en `lib/labels.ts`, como los estados del
+tracker. La excepción consciente es el error de columnas que faltan: nombra las columnas tal y
+como se llaman en la cabecera del CSV, porque es lo que hay que corregir en el fichero.

@@ -1,0 +1,13 @@
+# Dependencias de la API de Nexova. Se instalan desde services/api:
+#   pip install -r requirements.txt
+# La ruta del paquete compartido es relativa a esa carpeta.
+
+# Lógica de análisis de tickets: la misma que usa scripts/analyze.py.
+# -e (editable) enlaza la carpeta en vez de copiarla: un cambio en el paquete
+# se ve en la API sin reinstalar.
+-e ../../packages/incident-analysis
+
+fastapi==0.162.0
+uvicorn==0.54.0
+# Lo necesita FastAPI para leer formularios multipart (subida de ficheros).
+python-multipart==0.0.33

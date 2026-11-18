@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexova-incident-analysis"
+version = "0.1.0"
+description = "Validación y métricas de los ficheros de tickets de soporte de Nexova"
+requires-python = ">=3.11"
+# Sin dependencias de runtime, a propósito: solo librería estándar.
+dependencies = []
+
+[tool.setuptools]
+packages = ["incident_analysis"]

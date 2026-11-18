@@ -6,6 +6,8 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+# Metadatos que genera `pip install -e` de un paquete local
+*.egg-info/
 
 # Entorno
 .env*
@@ -23,6 +25,10 @@ Thumbs.db
 
 # Nota: uis/website/styles.css SI se versiona. Lo genera el CLI de Tailwind,
 # pero el sitio es estatico y debe funcionar sin pasos de build al clonarlo.
+
+# Exportacion del analizador de tickets (scripts/analyze.py): es una salida,
+# se genera en la carpeta desde la que se ejecuta el script
+results.csv
 
 # Salida de compilacion de TypeScript
 packages/talent-core/dist/
