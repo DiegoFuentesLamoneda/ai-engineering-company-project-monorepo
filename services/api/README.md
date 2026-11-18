@@ -75,6 +75,11 @@ app/
    │  ├─ security.py    firmar y verificar el JWT (HS256). El único módulo que importa jose
    │  ├─ schemas.py     Token y Me
    │  └─ exceptions.py
+   ├─ password_resets/  restablecimiento de contraseña (AUTH-03): enlaces de un solo uso
+   │  ├─ service.py     emitir un token (aleatorio, 256 bits) y gastarlo: existe, sin usar, sin caducar
+   │  ├─ schemas.py     ResetToken: se guarda el SHA-256 del token, nunca el token
+   │  ├─ database.py    TinyDB. Marcar como usado comprueba y escribe dentro del mismo cerrojo
+   │  └─ exceptions.py  InvalidResetTokenError: un solo mensaje, el motivo aparte para la auditoría
    ├─ incidents/
    │  ├─ router.py      HTTP: recibe la subida, llama al service, elige el código
    │  ├─ service.py     reglas de la subida y el último análisis. No importa fastapi
