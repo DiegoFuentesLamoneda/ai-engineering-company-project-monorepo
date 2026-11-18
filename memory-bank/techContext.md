@@ -10,12 +10,12 @@
 | [`uis/website/`](../uis/website/) | Web pública de Nexova: landing + formulario de registro de talento | HTML5, Tailwind 4 (CLI), JS sin dependencias | 1 |
 | [`packages/talent-core/`](../packages/talent-core/) | Motor de scoring de candidatos y matching de vacantes | TypeScript 5, `node:test`, `tsx` | 2 |
 | [`uis/talent-lab/`](../uis/talent-lab/) | Banco de pruebas manual de `talent-core`: dispara sus 18 funciones desde botones | HTML + Tailwind 4 + el `dist/` de `talent-core` | 2 |
-| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas, análisis de incidencias de soporte y directorio de proveedores | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias · Directorio de proveedores |
+| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas, análisis de incidencias de soporte y directorio de proveedores, con login, registro, perfil y recuperación y cambio de contraseña | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias · Directorio de proveedores · AUTH-02 · AUTH-03 |
 | [`packages/shared/`](../packages/shared/) | `@repo/shared-types` — viene de la plantilla, prácticamente vacío | TypeScript | — |
 | [`packages/incident-analysis/`](../packages/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte. Lógica única que comparten el script y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias |
 | [`scripts/analyze.py`](../scripts/analyze.py) | Analizador de tickets por consola, con exportación a `results.csv` | Python 3, usa `incident-analysis` | Analizador de incidencias |
 | [`scripts/sync_contexts.py`](../scripts/sync_contexts.py) | Descarga los contextos del syllabus y los coloca en `docs/contexts/` | Python 3, solo stdlib | — |
-| [`services/api/`](../services/api/) | Backend de Nexova. Dominios: `incidents` (análisis del CSV subido y exportación del último análisis), `suppliers` (directorio de proveedores con su seeder, `uv run seed`), `users` y `profiles` (cuentas y sus datos personales, con `uv run create-admin`) y `auth` (login con JWT). Todo menos el registro y el login pide token | Python 3.11+, FastAPI, Pydantic 2, uvicorn, TinyDB, python-jose, libpass, uv | Analizador de incidencias · Directorio de proveedores · Autenticación (AUTH-01) |
+| [`services/api/`](../services/api/) | Backend de Nexova. Dominios: `incidents` (análisis del CSV subido y exportación del último análisis), `suppliers` (directorio de proveedores con su seeder, `uv run seed`), `users` y `profiles` (cuentas y sus datos personales, con `uv run create-admin`) `auth` (login con JWT) y `password_resets` (enlace de restablecimiento por email, cambio de contraseña y su auditoría). Todo menos el registro, el login y la recuperación de contraseña pide token. Envía email con Resend | Python 3.11+, FastAPI, Pydantic 2, uvicorn, TinyDB, python-jose, libpass, uv | Analizador de incidencias · Directorio de proveedores · Autenticación (AUTH-01) · AUTH-03 |
 
 Las carpetas `data/`, `agents/`, `mcps/`, `workflows/`, `infra/` e `internal/` existen con su README pero **están vacías a propósito**. Se llenarán en los hitos que las necesiten. No se crean subcarpetas "por si acaso".
 
@@ -50,7 +50,7 @@ El prefijo `NEXT_PUBLIC_` incrusta la variable en el bundle del navegador — **
 
 El backoffice habla además con la API propia, `services/api/`, para el análisis de incidencias y el directorio de proveedores: variable **`NEXT_PUBLIC_NEXOVA_API_URL`** (`http://localhost:8000` en local). Las dos APIs pasan por el mismo `request()` de `lib/api.ts`, cada una con su URL base.
 
-> **Desde AUTH-01 (13/11/2026), la API propia pide token y el backoffice todavía no hace login.** Sus pantallas de incidencias y proveedores reciben `401` y muestran el mensaje de la API. Mientras no tenga pantalla de login, esas rutas se usan desde `/docs`. El token irá en la cabecera `Authorization`, y nunca en `localStorage` sin pensarlo antes: es una decisión pendiente para cuando se haga el login.
+> **Desde AUTH-02 (18/11/2026), el backoffice hace login** y manda el token en `Authorization: Bearer` en cada llamada a la API propia. La API mock del tracker no lo recibe: no es nuestra y no lo pide. Cómo se guarda la sesión y por qué, en la decisión «Backoffice: sesión con el token en `localStorage` y guardia en el cliente».
 
 ## Decisiones de arquitectura tomadas
 
@@ -160,6 +160,34 @@ Decidido el 12–13/11/2026, con AUTH-01. Lo fija el enunciado: `python-jose` pa
 - **El primer admin sale de `uv run create-admin`.** `POST /users` crea siempre cuentas `user`, y solo un admin cambia roles.
 - **El login no dice qué ha fallado.** Email desconocido, contraseña mala y cuenta desactivada dan el mismo `401`, en el mismo tiempo (se verifica contra un hash de relleno).
 - **Amplía la tabla de errores:** `401` para quien no está identificado, con la cabecera `WWW-Authenticate: Bearer`; `403` para quien está identificado pero no tiene permiso.
+- **Cambiar la contraseña cierra las demás sesiones** (18/11/2026, con AUTH-03). Sigue la idea de arriba, que el cambio cuente desde la petición siguiente, y la amplía a la contraseña: el usuario guarda `password_changed_at` y `get_current_user` rechaza los tokens con un `iat` anterior (comparado al segundo, redondeando hacia abajo). Vale para el enlace del email, `change-password` y `PUT /users/{id}`. `change-password` devuelve un token nuevo para que quien cambia siga dentro. Las cuentas sin el campo (`None`) no cambian de comportamiento.
+- **`forgot-password` responde antes de buscar** (18/11/2026, con AUTH-03): la búsqueda del usuario, el token y el envío van en `BackgroundTasks`. Así ni el texto ni el tiempo de respuesta dicen qué emails tienen cuenta, el mismo principio que el login.
+- **Límite por cuenta y registro de auditoría** (18/11/2026, con AUTH-03). La tabla `audit` de `password_resets.json` guarda una entrada por solicitud a las tres rutas, y hace también de contador del límite de `forgot-password` (3 enlaces por cuenta y hora, en el mismo cerrojo que la escritura). El límite es por cuenta, no por email: a un email sin cuenta nunca se le envía nada. Pasado el límite se responde el mismo `200`, no un `429`, para no delatar qué emails existen. **Datos de personas, decidido con Diego:** la cuenta va por `user_id` y nunca por el email (un email sin cuenta no se guarda), la IP va completa y las entradas se borran a los 90 días. La IP es la de `request.client`; detrás de un proxy habrá que arrancar uvicorn con `--proxy-headers`.
+
+### Email transaccional: Resend sobre `urllib`, una clave por entorno
+
+Decidido el 18–19/11/2026, con AUTH-03. Diego eligió Resend para el email de restablecimiento.
+
+- **Sin el SDK de Resend.** Enviar es un solo `POST https://api.resend.com/emails`, y no compensa una dependencia nueva para eso. Lo hace [`mailer.py`](../services/api/app/mailer.py) con `urllib`, con un `User-Agent` propio: Resend está detrás de Cloudflare, que rechaza el de urllib.
+- **El servicio no sabe de Resend.** El dominio recibe un `mailer` con un único método, `send`. Sin API key, `build_mailer` elige `LogMailer`, que escribe el email en el log: la API arranca y el flujo se puede probar entero sin cuenta de correo. Cambiar de proveedor es escribir otra clase, no tocar el dominio.
+- **La clave es un secreto de la API, nunca del backoffice.** `NEXOVA_API_RESEND_API_KEY` vive en `services/api/.env` como `SecretStr`. Un `NEXT_PUBLIC_` acabaría en el navegador.
+- **Una clave por entorno, con el mínimo permiso.** La de desarrollo, `nexova-api-local`, solo tiene *Sending access*: si se filtra, no sirve para tocar la cuenta, y se revoca sin afectar a otro entorno. La de acceso completo que crea el alta de Resend se borra.
+- **Los logs `nexova.*` salen en la consola desde `INFO`** (`configure_logging` en [`main.py`](../services/api/app/main.py)). Uvicorn solo configura sus loggers, y sin esto un envío correcto no dejaba rastro. Entre el log («Email enviado a d***@…», siempre con el email enmascarado) y la auditoría, un «no me llega el correo» se diagnostica sin adivinar.
+
+### Backoffice: sesión con el token en `localStorage` y guardia en el cliente
+
+Decidido el 18/11/2026, con AUTH-02. El enunciado fija dos cosas: el token va en `localStorage` y las rutas se protegen con una guardia en el cliente, sin *middleware* de Next.
+
+- **Por qué no una cookie `httpOnly`, que sería más segura.** El enunciado pide `localStorage`, y la API de AUTH-01 es JWT sin estado y sin cookies. Una cookie exigiría cambiar la API y el CORS. Queda anotado para cuando el backoffice salga de la red interna.
+- **El riesgo es el XSS: un script inyectado podría leer el token.** Se acota así: React escapa todo lo que pinta, el backoffice no usa `dangerouslySetInnerHTML` (no se añade sin revisar esto), y el token caduca a los 30 minutos.
+- **Por qué no *middleware*.** Además de que el enunciado lo excluye, el servidor no puede leer `localStorage`. Por eso el HTML que sale del servidor nunca lleva datos: [`AuthGuard`](../uis/backoffice/components/AuthGuard.tsx) no pinta la vista hasta saber que hay sesión. El candado de verdad sigue en la API: aunque alguien saltara la guardia, sin token recibe `401`.
+- **Una sola fuente de verdad para la sesión:** [`lib/session.ts`](../uis/backoffice/lib/session.ts), leída con `useSyncExternalStore`. La caducidad se lee del `exp` del JWT, sin llamar a la API, y la guardia programa un temporizador para cerrar la sesión cuando llegue. El evento `storage` del navegador cierra la sesión en todas las pestañas a la vez.
+- **La navegación sigue a la sesión, no al botón.** Los formularios solo guardan o borran el token, y las guardias deciden adónde ir. Cerrar sesión aquí, en otra pestaña o por un `401` acaba en el mismo sitio, por el mismo camino.
+- **Un `401` de la API propia cierra la sesión** en [`lib/api.ts`](../uis/backoffice/lib/api.ts), que es la única puerta a la API. Al volver a `/login` se explica por qué (`reason=ended`).
+- **El `next` del login se valida** ([`lib/auth-routes.ts`](../uis/backoffice/lib/auth-routes.ts)): solo rutas del propio backoffice. Un enlace con `?next=https://otro-sitio` no saca a nadie fuera tras entrar (redirección abierta).
+- **El perfil se guarda enviando solo lo que cambia**, y `null` borra un campo, que es lo que hace `PUT /profiles/me`. Así dos pestañas que editan campos distintos no se pisan.
+- **Sin librería de estado, como el tracker.** El menú de sesión se entera de un cambio de perfil con un evento del navegador (`nexova:profile`), no con un *store* global. Si aparecen más datos compartidos entre vistas, se reevalúa.
+- **Solo se protege el backoffice.** Es la única aplicación Next.js y la única que llama a la API propia. `uis/website/` es pública por enunciado, y `uis/talent-lab/` no carga datos de nadie.
 
 ### CI acotada por rutas
 

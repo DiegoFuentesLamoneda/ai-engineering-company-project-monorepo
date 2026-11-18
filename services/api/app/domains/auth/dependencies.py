@@ -25,7 +25,7 @@ from ..users.dependencies import get_user_repository
 from ..users.exceptions import UserNotFoundError
 from ..users.schemas import User
 from .exceptions import InvalidTokenError
-from .security import decode_access_token
+from .security import decode_access_token_claims
 
 # Lee `Authorization: Bearer <token>`. `tokenUrl` le dice a `/docs` dónde
 # hacer login con el botón *Authorize*. `auto_error=False`: sin cabecera
@@ -55,14 +55,26 @@ def get_current_user(
     if not token:
         raise unauthorized("Falta el token. Inicia sesión en POST /auth/login.")
     try:
-        user_id = decode_access_token(token, settings.require_jwt_secret())
+        claims = decode_access_token_claims(token, settings.require_jwt_secret())
         # Un token bien firmado de una cuenta ya borrada tampoco vale.
-        user = users_service.get_user(users, user_id)
+        user = users_service.get_user(users, claims.user_id)
     except (InvalidTokenError, UserNotFoundError):
         raise unauthorized("Token no válido o caducado.") from None
-    if not user.is_active:
+    if not user.is_active or _issued_before_password_change(claims.issued_at, user):
         raise unauthorized("Token no válido o caducado.")
     return user
+
+
+def _issued_before_password_change(issued_at: int, user: User) -> bool:
+    """Si el token es de antes del último cambio de contraseña (AUTH-03).
+
+    `iat` va en segundos enteros y la fecha del cambio lleva microsegundos.
+    Se compara con el segundo del cambio redondeado hacia abajo: el token
+    que se emite justo después, en el mismo segundo, tiene que valer.
+    """
+    if user.password_changed_at is None:
+        return False
+    return issued_at < int(user.password_changed_at.timestamp())
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]

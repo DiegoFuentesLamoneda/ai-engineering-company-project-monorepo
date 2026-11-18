@@ -40,6 +40,29 @@ DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES = 30
 # adivinar por fuerza bruta a partir de un token cualquiera.
 MIN_JWT_SECRET_LENGTH = 32
 
+# Fichero de TinyDB del restablecimiento de contraseña (AUTH-03): los tokens
+# emitidos y el registro de auditoría, en dos tablas del mismo fichero.
+DEFAULT_PASSWORD_RESETS_DB_PATH = Path(__file__).resolve().parents[1] / "storage" / "password_resets.json"
+
+# Validez del enlace del email. El ticket pide entre 15 y 60 minutos: lo
+# bastante para abrir el correo, lo bastante corto para que un enlace
+# olvidado en una bandeja de entrada deje de servir pronto.
+DEFAULT_RESET_TOKEN_EXPIRE_MINUTES = 30
+MIN_RESET_TOKEN_EXPIRE_MINUTES = 15
+MAX_RESET_TOKEN_EXPIRE_MINUTES = 60
+
+# Enlaces de restablecimiento por cuenta y hora. Por encima, la API sigue
+# respondiendo 200 pero no envía nada: así nadie usa el formulario para
+# inundar el buzón de otra persona ni gastar la cuota del servicio de correo.
+DEFAULT_RESET_REQUESTS_PER_HOUR = 3
+
+# Adónde apunta el enlace del email: la página /reset-password del backoffice.
+DEFAULT_FRONTEND_URL = "http://localhost:3000"
+
+# Remitente de pruebas de Resend: funciona sin verificar un dominio propio,
+# pero solo entrega al email con el que se creó la cuenta de Resend.
+DEFAULT_EMAIL_FROM = "Nexova Solutions <onboarding@resend.dev>"
+
 
 class Settings(BaseModel):
     cors_origins: list[str] = Field(min_length=1)
@@ -54,6 +77,28 @@ class Settings(BaseModel):
     jwt_secret_key: SecretStr | None = None
     # Un día como máximo: más allá, un token robado da demasiado margen.
     access_token_expire_minutes: int = Field(default=DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES, gt=0, le=1440)
+    password_resets_db_path: Path = DEFAULT_PASSWORD_RESETS_DB_PATH
+    reset_token_expire_minutes: int = Field(
+        default=DEFAULT_RESET_TOKEN_EXPIRE_MINUTES,
+        ge=MIN_RESET_TOKEN_EXPIRE_MINUTES,
+        le=MAX_RESET_TOKEN_EXPIRE_MINUTES,
+    )
+    reset_requests_per_hour: int = Field(default=DEFAULT_RESET_REQUESTS_PER_HOUR, gt=0, le=20)
+    frontend_url: str = DEFAULT_FRONTEND_URL
+    # Opcional: sin clave, el email no sale y el enlace se escribe en el log
+    # de la API, para poder desarrollar y probar sin cuenta de Resend.
+    resend_api_key: SecretStr | None = None
+    email_from: str = Field(default=DEFAULT_EMAIL_FROM, min_length=3)
+
+    @field_validator("frontend_url")
+    @classmethod
+    def http_url_without_trailing_slash(cls, url: str) -> str:
+        # El enlace se construye como f"{frontend_url}/reset-password?token=…":
+        # una barra final daría "//reset-password".
+        url = url.strip().rstrip("/")
+        if not url.startswith(("http://", "https://")):
+            raise ValueError("La URL del frontend tiene que empezar por http:// o https://")
+        return url
 
     @field_validator("jwt_secret_key")
     @classmethod
@@ -100,6 +145,15 @@ def load_settings(env: Mapping[str, str] = os.environ) -> Settings:
     - `NEXOVA_API_JWT_SECRET_KEY`: secreto con el que se firman los tokens.
       Va en `.env`, nunca en el código.
     - `NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES`: minutos de validez del token.
+    - `NEXOVA_API_PASSWORD_RESETS_DB_PATH`: fichero JSON de TinyDB de los
+      restablecimientos de contraseña y su auditoría.
+    - `NEXOVA_API_RESET_TOKEN_EXPIRE_MINUTES`: minutos de validez del enlace
+      de restablecimiento (de 15 a 60).
+    - `NEXOVA_API_RESET_REQUESTS_PER_HOUR`: enlaces por cuenta y hora.
+    - `NEXOVA_API_FRONTEND_URL`: URL del backoffice, para el enlace del email.
+    - `NEXOVA_API_RESEND_API_KEY`: API key de Resend. Va en `.env`, nunca en
+      el código.
+    - `NEXOVA_API_EMAIL_FROM`: remitente de los emails.
     """
     raw_origins = env.get("NEXOVA_API_CORS_ORIGINS")
     origins = (
@@ -118,4 +172,16 @@ def load_settings(env: Mapping[str, str] = os.environ) -> Settings:
         access_token_expire_minutes=env.get(
             "NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES", DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES
         ),
+        password_resets_db_path=env.get("NEXOVA_API_PASSWORD_RESETS_DB_PATH")
+        or DEFAULT_PASSWORD_RESETS_DB_PATH,
+        reset_token_expire_minutes=env.get(
+            "NEXOVA_API_RESET_TOKEN_EXPIRE_MINUTES", DEFAULT_RESET_TOKEN_EXPIRE_MINUTES
+        ),
+        reset_requests_per_hour=env.get(
+            "NEXOVA_API_RESET_REQUESTS_PER_HOUR", DEFAULT_RESET_REQUESTS_PER_HOUR
+        ),
+        frontend_url=env.get("NEXOVA_API_FRONTEND_URL") or DEFAULT_FRONTEND_URL,
+        # Vacía cuenta como ausente, igual que el secreto del JWT.
+        resend_api_key=env.get("NEXOVA_API_RESEND_API_KEY") or None,
+        email_from=env.get("NEXOVA_API_EMAIL_FROM") or DEFAULT_EMAIL_FROM,
     )

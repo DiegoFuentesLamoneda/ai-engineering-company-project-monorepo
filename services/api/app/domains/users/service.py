@@ -166,8 +166,28 @@ def update_user(repo: UserRepository, user_id: UUID, data: UserUpdate, caller: U
         ensure_admin(caller)
     if "password" in changes:
         changes["hashed_password"] = hash_password(changes.pop("password"))
+        changes["password_changed_at"] = _now(None).isoformat()
     if not changes:
         return get_user(repo, user_id)
+    user = repo.update(user_id, changes)
+    if user is None:
+        raise UserNotFoundError()
+    return user
+
+
+def set_password(
+    repo: UserRepository, user_id: UUID, password: str, now: datetime | None = None
+) -> User:
+    """Nueva contraseña sin `caller`: quien llama ya ha demostrado que puede.
+
+    Lo usa el restablecimiento (con el enlace del email) y el cambio de
+    contraseña (con la actual). Anota cuándo, y con eso los tokens emitidos
+    antes dejan de valer (ver `auth.dependencies.get_current_user`).
+    """
+    changes = {
+        "hashed_password": hash_password(password),
+        "password_changed_at": _now(now).isoformat(),
+    }
     user = repo.update(user_id, changes)
     if user is None:
         raise UserNotFoundError()
