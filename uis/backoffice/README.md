@@ -401,3 +401,19 @@ estática y no necesita `<Suspense>`.
 
 **Las pantallas de recuperación son solo sin sesión.** Con sesión, `GuestGuard` lleva al panel:
 quien ha entrado cambia la contraseña desde su cuenta, sabiendo la actual.
+
+## Posibles mejoras
+
+**Avisar de que el enlace está gastado al abrirlo, no al enviar.** Hoy `/reset-password` pide la
+contraseña nueva aunque el enlace ya se haya usado o haya caducado, y el error sale al pulsar
+«Guardar». Probado con un email real en la fase 8: funciona, pero hace escribir dos veces una
+contraseña para nada. Avisar al abrir tiene tres costes, y por eso no entra en AUTH-03:
+
+- **Una ruta más en la API** (por ejemplo, `GET /auth/reset-password/{token}`) solo para
+  consultar si el enlace vale.
+- **Que no delate nada.** Tendría que responder lo mismo para un enlace inventado, caducado o
+  usado, y sin decir de qué cuenta es. Si no, cualquiera podría probar tokens para averiguar qué
+  enlaces existen.
+- **Que la consulta no gaste el enlace.** Algunos filtros de correo (Microsoft Safe Links, por
+  ejemplo) abren los enlaces antes que la persona. La consulta tiene que ser de solo lectura, como
+  hoy lo es abrir la página.

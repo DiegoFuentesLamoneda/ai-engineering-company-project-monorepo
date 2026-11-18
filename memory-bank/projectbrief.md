@@ -99,6 +99,8 @@ Lo fija el enunciado del ticket **AUTH-01**. Los valores se usan literalmente:
 | **Perfil** | Los datos personales de esa cuenta, uno por cuenta: nombre, teléfono y dirección | `Profile` |
 | **Rol** | Qué puede hacer la cuenta. Hoy solo `admin` tiene permisos propios: lista cuentas y cambia roles | `admin`, `manager`, `user` |
 | **Sesión** | El tiempo que alguien pasa dentro del backoffice con un token válido (30 minutos como mucho). En la interfaz: «Iniciar sesión», «Cerrar sesión», «Tu sesión ha terminado» (AUTH-02) | `lib/session.ts` |
+| **Enlace de restablecimiento** | El enlace de un solo uso que llega por email para elegir una contraseña nueva sin saber la actual. Caduca a los 30 minutos y como mucho se envían 3 por cuenta y hora. En la interfaz: «¿Olvidaste tu contraseña?», «Si esa dirección está registrada, recibirás un enlace en breve.» (literal del ticket AUTH-03) | `password_resets` |
+| **Cambiar la contraseña** | Con la sesión iniciada y sabiendo la actual, desde Mi perfil. Cierra las demás sesiones de la cuenta (AUTH-03) | `POST /auth/change-password` |
 
 **El perfil y el email son datos personales**, como `customer_email`: las capturas y las pruebas usan cuentas inventadas (`ana@nexova.es`, `prueba@nexova.es`), nunca la de una persona real.
 

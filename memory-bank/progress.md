@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 18 de noviembre de 2026 (autenticación en el backoffice, AUTH-02)._
+_Última actualización: 19 de noviembre de 2026 (recuperación y cambio de contraseña, AUTH-03)._
 
 ## Entregado
 
@@ -127,7 +127,7 @@ Rama `feature/auth-frontend`, salida de `main` después de fusionar #6, #7 y #8.
 
 **Solo se protege el backoffice.** Es la única aplicación Next.js del monorepo y la única que llama a la API propia. `uis/website/` es pública por enunciado, y `uis/talent-lab/` es un banco de pruebas estático de `talent-core`: no llama a ninguna API ni muestra datos de personas.
 
-## Recuperación y cambio de contraseña (AUTH-03) — en curso
+## Recuperación y cambio de contraseña (AUTH-03) — en revisión (#10)
 
 Rama `feature/password-reset`, **apilada sobre `feature/auth-frontend`** (PR #9 abierta): necesita el `/login` del backoffice. Proyecto «La Pieza Que Faltaba: Flujo de Restablecimiento de Contraseña», ticket **AUTH-03**: `POST /auth/forgot-password`, `/auth/reset-password` y `/auth/change-password`, y sus tres pantallas en el backoffice. El enunciado no está en `docs/contexts/`: lo pegó Diego el 18/11/2026.
 
@@ -143,7 +143,7 @@ Rama `feature/password-reset`, **apilada sobre `feature/auth-frontend`** (PR #9 
 | 6 — Pantallas sin sesión en el [backoffice](../uis/backoffice/): enlace «¿Olvidaste tu contraseña?» en `/login`; `/forgot-password` con el mensaje fijo del ticket y el formulario desactivado tras enviar (solo un fallo de red o de la API sale como error); `/reset-password?token=` con confirmación local, `no-referrer`, éxito a `/login?reason=password-reset` con `replace`, y con enlace no válido el error de la API y «Pedir un enlace nuevo». Ambas estáticas y detrás de `GuestGuard`. Prueba en el navegador con Playwright contra la API real: 26/26 comprobaciones | ✅ |
 | 7 — `/account/change-password` en el backoffice, enlazada desde Mi perfil (el menú sigue marcando «Mi perfil»). Confirmación, longitud y «distinta de la actual» se comprueban antes de llamar a la API. Con la actual incorrecta, el mensaje de la API bajo el campo y la sesión intacta. Si sale bien, `lib/api.ts` guarda el token nuevo y se sigue dentro; las demás sesiones acaban en `/login` con «Tu sesión se ha cerrado». Prueba en el navegador con Playwright contra la API real, con una segunda sesión como «otro equipo»: 20/20 comprobaciones | ✅ |
 | 8 — Verificación de extremo a extremo con un email real (18/11/2026). Clave de Resend propia del entorno local (`nexova-api-local`), solo *Sending access*: envía, y listar dominios da `401 restricted_api_key`; la de acceso completo que crea el alta de Resend, borrada. Diego hizo el recorrido en el navegador con la API real y bases temporales: alta, «¿Olvidaste tu contraseña?», el email llegó a la bandeja de entrada (no a spam), contraseña nueva, `/login` con la nueva; el mismo enlace otra vez da el error de enlace no válido. La auditoría lo anotó todo, incluido un primer intento con una errata en el email (`unknown_account`, sin envío). Ni la clave ni nada con forma de clave en el historial (gitleaks), los archivos versionados, el log ni el build del backoffice | ✅ |
-| 9 — Cierre: banco de memoria, READMEs, ficha en la biblioteca y PR | ⬜ |
+| 9 — Cierre (19/11/2026): los logs `nexova.*` salen en la consola desde `INFO`, para ver también cuándo un email sale bien; captura del email con el token tapado en [`docs/screenshots/`](../docs/screenshots/); «avisar del enlace gastado al abrirlo» anotado como posible mejora en el [README del backoffice](../uis/backoffice/README.md); banco de memoria ([`techContext.md`](./techContext.md): decisión de email transaccional); ficha en la biblioteca y PR hacia `main`: [#10](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/10), abierta el 19/11/2026 para la evaluación del campus. Apilada sobre #9: hasta que se fusione, su diff incluye los commits de AUTH-02 | ✅ |
 
 ## Próximo
 
@@ -151,7 +151,7 @@ Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), m
 
 **Qué proyecto toca lo marca la web de 4Geeks**, y Diego pega el enunciado al empezar. Que un contexto esté en `docs/contexts/` no lo convierte en el siguiente.
 
-**Rama del siguiente proyecto (18/11/2026):** la PR #9 sigue abierta, a la espera de la revisión del campus. Si el siguiente proyecto necesita el login del backoffice o algo de AUTH-02, su rama sale de `feature/auth-frontend` y se apila, como #7 y #8. Si no lo necesita, sale de `main`.
+**Rama del siguiente proyecto (19/11/2026):** las PRs #9 (AUTH-02) y #10 (AUTH-03, apilada sobre #9) siguen abiertas, a la espera de la revisión del campus. Si el siguiente proyecto necesita algo de la autenticación del backoffice o de la API, su rama sale de `feature/password-reset`, que ya lo contiene todo, y se apila. Si no lo necesita, sale de `main`. Al fusionar, primero #9 y después #10, con *merge commit*, como el 18/11.
 
 ## Deuda técnica y decisiones aplazadas
 
@@ -165,6 +165,7 @@ Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), m
 | **Ambigüedad en `CONTEXT.md`** | El responsable de Ventas aparece con dos nombres distintos. Sin resolver — ver [`projectbrief.md`](./projectbrief.md). Bloqueará el dominio de ventas cuando llegue |
 | **Regla de ramas desfasada** | [`AGENTS.md`](../AGENTS.md) §9 y [`.agents/rules/commits-y-entrega.md`](../.agents/rules/commits-y-entrega.md) siguen diciendo que cada rama sale de la del hito anterior. En la práctica, una rama sale de `main` si lo anterior ya está fusionado (AUTH-02) y se apila solo cuando necesita código de una PR abierta (#7 y #8). Pendiente de corregir en esos dos archivos, en un commit propio |
 | **API de inventario (NXV-0201) pendiente** | Pospuesta el 04/11/2026 para hacer antes el analizador de incidencias. A 11/11/2026 **su enunciado todavía no está publicado** en la web del curso, que marca el orden de los proyectos: probablemente se ha movido más adelante. Su contexto está en `docs/contexts/` porque `sync_contexts.py` descarga todos. Se hará cuando salga |
+| **Remitente de pruebas de Resend** | El email sale de `onboarding@resend.dev`, que solo entrega al email con el que se creó la cuenta de Resend. Para que llegue a cualquier persona de Nexova hace falta verificar un dominio propio en Resend (registros DNS) y cambiar `NEXOVA_API_EMAIL_FROM`, con una clave propia de ese entorno. Se hace al desplegar |
 | **"El último análisis" en memoria** | `GET /api/incidents/results/export` exporta el último análisis del proceso: se pierde al reiniciar, es común a todos los usuarios y no funciona con varios workers. Solución prevista: un `analysis_id` en la respuesta del `POST`. Cambia el contrato del enunciado, así que se aplaza hasta que haya más de un usuario |
 | **Pruebas automáticas de las rutas HTTP** | Resuelto con AUTH-01: [`tests/http_client.py`](../services/api/tests/http_client.py) prueba las rutas por ASGI, sin `httpx`. El frontend se prueba con scripts de Playwright fuera del repositorio: no hay pruebas automáticas del backoffice en la CI más allá de typecheck, lint y build |
 | **Dependencia de una API mock compartida** | Los datos los escriben también otros alumnos. Ninguna funcionalidad puede asumir que un registro concreto sigue existiendo. El backend propio **no la envuelve**: convivirán |
