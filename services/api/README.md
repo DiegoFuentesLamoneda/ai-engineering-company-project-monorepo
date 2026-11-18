@@ -50,8 +50,14 @@ Se lee del entorno **una sola vez, al arrancar** ([`app/config.py`](./app/config
 | `NEXOVA_API_PROFILES_DB_PATH` | `storage/profiles.json` (dentro de esta carpeta) | Fichero de TinyDB de perfiles (nombre y contacto) |
 | `NEXOVA_API_JWT_SECRET_KEY` | — (obligatoria para arrancar) | **Secreta.** Clave con la que se firman los tokens. Al menos 32 caracteres. Va en `.env`, nunca en el código |
 | `NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Minutos de validez de un token, de 1 a 1440 |
+| `NEXOVA_API_RESEND_API_KEY` | — (opcional) | **Secreta.** API key de [Resend](https://resend.com), el servicio que envía el email de restablecimiento de contraseña. Va en `.env`, nunca en el código. Sin ella la API arranca y escribe el enlace en su log en vez de enviarlo |
+| `NEXOVA_API_EMAIL_FROM` | `Nexova Solutions <onboarding@resend.dev>` | Remitente. El de pruebas de Resend no necesita dominio propio, pero solo entrega al email con el que se creó la cuenta de Resend |
+| `NEXOVA_API_FRONTEND_URL` | `http://localhost:3000` | URL del backoffice. El email enlaza a `<URL>/reset-password?token=…` |
+| `NEXOVA_API_RESET_TOKEN_EXPIRE_MINUTES` | `30` | Minutos de validez del enlace de restablecimiento, de 15 a 60 |
+| `NEXOVA_API_RESET_REQUESTS_PER_HOUR` | `3` | Solicitudes de restablecimiento por email y hora. Las de más reciben el mismo `200`, pero no envían email |
+| `NEXOVA_API_PASSWORD_RESETS_DB_PATH` | `storage/password_resets.json` (dentro de esta carpeta) | Fichero de TinyDB de los tokens de restablecimiento y su registro de auditoría |
 
-El secreto va en `.env`, que no se versiona. [`.env.example`](./.env.example) es la plantilla: lleva las variables, sin el valor, y el comando para generar uno. El seeder no necesita el secreto, porque no firma tokens. Las demás variables no son secretas y se pueden cambiar para una sesión con `$env:NEXOVA_API_MAX_UPLOAD_MB = "5"`.
+Los dos secretos (el del JWT y la API key de Resend) van en `.env`, que no se versiona. [`.env.example`](./.env.example) es la plantilla: lleva las variables, sin el valor, y el comando para generar uno. El seeder no necesita el secreto, porque no firma tokens. Las demás variables no son secretas y se pueden cambiar para una sesión con `$env:NEXOVA_API_MAX_UPLOAD_MB = "5"`.
 
 ## Estructura
 

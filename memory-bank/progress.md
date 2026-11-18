@@ -127,6 +127,24 @@ Rama `feature/auth-frontend`, salida de `main` después de fusionar #6, #7 y #8.
 
 **Solo se protege el backoffice.** Es la única aplicación Next.js del monorepo y la única que llama a la API propia. `uis/website/` es pública por enunciado, y `uis/talent-lab/` es un banco de pruebas estático de `talent-core`: no llama a ninguna API ni muestra datos de personas.
 
+## Recuperación y cambio de contraseña (AUTH-03) — en curso
+
+Rama `feature/password-reset`, **apilada sobre `feature/auth-frontend`** (PR #9 abierta): necesita el `/login` del backoffice. Proyecto «La Pieza Que Faltaba: Flujo de Restablecimiento de Contraseña», ticket **AUTH-03**: `POST /auth/forgot-password`, `/auth/reset-password` y `/auth/change-password`, y sus tres pantallas en el backoffice. El enunciado no está en `docs/contexts/`: lo pegó Diego el 18/11/2026.
+
+**Decisiones de Diego (18/11/2026):** Resend como servicio de correo, y los tres extras opcionales: email en HTML, *rate limiting* por email y hora, y registro de auditoría.
+
+| Fase | Estado |
+| --- | --- |
+| 1 — Configuración: API key de Resend, remitente, URL del backoffice, caducidad del enlace (15–60 min) y solicitudes por hora en [`config.py`](../services/api/app/config.py) y [`.env.example`](../services/api/.env.example). Sin API key la API arranca y el enlace va al log. 199 pruebas | ✅ |
+| 2 — Tokens de restablecimiento: aleatorios, guardados con hash, caducidad y un solo uso | ⬜ |
+| 3 — Envío de correo con Resend y plantilla HTML legible en móvil | ⬜ |
+| 4 — Rutas `forgot-password`, `reset-password` y `change-password` | ⬜ |
+| 5 — *Rate limiting* y registro de auditoría | ⬜ |
+| 6 — `/forgot-password`, `/reset-password` y enlace en `/login` | ⬜ |
+| 7 — `/account/change-password` | ⬜ |
+| 8 — Verificación de extremo a extremo con un email real | ⬜ |
+| 9 — Cierre: banco de memoria, READMEs, ficha en la biblioteca y PR | ⬜ |
+
 ## Próximo
 
 Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), memoria y harness de agentes (8), workflows agénticos (9) y tiempo real (10).
