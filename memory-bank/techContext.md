@@ -10,7 +10,7 @@
 | [`uis/website/`](../uis/website/) | Web pública de Nexova: landing + formulario de registro de talento | HTML5, Tailwind 4 (CLI), JS sin dependencias | 1 |
 | [`packages/talent-core/`](../packages/talent-core/) | Motor de scoring de candidatos y matching de vacantes | TypeScript 5, `node:test`, `tsx` | 2 |
 | [`uis/talent-lab/`](../uis/talent-lab/) | Banco de pruebas manual de `talent-core`: dispara sus 18 funciones desde botones | HTML + Tailwind 4 + el `dist/` de `talent-core` | 2 |
-| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas, análisis de incidencias de soporte y directorio de proveedores | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias · Directorio de proveedores |
+| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas, análisis de incidencias de soporte y directorio de proveedores, con login, registro y perfil | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias · Directorio de proveedores · AUTH-02 |
 | [`packages/shared/`](../packages/shared/) | `@repo/shared-types` — viene de la plantilla, prácticamente vacío | TypeScript | — |
 | [`packages/incident-analysis/`](../packages/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte. Lógica única que comparten el script y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias |
 | [`scripts/analyze.py`](../scripts/analyze.py) | Analizador de tickets por consola, con exportación a `results.csv` | Python 3, usa `incident-analysis` | Analizador de incidencias |
@@ -50,7 +50,7 @@ El prefijo `NEXT_PUBLIC_` incrusta la variable en el bundle del navegador — **
 
 El backoffice habla además con la API propia, `services/api/`, para el análisis de incidencias y el directorio de proveedores: variable **`NEXT_PUBLIC_NEXOVA_API_URL`** (`http://localhost:8000` en local). Las dos APIs pasan por el mismo `request()` de `lib/api.ts`, cada una con su URL base.
 
-> **Desde AUTH-01 (13/11/2026), la API propia pide token y el backoffice todavía no hace login.** Sus pantallas de incidencias y proveedores reciben `401` y muestran el mensaje de la API. Mientras no tenga pantalla de login, esas rutas se usan desde `/docs`. El token irá en la cabecera `Authorization`, y nunca en `localStorage` sin pensarlo antes: es una decisión pendiente para cuando se haga el login.
+> **Desde AUTH-02 (18/11/2026), el backoffice hace login** y manda el token en `Authorization: Bearer` en cada llamada a la API propia. La API mock del tracker no lo recibe: no es nuestra y no lo pide. Cómo se guarda la sesión y por qué, en la decisión «Backoffice: sesión con el token en `localStorage` y guardia en el cliente».
 
 ## Decisiones de arquitectura tomadas
 
@@ -160,6 +160,21 @@ Decidido el 12–13/11/2026, con AUTH-01. Lo fija el enunciado: `python-jose` pa
 - **El primer admin sale de `uv run create-admin`.** `POST /users` crea siempre cuentas `user`, y solo un admin cambia roles.
 - **El login no dice qué ha fallado.** Email desconocido, contraseña mala y cuenta desactivada dan el mismo `401`, en el mismo tiempo (se verifica contra un hash de relleno).
 - **Amplía la tabla de errores:** `401` para quien no está identificado, con la cabecera `WWW-Authenticate: Bearer`; `403` para quien está identificado pero no tiene permiso.
+
+### Backoffice: sesión con el token en `localStorage` y guardia en el cliente
+
+Decidido el 18/11/2026, con AUTH-02. El enunciado fija dos cosas: el token va en `localStorage` y las rutas se protegen con una guardia en el cliente, sin *middleware* de Next.
+
+- **Por qué no una cookie `httpOnly`, que sería más segura.** El enunciado pide `localStorage`, y la API de AUTH-01 es JWT sin estado y sin cookies. Una cookie exigiría cambiar la API y el CORS. Queda anotado para cuando el backoffice salga de la red interna.
+- **El riesgo es el XSS: un script inyectado podría leer el token.** Se acota así: React escapa todo lo que pinta, el backoffice no usa `dangerouslySetInnerHTML` (no se añade sin revisar esto), y el token caduca a los 30 minutos.
+- **Por qué no *middleware*.** Además de que el enunciado lo excluye, el servidor no puede leer `localStorage`. Por eso el HTML que sale del servidor nunca lleva datos: [`AuthGuard`](../uis/backoffice/components/AuthGuard.tsx) no pinta la vista hasta saber que hay sesión. El candado de verdad sigue en la API: aunque alguien saltara la guardia, sin token recibe `401`.
+- **Una sola fuente de verdad para la sesión:** [`lib/session.ts`](../uis/backoffice/lib/session.ts), leída con `useSyncExternalStore`. La caducidad se lee del `exp` del JWT, sin llamar a la API, y la guardia programa un temporizador para cerrar la sesión cuando llegue. El evento `storage` del navegador cierra la sesión en todas las pestañas a la vez.
+- **La navegación sigue a la sesión, no al botón.** Los formularios solo guardan o borran el token, y las guardias deciden adónde ir. Cerrar sesión aquí, en otra pestaña o por un `401` acaba en el mismo sitio, por el mismo camino.
+- **Un `401` de la API propia cierra la sesión** en [`lib/api.ts`](../uis/backoffice/lib/api.ts), que es la única puerta a la API. Al volver a `/login` se explica por qué (`reason=ended`).
+- **El `next` del login se valida** ([`lib/auth-routes.ts`](../uis/backoffice/lib/auth-routes.ts)): solo rutas del propio backoffice. Un enlace con `?next=https://otro-sitio` no saca a nadie fuera tras entrar (redirección abierta).
+- **El perfil se guarda enviando solo lo que cambia**, y `null` borra un campo, que es lo que hace `PUT /profiles/me`. Así dos pestañas que editan campos distintos no se pisan.
+- **Sin librería de estado, como el tracker.** El menú de sesión se entera de un cambio de perfil con un evento del navegador (`nexova:profile`), no con un *store* global. Si aparecen más datos compartidos entre vistas, se reevalúa.
+- **Solo se protege el backoffice.** Es la única aplicación Next.js y la única que llama a la API propia. `uis/website/` es pública por enunciado, y `uis/talent-lab/` no carga datos de nadie.
 
 ### CI acotada por rutas
 
