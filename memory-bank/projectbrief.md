@@ -98,6 +98,7 @@ Lo fija el enunciado del ticket **AUTH-01**. Los valores se usan literalmente:
 | **Cuenta** | Las credenciales con las que alguien entra: email, contraseña (solo su hash), si está activa y su rol | `User` |
 | **Perfil** | Los datos personales de esa cuenta, uno por cuenta: nombre, teléfono y dirección | `Profile` |
 | **Rol** | Qué puede hacer la cuenta. Hoy solo `admin` tiene permisos propios: lista cuentas y cambia roles | `admin`, `manager`, `user` |
+| **Sesión** | El tiempo que alguien pasa dentro del backoffice con un token válido (30 minutos como mucho). En la interfaz: «Iniciar sesión», «Cerrar sesión», «Tu sesión ha terminado» (AUTH-02) | `lib/session.ts` |
 
 **El perfil y el email son datos personales**, como `customer_email`: las capturas y las pruebas usan cuentas inventadas (`ana@nexova.es`, `prueba@nexova.es`), nunca la de una persona real.
 

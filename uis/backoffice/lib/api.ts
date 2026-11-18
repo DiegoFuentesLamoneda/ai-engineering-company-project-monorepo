@@ -7,6 +7,14 @@ import type {
   Stage,
   Status,
 } from "@/types/candidate";
+import type {
+  Me,
+  Profile,
+  ProfileUpdate,
+  RegisterInput,
+  Token,
+  UserCreated,
+} from "@/types/auth";
 import type { IncidentAnalysis } from "@/types/incident";
 import type {
   Supplier,
@@ -14,17 +22,24 @@ import type {
   SupplierInput,
   SupplierStatus,
 } from "@/types/supplier";
+import { clearToken, getToken, saveToken } from "@/lib/session";
 
 /**
  * El backoffice habla con dos APIs:
  * - la del tracker (API mock de 4Geeks), para las candidaturas;
- * - la propia de Nexova (services/api), para el analisis de incidencias.
+ * - la propia de Nexova (services/api): incidencias, proveedores y cuentas.
  * Cada una con su variable de entorno, y las dos por el mismo request().
  */
 interface ApiTarget {
   baseUrl: string | undefined;
   /** Nombre de la variable, para el mensaje si falta. */
   variable: string;
+  /**
+   * Si las peticiones llevan el token de la sesion. Solo nuestra API: la del
+   * tracker es una mock que comparten todos los alumnos del curso, y
+   * mandarle el token seria regalarselo a un tercero.
+   */
+  auth: boolean;
 }
 
 // process.env.NEXT_PUBLIC_* se escribe literal: Next sustituye el texto
@@ -32,12 +47,25 @@ interface ApiTarget {
 const TRACKER_API: ApiTarget = {
   baseUrl: process.env.NEXT_PUBLIC_API_URL,
   variable: "NEXT_PUBLIC_API_URL",
+  auth: false,
 };
 
+/** Rutas protegidas de la API propia: todas menos el login y el registro. */
 const NEXOVA_API: ApiTarget = {
   baseUrl: process.env.NEXT_PUBLIC_NEXOVA_API_URL,
   variable: "NEXT_PUBLIC_NEXOVA_API_URL",
+  auth: true,
 };
+
+/**
+ * Login y registro: la misma API, sin token. Un 401 aqui es "email o
+ * contraseña incorrectos", no "la sesion ha caducado", y no debe cerrarla.
+ */
+const NEXOVA_PUBLIC_API: ApiTarget = { ...NEXOVA_API, auth: false };
+
+/** Mensaje de un 401 en una ruta protegida: se ha cerrado la sesion. */
+export const SESSION_EXPIRED_MESSAGE =
+  "Tu sesión ha caducado o no es válida. Vuelve a iniciar sesión.";
 
 /** Error de la API con el codigo HTTP y, si los hay, los errores por campo. */
 export class ApiError extends Error {
@@ -63,6 +91,7 @@ interface ErrorBody {
 
 const MENSAJES_POR_ESTADO: Record<number, string> = {
   400: "La peticion no es valida.",
+  401: "Email o contraseña incorrectos.",
   404: "No se ha encontrado el recurso.",
   409: "La operación no está permitida en el estado actual.",
   413: "El fichero es demasiado grande.",
@@ -127,13 +156,24 @@ async function send(
     throw new ApiError(`Falta la variable ${api.variable} en .env.local`, 0);
   }
 
-  // Con FormData no se pone Content-Type: el navegador escribe
-  // "multipart/form-data; boundary=…" con el separador que ha generado.
-  // Si lo fijamos a mano, el boundary se pierde y el servidor no lo entiende.
-  const headers =
-    options.body instanceof FormData
-      ? options.headers
-      : { "Content-Type": "application/json", ...options.headers };
+  const headers = new Headers(options.headers);
+
+  // Con FormData (subida de ficheros) y URLSearchParams (formulario del
+  // login) no se pone Content-Type: el navegador lo escribe solo, y en el
+  // caso de FormData con el "boundary" que separa las partes. Si lo fijamos
+  // a mano, se pierde y el servidor no entiende el cuerpo.
+  const cuerpoDeFormulario =
+    options.body instanceof FormData || options.body instanceof URLSearchParams;
+  if (!cuerpoDeFormulario && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  // El token se lee en cada peticion, no al cargar la pagina: si la sesion
+  // se cierra en otra pestaña, la siguiente peticion ya sale sin el.
+  if (api.auth) {
+    const token = getToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+  }
 
   let res: Response;
   try {
@@ -141,6 +181,15 @@ async function send(
   } catch {
     // Sin red, servidor apagado o CORS: fetch si lanza en estos casos.
     throw new ApiError("No se ha podido conectar con el servidor.", 0);
+  }
+
+  // 401 en una ruta protegida: el token falta, ha caducado o la API ya no lo
+  // acepta (cuenta desactivada o borrada). La sesion se cierra aqui, en un
+  // solo sitio para todas las llamadas. clearToken() avisa a quien escucha
+  // la sesion, y la proteccion de rutas lleva al usuario a /login.
+  if (res.status === 401 && api.auth) {
+    clearToken();
+    throw new ApiError(SESSION_EXPIRED_MESSAGE, 401);
   }
 
   if (!res.ok) {
@@ -301,6 +350,75 @@ export function updateSupplierStatus(id: number, status: SupplierStatus): Promis
   return request<Supplier>(
     `/suppliers/${id}/status`,
     { method: "PATCH", body: JSON.stringify({ status }) },
+    NEXOVA_API,
+  );
+}
+
+// --- Cuentas: login, registro y perfil (services/api) ---
+
+/**
+ * POST /auth/login y guarda el token. Si las credenciales no valen, lanza
+ * un ApiError 401 y la sesion anterior, si la habia, no se toca.
+ *
+ * El cuerpo es un formulario, no JSON: es el formato estandar de OAuth2, el
+ * mismo que usa el boton Authorize de /docs. Por eso el email va en el campo
+ * "username".
+ */
+export async function login(email: string, password: string): Promise<Token> {
+  const formulario = new URLSearchParams({ username: email, password });
+
+  const token = await request<Token>(
+    "/auth/login",
+    { method: "POST", body: formulario },
+    NEXOVA_PUBLIC_API,
+  );
+  saveToken(token.access_token);
+  return token;
+}
+
+/**
+ * Registro: POST /users con el perfil opcional y, si sale bien, login con
+ * las mismas credenciales. Asi el registro deja la sesion abierta.
+ *
+ * Si falla el alta (email repetido, datos no validos), no se intenta el
+ * login y el ApiError trae los errores por campo.
+ *
+ * Si el alta sale bien y el login no (la API se cae justo entre las dos
+ * llamadas), la cuenta ya existe: el mensaje lo dice, para que la persona
+ * entre por /login y no intente registrarse otra vez con el mismo email.
+ */
+export async function register(input: RegisterInput): Promise<UserCreated> {
+  const cuenta = await request<UserCreated>(
+    "/users",
+    { method: "POST", body: JSON.stringify(input) },
+    NEXOVA_PUBLIC_API,
+  );
+  try {
+    await login(input.email, input.password);
+  } catch (e) {
+    throw new ApiError(
+      "La cuenta se ha creado, pero no se ha podido iniciar sesión. Entra con tu email y contraseña.",
+      e instanceof ApiError ? e.status : 0,
+    );
+  }
+  return cuenta;
+}
+
+/** Cierra la sesion. El JWT no tiene estado en la API: basta con olvidarlo. */
+export function logout(): void {
+  clearToken("logout");
+}
+
+/** GET /auth/me: email y rol de la cuenta, con su perfil. */
+export function getMe(): Promise<Me> {
+  return request<Me>("/auth/me", {}, NEXOVA_API);
+}
+
+/** PUT /profiles/me: solo cambian los campos enviados; uno a null se borra. */
+export function updateMyProfile(changes: ProfileUpdate): Promise<Profile> {
+  return request<Profile>(
+    "/profiles/me",
+    { method: "PUT", body: JSON.stringify(changes) },
     NEXOVA_API,
   );
 }

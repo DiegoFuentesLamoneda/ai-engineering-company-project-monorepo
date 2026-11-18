@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 13 de noviembre de 2026 (autenticación de la API, cierre)._
+_Última actualización: 18 de noviembre de 2026 (autenticación en el backoffice, AUTH-02)._
 
 ## Entregado
 
@@ -13,6 +13,10 @@ _Última actualización: 13 de noviembre de 2026 (autenticación de la API, cier
 | 2 — Fundamentos de Programación | `@repo/talent-core`: filtros, búsquedas lineal y binaria, scoring, ranking, reportes y validaciones. 112 pruebas en verde. Banco de pruebas web | [`packages/talent-core/`](../packages/talent-core/) · [`uis/talent-lab/`](../uis/talent-lab/) | `feature/domain-models` | #2 · fusionada el 16/09/2026 |
 | 3 — Talent Pipeline Tracker | Listado, filtros y búsqueda sin recarga, detalle, cambio de estado y etapa, notas internas, alta y edición de candidaturas | [`uis/backoffice/`](../uis/backoffice/) | `feature/talent-pipeline-tracker` | #3 · fusionada el 16/09/2026 |
 | 4 — Ingeniería impulsada por IA | Banco de memoria, `AGENTS.md`, reglas y skills en `.agents/`, traslado del tracker a `uis/backoffice/` con panel de entrada propio, CI del backoffice | [`memory-bank/`](../memory-bank/) · [`.agents/`](../.agents/) · [`uis/backoffice/`](../uis/backoffice/) | `feature/agent-memory-bank` | #4 · fusionada el 16/09/2026 |
+| 5 — Backend (5a) | Propuesta de arquitectura del backend | [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHITECTURE_PROPOSAL.md) | `feature/backend-architecture-proposal` | #5 · fusionada el 18/09/2026 |
+| Analizador de incidencias | Paquete de análisis, script por consola, `POST /api/incidents/analyze` con su exportación y página `/incidents` | [`packages/incident-analysis/`](../packages/incident-analysis/) · [`scripts/analyze.py`](../scripts/analyze.py) · [`services/api/`](../services/api/) | `feature/incidents-analyzer` | #6 · fusionada el 18/11/2026 |
+| Directorio de proveedores | API `/suppliers` sobre TinyDB con seeder y página `/suppliers` | [`services/api/`](../services/api/) · [`uis/backoffice/`](../uis/backoffice/) | `feature/supplier-directory` | #7 · fusionada el 18/11/2026 |
+| Autenticación de la API (AUTH-01) | Cuentas, perfiles, login con JWT y candado en las rutas de `incidents` y `suppliers` | [`services/api/`](../services/api/) | `feature/auth-api` | #8 · fusionada el 18/11/2026 |
 
 ### Cambio en el modelo de ramas — 16/09/2026
 
@@ -27,7 +31,11 @@ Aprobadas ya las cuatro entregas, las PRs #2, #3 y #4 se fusionaron en orden con
 - **`uis/website/` no se toca.** Ya cumple lo que pide el hito y migrarla a un framework pondría en riesgo el 100 de Lighthouse y el despliegue a Pages.
 - **`.agents/` no es `/agents`.** `.agents/` configura las herramientas de desarrollo. `/agents` es producto, y llega en hitos posteriores.
 
-## En curso — hito 5: Backend
+### Fusión de las PRs #6, #7 y #8 — 18/11/2026
+
+Las tres ramas estaban **apiladas**: proveedores salía del analizador y la autenticación, de proveedores, porque `services/api/` todavía no estaba en `main`. Aprobadas las tres, se fusionaron en orden (#6, #7, #8) con *merge commit*, por la misma razón que el 16/09: un *squash* habría reescrito los commits y dejado las siguientes con conflictos falsos. `main` contiene ya `services/api/` completo, y AUTH-02 sale de `main`.
+
+## Hito 5: Backend
 
 Rama `feature/backend-architecture-proposal`, salida de `main`. El hito tiene **dos proyectos encadenados**:
 
@@ -41,7 +49,7 @@ Documento técnico, no código: [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHIT
 | Redacción de la propuesta: patrón, estructura, routers, CORS y entorno, decisiones y riesgos | ✅ |
 | Actualizar el apéndice de `CONTEXT.md` y `CONTEXT.es.md` al hito 5 | ✅ |
 | Actualizar el banco de memoria | ✅ |
-| PR hacia `main` | ⏳ |
+| PR hacia `main`: #5, fusionada el 18/09/2026 | ✅ |
 
 **Decisiones propuestas en el documento** (pasan a [`techContext.md`](./techContext.md) cuando se implementen):
 
@@ -57,7 +65,7 @@ Implementación del ticket **NXV-0201**: `Asset`, `AssetEntry`, `AssetExit`, sto
 
 **Estado a 04/11/2026:** la PR #5 (propuesta de arquitectura) está fusionada en `main`. La API de inventario **no está empezada**: se pospone para hacer antes el analizador de incidencias, y entrará como otro dominio del mismo servicio `services/api/`.
 
-## En curso — Analizador de incidencias
+## Analizador de incidencias — entregado (#6)
 
 Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/contexts/proyectos/incidents-file-analysis.es.md`](../docs/contexts/proyectos/incidents-file-analysis.es.md). Script de análisis del CSV de tickets de soporte de Roberto Díaz, y después la misma lógica en la API y en el backoffice.
 
@@ -66,10 +74,10 @@ Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/con
 | Lógica compartida en [`packages/incident-analysis/`](../packages/incident-analysis/): validación, métricas, exportación e informe. 44 pruebas, incluida la de aceptación contra el briefing | ✅ |
 | Script [`scripts/analyze.py`](../scripts/analyze.py): 100 / 96 / 4 y todos los desgloses coinciden con el briefing | ✅ |
 | API en [`services/api/`](../services/api/): `POST /api/incidents/analyze` y `GET /api/incidents/results/export`. 18 pruebas del service y la configuración; rutas, errores y CORS verificados con el servidor arrancado; la exportación es idéntica byte a byte a la del script | ✅ |
-| Página [`/incidents`](../uis/backoffice/app/incidents/) en el backoffice: subida por arrastre o selector, totales, desglose por categoría y estado, índice de satisfacción, registros inválidos por regla con sus filas y descarga del CSV. Verificada en el navegador con la API arrancada: cifras del briefing, CSV descargado idéntico byte a byte al del script, y errores 400 y 415 mostrados con el mensaje de la API | ✅ |
-| Capturas (consola e interfaz) y PR hacia `main`: [#6](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/6), abierta el 04/11/2026 para la evaluación del campus | ✅ |
+| Página [`/incidents`](../uis/backoffice/components/IncidentAnalyzer.tsx) en el backoffice: subida por arrastre o selector, totales, desglose por categoría y estado, índice de satisfacción, registros inválidos por regla con sus filas y descarga del CSV. Verificada en el navegador con la API arrancada: cifras del briefing, CSV descargado idéntico byte a byte al del script, y errores 400 y 415 mostrados con el mensaje de la API | ✅ |
+| Capturas (consola e interfaz) y PR hacia `main`: [#6](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/6), abierta el 04/11/2026 para la evaluación del campus y fusionada el 18/11/2026 | ✅ |
 
-## En curso — Directorio de proveedores
+## Directorio de proveedores — entregado (#7)
 
 Rama `feature/supplier-directory`, **apilada sobre `feature/incidents-analyzer`**, porque `services/api/` todavía no está en `main` (PR #6 abierta). Especificación: [`docs/contexts/proyectos/supplier-directory.es.md`](../docs/contexts/proyectos/supplier-directory.es.md). API de proveedores sobre FastAPI + TinyDB + Pydantic, con seeder y página en el backoffice. Lo pide Patricia Solís (HR Manager) para sustituir su hoja de cálculo.
 
@@ -79,14 +87,14 @@ Rama `feature/supplier-directory`, **apilada sobre `feature/incidents-analyzer`*
 | 2 — Modelo de datos: [`schemas.py`](../services/api/app/domains/suppliers/schemas.py) con enums de país, moneda, categoría y estado, tarifa > 0 (y finita), moneda según el país, entrada y salida separadas, `extra="forbid"` en la entrada. 19 pruebas | ✅ |
 | 3 — Base de datos y seeder: [`database.py`](../services/api/app/domains/suppliers/database.py) (TinyDB en `services/api/storage/suppliers.json`, ignorado por git, con filtros por país y categoría) y [`seed.py`](../services/api/app/seed.py) (`uv run seed`: 15 insertados la primera vez, 0 la segunda). 55 pruebas en total | ✅ |
 | 4 — Endpoints `/suppliers`: [`router.py`](../services/api/app/domains/suppliers/router.py) y [`service.py`](../services/api/app/domains/suppliers/service.py). Alta `201`, listado con filtros, detalle, tarifa (renueva `updated_at`), estado y baja; `404`/`422` y `409` al borrar un suspendido (decisión de Diego, 11/11/2026). Probado a mano con curl y tras reiniciar. 70 pruebas | ✅ |
-| 5 — Página [`/suppliers`](../uis/backoffice/app/suppliers/page.tsx) en el backoffice, en el menú: tabla, filtros por país y categoría en la URL, tarifa y estado editables por fila, suspendidos atenuados, aviso de renovación a 60 días y alta en `/suppliers/new` con validación y errores de la API en español. Etiquetas aprobadas por Diego (11/11/2026). Typecheck, lint y build en verde, y 20 comprobaciones en el navegador | ✅ |
-| 6 — Cierre: capturas del seeder, de Swagger con un filtro y de la interfaz con un filtro; banco de memoria ([`techContext.md`](./techContext.md): TinyDB detrás de un repositorio y el `409`) y PR hacia `main`: [#7](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/7), abierta el 11/11/2026 para la evaluación del campus | ✅ |
+| 5 — Página [`/suppliers`](../uis/backoffice/components/SupplierList.tsx) en el backoffice, en el menú: tabla, filtros por país y categoría en la URL, tarifa y estado editables por fila, suspendidos atenuados, aviso de renovación a 60 días y alta en `/suppliers/new` con validación y errores de la API en español. Etiquetas aprobadas por Diego (11/11/2026). Typecheck, lint y build en verde, y 20 comprobaciones en el navegador | ✅ |
+| 6 — Cierre: capturas del seeder, de Swagger con un filtro y de la interfaz con un filtro; banco de memoria ([`techContext.md`](./techContext.md): TinyDB detrás de un repositorio y el `409`) y PR hacia `main`: [#7](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/7), abierta el 11/11/2026 para la evaluación del campus y fusionada el 18/11/2026 | ✅ |
 
 **Estructura:** dominio `app/domains/suppliers/`, no los archivos sueltos que propone el enunciado (`models.py`, `routes/suppliers.py`…). Lo decidió la propuesta de arquitectura del hito 5. La PR lleva una tabla con la equivalencia entre los dos.
 
-**La PR de proveedores incluye los commits de la #6**, porque la rama está apilada. Cuando se fusione la #6, su diff se queda solo con lo de proveedores.
+**La rama estaba apilada sobre la #6**, así que su PR mostraba también esos commits. Se fusionó justo después de la #6.
 
-## En curso — Autenticación de la API
+## Autenticación de la API (AUTH-01) — entregado (#8)
 
 Rama `feature/auth-api`, **apilada sobre `feature/supplier-directory`** (PR #7 abierta). Proyecto «Asegurando la API: Autenticación y Restricción de Rutas en FastAPI», ticket **AUTH-01**: usuarios (solo credenciales) y perfiles en TinyDB, login con JWT y `get_current_user` en toda ruta que no sea pública. El enunciado no está en `docs/contexts/`: lo pegó Diego el 12/11/2026.
 
@@ -99,13 +107,33 @@ Rama `feature/auth-api`, **apilada sobre `feature/supplier-directory`** (PR #7 a
 | 3 — Service de usuarios: [`users/service.py`](../services/api/app/domains/users/service.py) (bcrypt, alta con perfil y marcha atrás si el perfil falla, permisos: tú mismo o admin, rol solo admin, login sin pistas) y [`create_admin.py`](../services/api/app/create_admin.py) (`uv run create-admin`). 137 pruebas | ✅ |
 | 4 — Token: [`auth/`](../services/api/app/domains/auth/) con `POST /auth/login` (formulario OAuth2, el email en `username`), `get_current_user` (401 sin token, caducado, manipulado o de cuenta borrada o desactivada; el usuario se relee en cada petición) y `GET /auth/me`. JWT HS256 con solo `sub` y fechas. 156 pruebas | ✅ |
 | 5 — Rutas: [`users/router.py`](../services/api/app/domains/users/router.py) (`POST /users` pública con perfil; el resto con token, tú o admin, `403` antes que `404`, `409` email repetido) y [`profiles/router.py`](../services/api/app/domains/profiles/router.py) (`/profiles/me`). Pruebas HTTP de verdad con un cliente ASGI propio ([`http_client.py`](../services/api/tests/http_client.py)), sin `httpx`. 185 pruebas | ✅ |
-| 6 — Candado en las 8 rutas que ya existían: las 2 de `incidents` y las 6 de `suppliers`, con `dependencies=[Depends(get_current_user)]` en cada router. Sin token, `401` y nada cambia; con token, igual que antes. Pruebas en [`test_protected_routes.py`](../services/api/tests/test_protected_routes.py). 194 pruebas. El backoffice aún no hace login: esas pantallas reciben `401` (limitación conocida en el README de la API) | ✅ |
+| 6 — Candado en las 8 rutas que ya existían: las 2 de `incidents` y las 6 de `suppliers`, con `dependencies=[Depends(get_current_user)]` en cada router. Sin token, `401` y nada cambia; con token, igual que antes. Pruebas en [`test_protected_routes.py`](../services/api/tests/test_protected_routes.py). 194 pruebas. Hasta AUTH-02 el backoffice no hacía login y esas pantallas recibían `401` | ✅ |
 | 7 — Verificación: 194 pruebas en verde; recorrido en `/docs` con una cuenta de prueba (`401` sin token, alta `201`, *Authorize*, `/auth/me`, `200` con token, `403` en `GET /users`), con 5 capturas para la PR; y un script contra el servidor real, 29/29. Pasos en la sección "Verificación manual en `/docs`" del [README de la API](../services/api/README.md) | ✅ |
-| 8 — Cierre: banco de memoria ([`techContext.md`](./techContext.md): decisión de autenticación y dos correcciones; [`projectbrief.md`](./projectbrief.md): vocabulario de cuentas), ficha en la biblioteca y PR hacia `main`: [#8](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/8), abierta el 13/11/2026 para la evaluación del campus, con las 8 rutas protegidas y cómo se verificaron | ✅ |
+| 8 — Cierre: banco de memoria ([`techContext.md`](./techContext.md): decisión de autenticación y dos correcciones; [`projectbrief.md`](./projectbrief.md): vocabulario de cuentas), ficha en la biblioteca y PR hacia `main`: [#8](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/8), abierta el 13/11/2026 para la evaluación del campus, con las 8 rutas protegidas y cómo se verificaron, y fusionada el 18/11/2026 | ✅ |
+
+## Autenticación en el backoffice (AUTH-02) — en revisión (#9)
+
+Rama `feature/auth-frontend`, salida de `main` después de fusionar #6, #7 y #8. Proyecto «Conectando el Candado: Flujos de Autenticación en el Frontend», ticket **AUTH-02**: login, registro y perfil dentro del backoffice, guardia de sesión en el cliente y token en `localStorage`. Cierra la rotura temporal de AUTH-01: las pantallas de incidencias y proveedores vuelven a funcionar, ahora con sesión. El enunciado no está en `docs/contexts/`: lo pegó Diego el 18/11/2026.
+
+| Fase | Estado |
+| --- | --- |
+| 1 — Sesión en el cliente de la API: [`lib/session.ts`](../uis/backoffice/lib/session.ts) (token en `localStorage`, caducidad leída del JWT, aviso entre pestañas) y [`lib/api.ts`](../uis/backoffice/lib/api.ts), que pone `Authorization: Bearer` en toda llamada a `services/api` y cierra la sesión ante un `401` | ✅ |
+| 2 — Grupos de rutas: las vistas internas pasan a `app/(protected)/` y las de acceso, a `app/(auth)/`, con un layout raíz común. El movimiento va en su propio commit | ✅ |
+| 3 — `/login` y `/register`: errores bajo cada campo; `POST /users` con nombre, teléfono y dirección opcionales y login automático después; email repetido como error del campo email. 31 comprobaciones en el navegador | ✅ |
+| 4 — [`AuthGuard`](../uis/backoffice/components/AuthGuard.tsx) y [`GuestGuard`](../uis/backoffice/components/GuestGuard.tsx): sin sesión, `/login?next=…`; con sesión, fuera de `/login`; cerrar sesión; aviso cuando la sesión se cierra por un `401`, por caducidad o desde otra pestaña; `next` validado contra redirecciones abiertas. 29 comprobaciones | ✅ |
+| 5 — [`/account/profile`](../uis/backoffice/components/ProfileForm.tsx): datos de `GET /auth/me`, edición con `PUT /profiles/me` enviando solo lo que cambia, y el menú de sesión se actualiza sin recargar. 25 comprobaciones | ✅ |
+| 6 — Verificación de extremo a extremo contra la API real: las 9 vistas protegidas con y sin sesión, registro, perfil, cerrar sesión, login fallido y `401`; `uis/website/` sin cambios frente a `main` y funcionando. 55/55 | ✅ |
+| 7 — Cierre: banco de memoria, READMEs, ficha en la biblioteca y PR hacia `main`: [#9](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/9), abierta el 18/11/2026 para la evaluación del campus, con las 9 vistas protegidas y la web pública sin cambios | ✅ |
+
+**Solo se protege el backoffice.** Es la única aplicación Next.js del monorepo y la única que llama a la API propia. `uis/website/` es pública por enunciado, y `uis/talent-lab/` es un banco de pruebas estático de `talent-core`: no llama a ninguna API ni muestra datos de personas.
 
 ## Próximo
 
 Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), memoria y harness de agentes (8), workflows agénticos (9) y tiempo real (10).
+
+**Qué proyecto toca lo marca la web de 4Geeks**, y Diego pega el enunciado al empezar. Que un contexto esté en `docs/contexts/` no lo convierte en el siguiente.
+
+**Rama del siguiente proyecto (18/11/2026):** la PR #9 sigue abierta, a la espera de la revisión del campus. Si el siguiente proyecto necesita el login del backoffice o algo de AUTH-02, su rama sale de `feature/auth-frontend` y se apila, como #7 y #8. Si no lo necesita, sale de `main`.
 
 ## Deuda técnica y decisiones aplazadas
 
@@ -117,8 +145,8 @@ Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), m
 | **npm workspaces** | Aplazado. Cada proyecto se instala por separado. Se reevalúa cuando dos aplicaciones consuman el mismo paquete a la vez |
 | **`packages/shared/`** | Viene de la plantilla y está prácticamente vacío. Decidir si se usa o se retira cuando haya tipos que compartir de verdad |
 | **Ambigüedad en `CONTEXT.md`** | El responsable de Ventas aparece con dos nombres distintos. Sin resolver — ver [`projectbrief.md`](./projectbrief.md). Bloqueará el dominio de ventas cuando llegue |
-| **Regla de ramas desfasada** | [`AGENTS.md`](../AGENTS.md) §9 y [`.agents/rules/commits-y-entrega.md`](../.agents/rules/commits-y-entrega.md) siguen diciendo que cada rama sale de la del hito anterior. Desde el 16/09/2026 salen de `main` (ver arriba). Corregir al cerrar el analizador de incidencias |
+| **Regla de ramas desfasada** | [`AGENTS.md`](../AGENTS.md) §9 y [`.agents/rules/commits-y-entrega.md`](../.agents/rules/commits-y-entrega.md) siguen diciendo que cada rama sale de la del hito anterior. En la práctica, una rama sale de `main` si lo anterior ya está fusionado (AUTH-02) y se apila solo cuando necesita código de una PR abierta (#7 y #8). Pendiente de corregir en esos dos archivos, en un commit propio |
 | **API de inventario (NXV-0201) pendiente** | Pospuesta el 04/11/2026 para hacer antes el analizador de incidencias. A 11/11/2026 **su enunciado todavía no está publicado** en la web del curso, que marca el orden de los proyectos: probablemente se ha movido más adelante. Su contexto está en `docs/contexts/` porque `sync_contexts.py` descarga todos. Se hará cuando salga |
 | **"El último análisis" en memoria** | `GET /api/incidents/results/export` exporta el último análisis del proceso: se pierde al reiniciar, es común a todos los usuarios y no funciona con varios workers. Solución prevista: un `analysis_id` en la respuesta del `POST`. Cambia el contrato del enunciado, así que se aplaza hasta que haya más de un usuario |
-| **Pruebas automáticas de las rutas HTTP** | Necesitan el cliente de pruebas de FastAPI, que depende de `httpx`, y `httpx` no está aprobado como dependencia. Hoy se prueban el service y la configuración, y las rutas se verifican a mano |
+| **Pruebas automáticas de las rutas HTTP** | Resuelto con AUTH-01: [`tests/http_client.py`](../services/api/tests/http_client.py) prueba las rutas por ASGI, sin `httpx`. El frontend se prueba con scripts de Playwright fuera del repositorio: no hay pruebas automáticas del backoffice en la CI más allá de typecheck, lint y build |
 | **Dependencia de una API mock compartida** | Los datos los escriben también otros alumnos. Ninguna funcionalidad puede asumir que un registro concreto sigue existiendo. El backend propio **no la envuelve**: convivirán |

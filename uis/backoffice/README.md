@@ -4,16 +4,41 @@ La **aplicación interna** de Nexova: el sitio donde el equipo trabaja, frente a
 [`uis/website`](../website/), que es la cara pública de la empresa.
 
 Hoy cubre las **operaciones de selección**, el **análisis de incidencias de soporte** y el
-**directorio de proveedores**. A medida que avancen los hitos irá albergando el
+**directorio de proveedores**, detrás de un **login**. A medida que avancen los hitos irá albergando el
 resto de capacidades internas —formación, soporte, RR. HH.— como secciones nuevas, en lugar de
 crear una aplicación por cada una.
 
-Hitos 3 y 4 y proyectos «Analizador de Incidencias» y «Directorio de Proveedores» del proyecto
-transversal de AI Engineering · 4Geeks Academy.
+Hitos 3 y 4 y proyectos «Analizador de Incidencias», «Directorio de Proveedores» y «Conectando
+el Candado» (AUTH-02) del proyecto transversal de AI Engineering · 4Geeks Academy.
 
 ---
 
 ## Qué hace
+
+### Acceso (`/login`, `/register`)
+
+Todo el backoffice pide sesión. Las cuentas son las de la API propia,
+[`services/api`](../../services/api/), que debe estar arrancada.
+
+- **Entrar** con email y contraseña (`POST /auth/login`). El token se guarda en `localStorage`.
+- **Crear cuenta** (`POST /users`) con email y contraseña, y nombre, teléfono y dirección
+  opcionales. Después entra sola.
+- Los errores salen **bajo cada campo**. Un email ya registrado se marca en el campo email; un
+  login fallido dice solo «Email o contraseña incorrectos.», sin aclarar cuál de los dos.
+- **Sin sesión**, cualquier vista protegida lleva a `/login?next=<ruta>` y, al entrar, vuelve
+  a esa ruta. Con sesión, `/login` y `/register` llevan al panel.
+- **Cerrar sesión** borra el token y lleva a `/login`. Si la sesión termina sola (caduca a los
+  30 minutos, la API responde `401` o se cierra en otra pestaña), `/login` lo explica.
+
+Vistas protegidas: `/`, `/candidates`, `/candidates/new`, `/candidates/[id]`,
+`/candidates/[id]/edit`, `/incidents`, `/suppliers`, `/suppliers/new` y `/account/profile`.
+
+### Mi perfil (`/account/profile`)
+
+- El **email** de la cuenta, que no se cambia desde aquí.
+- **Nombre, teléfono y dirección**, editables (`PUT /profiles/me`). Dejar un campo vacío lo
+  borra.
+- El nombre del menú de sesión, arriba a la derecha, se actualiza al guardar, sin recargar.
 
 ### Panel (`/`)
 
@@ -101,7 +126,7 @@ La app queda en `http://localhost:3000`.
 | Variable | Descripción |
 | --- | --- |
 | `NEXT_PUBLIC_API_URL` | URL base de la API del tracker |
-| `NEXT_PUBLIC_NEXOVA_API_URL` | URL base de la API propia, [`services/api`](../../services/api/) (`http://localhost:8000` en local) |
+| `NEXT_PUBLIC_NEXOVA_API_URL` | URL base de la API propia, [`services/api`](../../services/api/) (`http://localhost:8000` en local). Sin ella no se puede entrar: la usan el login, el perfil, incidencias y proveedores |
 
 `.env.local` **no se versiona**. `.env.example` sí, como plantilla.
 
@@ -124,17 +149,32 @@ La app queda en `http://localhost:3000`.
 
 ```
 app/                         Rutas (App Router)
-  layout.tsx                 Layout propio: barra lateral, cabecera y pie
-  page.tsx                   Panel de entrada
-  candidates/                Listado
-  candidates/new/            Alta
-  candidates/[id]/           Detalle
-  candidates/[id]/edit/      Edición
-  incidents/                 Análisis de incidencias
-  suppliers/                 Directorio de proveedores
-  suppliers/new/             Alta de proveedor
+  layout.tsx                 Layout raíz: html, fuentes y fondo, común a todas las vistas
+  (auth)/                    Vistas sin sesión. El grupo no aparece en la URL
+    layout.tsx               Tarjeta centrada con el logotipo y GuestGuard
+    login/                   Entrar
+    register/                Crear cuenta
+  (protected)/               Vistas con sesión. El grupo no aparece en la URL
+    layout.tsx               AuthGuard, barra lateral, cabecera con el menú de sesión y pie
+    page.tsx                 Panel de entrada
+    candidates/              Listado
+    candidates/new/          Alta
+    candidates/[id]/         Detalle
+    candidates/[id]/edit/    Edición
+    incidents/               Análisis de incidencias
+    suppliers/               Directorio de proveedores
+    suppliers/new/           Alta de proveedor
+    account/profile/         Mi perfil
 components/
   AppNav.tsx                 Navegación entre secciones
+  AuthGuard.tsx              Sin sesión, a /login?next=…; cierra la sesión cuando caduca
+  GuestGuard.tsx             Con sesión, fuera de /login y /register
+  SessionMenu.tsx            Quién ha entrado y «Cerrar sesión»
+  SessionEndedNotice.tsx     Aviso en /login cuando la sesión terminó sola
+  LoginForm.tsx              Formulario de entrada
+  RegisterForm.tsx           Formulario de alta de cuenta
+  ProfileForm.tsx            Formulario de Mi perfil
+  FormField.tsx              Campo con etiqueta y error accesible, común a los formularios
   BrandLogo.tsx              Logotipo de Nexova, en línea
   PipelineSummary.tsx        Estado del proceso en vivo
   Candidate*.tsx             Interfaz del tracker
@@ -145,11 +185,16 @@ hooks/                       Lógica de datos reutilizable
   useSupplierFilters.ts      Filtros de proveedores leídos de la URL y validados
   useSuppliers.ts            Listado de proveedores: carga, error y refresco de una fila
 lib/
-  api.ts                     Cliente único de las dos APIs (tracker y services/api)
+  api.ts                     Cliente único de las dos APIs; pone el token y cierra la sesión ante un 401
+  session.ts                 Token en localStorage, caducidad leída del JWT y aviso entre pestañas
+  useSession.ts              Hook: ¿hay sesión válida? (useSyncExternalStore)
+  auth-routes.ts             Rutas de acceso y validación de ?next=
+  account.ts                 Validación de los datos de cuenta y aviso de perfil actualizado
   company.ts                 Datos de empresa tomados de CONTEXT.md
   labels.ts                  Etiquetas de dominio en español
   format.ts                  Formato de fechas, importes, números y porcentajes
   suppliers.ts               Reglas del BRIEFING: moneda por país y aviso de renovación
+types/auth.ts                Contrato de la API de cuentas y perfiles en TypeScript
 types/candidate.ts           Contrato de la API del tracker en TypeScript
 types/incident.ts            Contrato de la API de incidencias en TypeScript
 types/supplier.ts            Contrato de la API de proveedores en TypeScript
@@ -196,7 +241,9 @@ Comportamientos a tener en cuenta:
 compartibles, `F5` no pierde el contexto y volver desde el detalle mantiene los filtros. Como
 efecto secundario, el componente de filtros y el listado no se pasan props: cada uno lee la URL.
 
-**Sin librería de estado.** No hace falta: no hay estado global que compartir.
+**Sin librería de estado.** No hace falta: no hay estado global que compartir. La sesión vive en
+`localStorage` y se lee con `useSyncExternalStore`; el perfil guardado se avisa con un evento del
+navegador (`nexova:profile`).
 
 **Etiquetas de dominio separadas.** `lib/labels.ts` traduce los valores de la API a las
 etiquetas del `CONTEXT` de Nexova. Los valores crudos (`in_progress`, `offer_presented`) nunca
@@ -292,3 +339,24 @@ caso de uso: el proveedor deja de usarse, pero su historial sigue ahí. La API s
 **La edición por fila no recarga la lista.** Los `PATCH` devuelven el proveedor completo y
 `useSuppliers` sustituye esa fila. Ni la tarifa ni el estado cambian el país o las categorías,
 así que la fila sigue cumpliendo el filtro activo.
+
+**El token, en `localStorage`, y la guardia, en el navegador.** Lo pide el enunciado de AUTH-02,
+sin *middleware* de Next. El servidor no puede leer `localStorage`, así que ninguna página pide
+datos desde el servidor: `AuthGuard` no pinta la vista hasta saber que hay sesión, y la API exige
+el token en cada petición, que es el candado de verdad. El riesgo de `localStorage` es el XSS, y
+por eso aquí no se usa `dangerouslySetInnerHTML` y el token dura 30 minutos. El razonamiento
+completo está en [`techContext.md`](../../memory-bank/techContext.md).
+
+**Los formularios no navegan: navega la sesión.** Entrar guarda el token y cerrar sesión lo
+borra, nada más. Las guardias ven el cambio y deciden adónde ir. Así, cerrar sesión aquí, en otra
+pestaña, por caducidad o por un `401` acaba siempre en `/login`, por el mismo camino.
+
+**`?next=` solo admite rutas propias.** `lib/auth-routes.ts` descarta cualquier otro origen. Un
+enlace `/login?next=https://otro-sitio` no saca a nadie fuera del backoffice tras entrar.
+
+**El perfil envía solo lo que cambia.** `PUT /profiles/me` deja como está lo que no llega y borra
+lo que llega a `null`. Si no hay cambios, no se llama a la API.
+
+**El login no dice qué ha fallado.** La API da el mismo `401` para un email desconocido y una
+contraseña mala, y el formulario lo respeta: decir «ese email no existe» enseñaría qué cuentas
+hay.
