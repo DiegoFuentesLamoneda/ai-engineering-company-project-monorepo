@@ -111,7 +111,7 @@ Rama `feature/auth-api`, **apilada sobre `feature/supplier-directory`** (PR #7 a
 | 7 — Verificación: 194 pruebas en verde; recorrido en `/docs` con una cuenta de prueba (`401` sin token, alta `201`, *Authorize*, `/auth/me`, `200` con token, `403` en `GET /users`), con 5 capturas para la PR; y un script contra el servidor real, 29/29. Pasos en la sección "Verificación manual en `/docs`" del [README de la API](../services/api/README.md) | ✅ |
 | 8 — Cierre: banco de memoria ([`techContext.md`](./techContext.md): decisión de autenticación y dos correcciones; [`projectbrief.md`](./projectbrief.md): vocabulario de cuentas), ficha en la biblioteca y PR hacia `main`: [#8](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/8), abierta el 13/11/2026 para la evaluación del campus, con las 8 rutas protegidas y cómo se verificaron, y fusionada el 18/11/2026 | ✅ |
 
-## En curso — Autenticación en el backoffice (AUTH-02)
+## Autenticación en el backoffice (AUTH-02) — en revisión (#9)
 
 Rama `feature/auth-frontend`, salida de `main` después de fusionar #6, #7 y #8. Proyecto «Conectando el Candado: Flujos de Autenticación en el Frontend», ticket **AUTH-02**: login, registro y perfil dentro del backoffice, guardia de sesión en el cliente y token en `localStorage`. Cierra la rotura temporal de AUTH-01: las pantallas de incidencias y proveedores vuelven a funcionar, ahora con sesión. El enunciado no está en `docs/contexts/`: lo pegó Diego el 18/11/2026.
 
@@ -123,7 +123,7 @@ Rama `feature/auth-frontend`, salida de `main` después de fusionar #6, #7 y #8.
 | 4 — [`AuthGuard`](../uis/backoffice/components/AuthGuard.tsx) y [`GuestGuard`](../uis/backoffice/components/GuestGuard.tsx): sin sesión, `/login?next=…`; con sesión, fuera de `/login`; cerrar sesión; aviso cuando la sesión se cierra por un `401`, por caducidad o desde otra pestaña; `next` validado contra redirecciones abiertas. 29 comprobaciones | ✅ |
 | 5 — [`/account/profile`](../uis/backoffice/components/ProfileForm.tsx): datos de `GET /auth/me`, edición con `PUT /profiles/me` enviando solo lo que cambia, y el menú de sesión se actualiza sin recargar. 25 comprobaciones | ✅ |
 | 6 — Verificación de extremo a extremo contra la API real: las 9 vistas protegidas con y sin sesión, registro, perfil, cerrar sesión, login fallido y `401`; `uis/website/` sin cambios frente a `main` y funcionando. 55/55 | ✅ |
-| 7 — Cierre: banco de memoria, READMEs, ficha en la biblioteca y PR hacia `main` | ⏳ |
+| 7 — Cierre: banco de memoria, READMEs, ficha en la biblioteca y PR hacia `main`: [#9](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/9), abierta el 18/11/2026 para la evaluación del campus, con las 9 vistas protegidas y la web pública sin cambios | ✅ |
 
 **Solo se protege el backoffice.** Es la única aplicación Next.js del monorepo y la única que llama a la API propia. `uis/website/` es pública por enunciado, y `uis/talent-lab/` es un banco de pruebas estático de `talent-core`: no llama a ninguna API ni muestra datos de personas.
 
