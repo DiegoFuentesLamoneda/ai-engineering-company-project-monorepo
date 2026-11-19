@@ -6,7 +6,7 @@ Hoy tiene dos dominios:
 
 | Dominio | Qué hace | Rutas |
 | --- | --- | --- |
-| [`incidents`](./app/domains/incidents/) | Analiza la exportación CSV del helpdesk de soporte (Roberto Díaz). La validación y las métricas son las del paquete [`packages/shared/incident-analysis/`](../../packages/shared/incident-analysis/), las mismas que usa el script [`scripts/analyze.py`](../../scripts/analyze.py) | `POST /api/incidents/analyze` · `GET /api/incidents/results/export` |
+| [`incidents`](./app/domains/incidents/) | Analiza la exportación CSV del helpdesk de soporte (Roberto Díaz). La validación y las métricas son las del paquete [`packages/shared/incident-analysis/`](../../packages/shared/incident-analysis/), las mismas que usa el script [`scripts/analyze.py`](../../scripts/analyze.py). También guarda las incidencias del gestor centralizado (modelo y repositorio listos; las rutas llegan con el resto del hito) | `POST /api/incidents/analyze` · `GET /api/incidents/results/export` |
 | [`suppliers`](./app/domains/suppliers/) | Directorio oficial de proveedores externos (Patricia Solís). Persistido en TinyDB, con las reglas del [BRIEFING](../../docs/contexts/proyectos/supplier-directory.es.md) | `/suppliers` (ver abajo) |
 
 ## Puesta en marcha
@@ -48,6 +48,7 @@ Se lee del entorno **una sola vez, al arrancar** ([`app/config.py`](./app/config
 | `NEXOVA_API_SUPPLIERS_DB_PATH` | `storage/suppliers.json` (dentro de esta carpeta) | Fichero de TinyDB del directorio de proveedores. La API y `uv run seed` leen la misma variable, así que siempre abren el mismo fichero |
 | `NEXOVA_API_USERS_DB_PATH` | `storage/users.json` (dentro de esta carpeta) | Fichero de TinyDB de usuarios (solo credenciales) |
 | `NEXOVA_API_PROFILES_DB_PATH` | `storage/profiles.json` (dentro de esta carpeta) | Fichero de TinyDB de perfiles (nombre y contacto) |
+| `NEXOVA_API_INCIDENTS_DB_PATH` | `storage/incidents.json` (dentro de esta carpeta) | Fichero de TinyDB del gestor de incidencias: tabla `incidents` y tabla `seed_imports` (qué `ticket_id` del CSV ya se cargó) |
 | `NEXOVA_API_JWT_SECRET_KEY` | — (obligatoria para arrancar) | **Secreta.** Clave con la que se firman los tokens. Al menos 32 caracteres. Va en `.env`, nunca en el código |
 | `NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Minutos de validez de un token, de 1 a 1440 |
 | `NEXOVA_API_RESEND_API_KEY` | — (opcional) | **Secreta.** API key de [Resend](https://resend.com), el servicio que envía el email de restablecimiento de contraseña. Va en `.env`, nunca en el código. Sin ella la API arranca y escribe el enlace en su log en vez de enviarlo |
@@ -84,10 +85,11 @@ app/
    │  ├─ database.py    TinyDB, tablas tokens y audit. Marcar como usado, y contar y anotar para el límite, dentro del mismo cerrojo
    │  ├─ exceptions.py  InvalidResetTokenError (un solo mensaje, el motivo aparte), contraseña actual mal o repetida
    │  └─ dependencies.py  el repositorio de tokens, el mailer y la IP de quien llama
-   ├─ incidents/
+   ├─ incidents/        análisis del CSV y gestor de incidencias centralizado
    │  ├─ router.py      HTTP: recibe la subida, llama al service, elige el código
    │  ├─ service.py     reglas de la subida y el último análisis. No importa fastapi
-   │  ├─ schemas.py     contrato de salida (lo que publica /docs)
+   │  ├─ schemas.py     Incident, IncidentCreate y StatusUpdate (valores del paquete compartido) y el contrato del análisis
+   │  ├─ database.py    TinyDB, tablas incidents y seed_imports. Cambio de estado solo si nadie lo cambió antes
    │  ├─ exceptions.py  errores del dominio, sin HTTP
    │  └─ dependencies.py
    ├─ suppliers/
@@ -234,6 +236,8 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 - **Solo la tarifa mueve `updated_at`.** Patricia lo usa para justificar variaciones de presupuesto, y suspender no cambia el precio. Una tarifa repetida sí lo renueva: confirma ese precio en esa fecha.
 - **`DELETE` devuelve `200` con el proveedor borrado**, no `204` sin cuerpo. Así el frontend puede decir qué ha borrado sin haberlo guardado antes.
 - **La base de datos se abre al arrancar el servidor, no al importar** (`lifespan` en [`main.py`](./app/main.py)), y se cierra al pararlo. Crear la app para las pruebas o para leer el OpenAPI no toca el fichero.
+- **El modelo `Incident` no define sus valores válidos.** Estados, categorías, orígenes y sedes son los `StrEnum` de [`incident_analysis.catalog`](../../packages/shared/incident-analysis/incident_analysis/catalog.py), los mismos que usa el seed. Toda incidencia nace `open` (`IncidentCreate` no acepta `status`), el título va de 1 a 120 caracteres, la descripción de 1 a 2000, las fechas llevan zona horaria y `updated_at` nunca es anterior a `created_at`.
+- **El cambio de estado se escribe solo si nadie lo cambió antes** (`IncidentRepository.update_status`). Se pasa el estado que se leyó y, dentro del cerrojo, se comprueba que sigue siendo ese. Si dos personas pasan a la vez una incidencia `in_progress` a `resolved` y a `discarded`, la segunda no pisa a la primera sin saberlo.
 - **El `id` de un usuario es un UUID**, no el número de TinyDB. TinyDB reutiliza los números borrados, y el token de una cuenta eliminada identificaría a la siguiente que se registrase.
 - **Quién puede hacer qué lo decide el service**, no el router ([`users/service.py`](./app/domains/users/service.py)). Cada uno ve, edita y borra su propia cuenta. Un `admin`, cualquiera, y es el único que lista usuarios y cambia roles. `manager` todavía no tiene permisos propios. La comprobación de permiso va antes que la de existencia: así quien no es admin no puede averiguar qué IDs existen.
 - **El login no dice qué ha fallado.** Un email desconocido, una contraseña incorrecta y una cuenta desactivada dan la misma respuesta. Con un email desconocido se verifica igualmente contra un hash de relleno, para que tarde lo mismo y el tiempo de respuesta no delate qué emails tienen cuenta.

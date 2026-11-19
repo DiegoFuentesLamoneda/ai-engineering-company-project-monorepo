@@ -32,6 +32,11 @@ DEFAULT_SUPPLIERS_DB_PATH = Path(__file__).resolve().parents[1] / "storage" / "s
 DEFAULT_USERS_DB_PATH = Path(__file__).resolve().parents[1] / "storage" / "users.json"
 DEFAULT_PROFILES_DB_PATH = Path(__file__).resolve().parents[1] / "storage" / "profiles.json"
 
+# Fichero de TinyDB del gestor de incidencias: las incidencias y la tabla de
+# idempotencia del seed. Relativo a services/api, como los demás: la API y
+# scripts/seed_incidents.py tienen que abrir siempre el mismo fichero.
+DEFAULT_INCIDENTS_DB_PATH = Path(__file__).resolve().parents[1] / "storage" / "incidents.json"
+
 # Ventana de validez del token. Corta a propósito: un JWT no se puede revocar,
 # así que un token robado sirve hasta que caduca.
 DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -70,6 +75,7 @@ class Settings(BaseModel):
     suppliers_db_path: Path = DEFAULT_SUPPLIERS_DB_PATH
     users_db_path: Path = DEFAULT_USERS_DB_PATH
     profiles_db_path: Path = DEFAULT_PROFILES_DB_PATH
+    incidents_db_path: Path = DEFAULT_INCIDENTS_DB_PATH
     # Opcional aquí porque el seeder también carga la configuración y no firma
     # tokens. La API no arranca sin él: ver `require_jwt_secret`.
     # SecretStr: si la configuración sale en un log o un traceback, se ve
@@ -142,6 +148,8 @@ def load_settings(env: Mapping[str, str] = os.environ) -> Settings:
     - `NEXOVA_API_SUPPLIERS_DB_PATH`: fichero JSON de TinyDB de proveedores.
     - `NEXOVA_API_USERS_DB_PATH`: fichero JSON de TinyDB de usuarios.
     - `NEXOVA_API_PROFILES_DB_PATH`: fichero JSON de TinyDB de perfiles.
+    - `NEXOVA_API_INCIDENTS_DB_PATH`: fichero JSON de TinyDB del gestor de
+      incidencias.
     - `NEXOVA_API_JWT_SECRET_KEY`: secreto con el que se firman los tokens.
       Va en `.env`, nunca en el código.
     - `NEXOVA_API_ACCESS_TOKEN_EXPIRE_MINUTES`: minutos de validez del token.
@@ -167,6 +175,7 @@ def load_settings(env: Mapping[str, str] = os.environ) -> Settings:
         suppliers_db_path=env.get("NEXOVA_API_SUPPLIERS_DB_PATH") or DEFAULT_SUPPLIERS_DB_PATH,
         users_db_path=env.get("NEXOVA_API_USERS_DB_PATH") or DEFAULT_USERS_DB_PATH,
         profiles_db_path=env.get("NEXOVA_API_PROFILES_DB_PATH") or DEFAULT_PROFILES_DB_PATH,
+        incidents_db_path=env.get("NEXOVA_API_INCIDENTS_DB_PATH") or DEFAULT_INCIDENTS_DB_PATH,
         # Vacía cuenta como ausente: es como viene en .env.example.
         jwt_secret_key=env.get("NEXOVA_API_JWT_SECRET_KEY") or None,
         access_token_expire_minutes=env.get(

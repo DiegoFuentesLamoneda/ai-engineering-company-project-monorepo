@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, load_settings
 from .domains.auth.router import router as auth_router
+from .domains.incidents.database import IncidentRepository
 from .domains.incidents.router import router as incidents_router
 from .domains.incidents.service import ResultsStore
 from .domains.password_resets.database import PasswordResetRepository
@@ -62,6 +63,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.suppliers = stack.enter_context(SupplierRepository(settings.suppliers_db_path))
         app.state.users = stack.enter_context(UserRepository(settings.users_db_path))
         app.state.profiles = stack.enter_context(ProfileRepository(settings.profiles_db_path))
+        app.state.incidents = stack.enter_context(IncidentRepository(settings.incidents_db_path))
         app.state.password_resets = stack.enter_context(
             PasswordResetRepository(settings.password_resets_db_path)
         )
