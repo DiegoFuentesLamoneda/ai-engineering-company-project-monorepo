@@ -17,6 +17,7 @@ import type {
   UserCreated,
 } from "@/types/auth";
 import type { IncidentAnalysis } from "@/types/incident";
+import type { Incident, IncidentInput } from "@/types/incident-manager";
 import type {
   Supplier,
   SupplierFilters,
@@ -69,26 +70,40 @@ const NEXOVA_PUBLIC_API: ApiTarget = { ...NEXOVA_API, auth: false };
 export const SESSION_EXPIRED_MESSAGE =
   "Tu sesión ha caducado o no es válida. Vuelve a iniciar sesión.";
 
-/** Error de la API con el codigo HTTP y, si los hay, los errores por campo. */
+/**
+ * Error de la API con el codigo HTTP y, si los hay, los errores por campo.
+ * fieldCodes solo lo rellena el gestor de incidencias: un codigo estable por
+ * campo ("missing", "too_long"…) para que el formulario escriba su propio
+ * mensaje en vez de depender del texto de la API.
+ */
 export class ApiError extends Error {
   status: number;
   fieldErrors: Record<string, string>;
+  fieldCodes: Record<string, string>;
 
-  constructor(message: string, status: number, fieldErrors: Record<string, string> = {}) {
+  constructor(
+    message: string,
+    status: number,
+    fieldErrors: Record<string, string> = {},
+    fieldCodes: Record<string, string> = {},
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.fieldErrors = fieldErrors;
+    this.fieldCodes = fieldCodes;
   }
 }
 
 // Formatos de error que llegan:
 // - tracker:          { error, details: { campo } }  y  { detail: [ { loc, msg } ] }
 // - services/api:     { detail: "mensaje en espanol, listo para mostrar" }
+// - gestor (400):     { detail, errors: [ { field, code, message } ] }
 interface ErrorBody {
   error?: string;
   details?: Record<string, string>;
   detail?: string | Array<{ loc: Array<string | number>; msg: string }>;
+  errors?: Array<{ field: string; code: string; message: string }>;
 }
 
 const MENSAJES_POR_ESTADO: Record<number, string> = {
@@ -135,6 +150,20 @@ async function construirError(res: Response): Promise<ApiError> {
     }
   }
 
+  // Formato C (gestor de incidencias) -> { errors: [{ field, code, message }] }
+  // "body" es el cuerpo entero (JSON roto): va al mensaje general.
+  const fieldCodes: Record<string, string> = {};
+  if (Array.isArray(body?.errors)) {
+    for (const item of body.errors) {
+      if (item.field === "body") {
+        errorDelCuerpo = item.message;
+        continue;
+      }
+      fieldErrors[item.field] = item.message;
+      fieldCodes[item.field] = item.code;
+    }
+  }
+
   const mensaje =
     errorDelCuerpo ??
     body?.error ??
@@ -142,7 +171,7 @@ async function construirError(res: Response): Promise<ApiError> {
     MENSAJES_POR_ESTADO[res.status] ??
     `Error inesperado (${res.status}).`;
 
-  return new ApiError(mensaje, res.status, fieldErrors);
+  return new ApiError(mensaje, res.status, fieldErrors, fieldCodes);
 }
 
 /**
@@ -316,6 +345,20 @@ export function analyzeIncidents(file: File): Promise<IncidentAnalysis> {
 export async function downloadIncidentResults(): Promise<Blob> {
   const res = await send(NEXOVA_API, "/api/incidents/results/export");
   return res.blob();
+}
+
+// --- Gestor de incidencias (services/api) ---
+
+/**
+ * Registra una incidencia. Nace "open": el estado no se envia. Un 400 trae
+ * los errores por campo en fieldErrors y fieldCodes.
+ */
+export function createIncident(input: IncidentInput): Promise<Incident> {
+  return request<Incident>(
+    "/api/incidents",
+    { method: "POST", body: JSON.stringify(input) },
+    NEXOVA_API,
+  );
 }
 
 // --- Directorio de proveedores (services/api) ---

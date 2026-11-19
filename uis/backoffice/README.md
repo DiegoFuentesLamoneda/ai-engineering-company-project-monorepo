@@ -40,7 +40,7 @@ Todo el backoffice pide sesión. Las cuentas son las de la API propia,
   30 minutos, la API responde `401` o se cierra en otra pestaña), `/login` lo explica.
 
 Vistas protegidas: `/`, `/candidates`, `/candidates/new`, `/candidates/[id]`,
-`/candidates/[id]/edit`, `/incidents`, `/suppliers`, `/suppliers/new`, `/account/profile` y
+`/candidates/[id]/edit`, `/incidents`, `/incidents/new`, `/suppliers`, `/suppliers/new`, `/account/profile` y
 `/account/change-password`.
 
 ### Mi perfil (`/account/profile`)
@@ -98,6 +98,22 @@ Análisis de la exportación CSV del helpdesk de soporte al cliente:
 
 El análisis lo hace la API propia, [`services/api`](../../services/api/), que debe estar
 arrancada (ver su README). El email de los clientes no aparece en ninguna parte del resultado.
+
+### Nueva incidencia (`/incidents/new`)
+
+El formulario del gestor de incidencias centralizado: la primera pieza de la herramienta que
+sustituye los correos sueltos, los Excel por oficina y las llamadas.
+
+- **Campos**: título (hasta 120 caracteres), descripción (hasta 2000), categoría, quién la
+  reporta y sede, todos obligatorios. Título y descripción llevan contador.
+- **Ayuda en cada desplegable**: al elegir categoría u origen se lee su descripción del briefing.
+- **La sede siempre está a la vista**, con las cuatro oficinas del briefing. Si la reporta
+  *Personal de una oficina*, el campo se resalta; si no, la ayuda dice que se use Central.
+- **Validación en el navegador** antes de enviar, y los errores de la API bajo su campo.
+- Mientras se envía, el botón se desactiva y dice «Registrando…». Al registrarla, el formulario
+  se vacía y un aviso confirma el título registrado.
+
+La incidencia nace *Abierta*: el estado no se elige al registrarla.
 
 ### Proveedores (`/suppliers`)
 
@@ -185,6 +201,7 @@ app/                         Rutas (App Router)
     candidates/[id]/         Detalle
     candidates/[id]/edit/    Edición
     incidents/               Análisis de incidencias
+    incidents/new/           Alta de incidencia en el gestor
     suppliers/               Directorio de proveedores
     suppliers/new/           Alta de proveedor
     account/profile/         Mi perfil
@@ -205,7 +222,8 @@ components/
   BrandLogo.tsx              Logotipo de Nexova, en línea
   PipelineSummary.tsx        Estado del proceso en vivo
   Candidate*.tsx             Interfaz del tracker
-  Incident*.tsx              Subida, resultado y descarga del análisis de incidencias
+  Incident*.tsx              Análisis del CSV de incidencias (subida, resultado, descarga)
+  IncidentForm.tsx           Alta de incidencia en el gestor
   Supplier*.tsx              Filtros, tabla, edición por fila y alta de proveedores
 hooks/                       Lógica de datos reutilizable
   useIncidentAnalysis.ts     Estado del análisis: fichero, carga, error y resultado
@@ -223,7 +241,8 @@ lib/
   suppliers.ts               Reglas del BRIEFING: moneda por país y aviso de renovación
 types/auth.ts                Contrato de la API de cuentas y perfiles en TypeScript
 types/candidate.ts           Contrato de la API del tracker en TypeScript
-types/incident.ts            Contrato de la API de incidencias en TypeScript
+types/incident.ts            Contrato del análisis de incidencias (CSV) en TypeScript
+types/incident-manager.ts    Contrato del gestor de incidencias en TypeScript
 types/supplier.ts            Contrato de la API de proveedores en TypeScript
 ```
 
@@ -342,6 +361,29 @@ como se llaman en la cabecera del CSV, porque es lo que hay que corregir en el f
 categoría y estado, pero no su texto en español. Las etiquetas de `lib/labels.ts` las aprobó Diego
 el 11/11/2026 antes de escribirlas. La excepción consciente es la moneda: se muestra `EUR` o
 `USD`, el código ISO que usa contabilidad, y en los importes el símbolo (`450,00 €`).
+
+**Gestor de incidencias: dos vocabularios con el mismo nombre.** El analizador del CSV ya tenía
+`IncidentStatus` e `IncidentCategory` (`OPEN`, `TECHNICAL`…). Los del gestor son otros valores,
+así que sus tipos se llaman `IncidentManagerStatus` e `IncidentManagerCategory`, viven en
+[`types/incident-manager.ts`](./types/incident-manager.ts) y sus etiquetas llevan el prefijo
+`MANAGER_` en `lib/labels.ts`.
+
+**Gestor de incidencias: etiquetas aprobadas y sedes literales.** Las sedes son la tabla
+«Oficinas de Nexova» del briefing, tal cual, para que *Remoto* no se confunda con *Central* ni con
+*Valencia — Operaciones*. Estados, categorías y orígenes no tienen nombre corto en el briefing:
+sus etiquetas las aprobó Diego el 19/11/2026. Las descripciones de la ayuda sí son literales.
+
+**Gestor de incidencias: solo en español.** El briefing pide versión bilingüe solo si la interfaz
+ya la tenía. El backoffice no la tiene: todas sus etiquetas están en español.
+
+**Los errores del gestor se escriben a partir de un código.** El `400` del gestor trae, por cada
+campo, un `code` estable (`missing`, `too_long`, `invalid_choice`…) además del mensaje.
+`lib/api.ts` los guarda en `fieldCodes` y el formulario escribe su propio texto llano («Falta el
+título»). El mensaje de la API («El campo 'title' es obligatorio») está pensado para quien la usa
+directamente, no para quien rellena el formulario.
+
+**Los desplegables del gestor empiezan vacíos.** Con *Central* preseleccionada, una incidencia de
+Miami se quedaría en Valencia por no mirar el campo. Vacío, hay que elegir.
 
 **La moneda no se elige: la fija el país.** El formulario no tiene campo de moneda. España
 factura en EUR y EE. UU. en USD (BRIEFING), así que el formulario la deduce y la API rechaza una
