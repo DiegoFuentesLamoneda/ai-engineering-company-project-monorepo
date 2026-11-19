@@ -10,7 +10,7 @@ from __future__ import annotations
 import csv
 import re
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -136,12 +136,13 @@ def percentage(count: int, total: int) -> float:
     return round(count * 100 / total, 1) if total else 0.0
 
 
-def analyze_csv(lines: Iterable[str]) -> AnalysisResult:
-    """Analiza un CSV ya abierto como texto (fichero, upload de la API, lista de líneas).
+def iter_rows(lines: Iterable[str]) -> Iterator[tuple[int, dict[str, str | None]]]:
+    """Recorre un CSV de tickets fila a fila: (línea física, fila).
 
-    Lanza IncidentFileError (o una subclase) si el fichero entero es
-    inutilizable: vacío, sin las columnas obligatorias o con otra codificación.
-    Las filas sueltas mal formadas no lanzan nada: se cuentan como inválidas.
+    Es la lectura que comparten el análisis y el seed del gestor de
+    incidencias. Comprueba el fichero entero (vacío, sin las columnas
+    obligatorias o con otra codificación) y lanza IncidentFileError, o una
+    subclase. Las filas no se validan aquí: eso lo hace `validate_record`.
     """
     reader = csv.DictReader(lines)
 
@@ -165,45 +166,10 @@ def analyze_csv(lines: Iterable[str]) -> AnalysisResult:
         raise MissingColumnsError(missing)
 
     total = 0
-    invalid = 0
-    invalid_by_rule: Counter[str] = Counter()
-    by_category: Counter[str] = Counter()
-    by_status: Counter[str] = Counter()
-    scores: Counter[int] = Counter()
-    closed = 0
-    samples: list[InvalidRecord] = []
-
     try:
         for row in reader:
             total += 1
-            errors = validate_record(row)
-
-            if errors:
-                invalid += 1
-                invalid_by_rule.update(errors)
-                if len(samples) < MAX_INVALID_SAMPLES:
-                    ticket_id = field(row, "ticket_id")
-                    samples.append(
-                        InvalidRecord(
-                            line=reader.line_num,
-                            # Solo se devuelve el ID si tiene el formato esperado:
-                            # un campo mal rellenado podría contener cualquier cosa.
-                            ticket_id=ticket_id if _TICKET_ID_RE.fullmatch(ticket_id) else "",
-                            rules=tuple(errors),
-                        )
-                    )
-                continue
-
-            # A partir de aquí la fila es válida: los valores ya están comprobados.
-            by_category[field(row, "category")] += 1
-            status = field(row, "status")
-            by_status[status] += 1
-
-            if status == CLOSED_STATUS:
-                closed += 1
-                score = parse_score(field(row, "satisfaction_score"))
-                if score is not None:
-                    scores[score] += 1
+            yield reader.line_num, row
     except UnicodeDecodeError as exc:
         raise FileEncodingError(
             "El fichero no está en UTF-8. Expórtalo de nuevo como CSV UTF-8."
@@ -215,6 +181,58 @@ def analyze_csv(lines: Iterable[str]) -> AnalysisResult:
 
     if total == 0:
         raise EmptyFileError("El fichero solo tiene la cabecera: no hay registros que analizar.")
+
+
+def safe_ticket_id(row: Mapping[str, str | None]) -> str:
+    """El ticket_id de la fila solo si tiene el formato esperado; si no, "".
+
+    Un campo mal rellenado podría contener cualquier cosa, incluido un dato
+    personal: lo que no tiene forma de ID no se muestra.
+    """
+    ticket_id = field(row, "ticket_id")
+    return ticket_id if _TICKET_ID_RE.fullmatch(ticket_id) else ""
+
+
+def analyze_csv(lines: Iterable[str]) -> AnalysisResult:
+    """Analiza un CSV ya abierto como texto (fichero, upload de la API, lista de líneas).
+
+    Lanza IncidentFileError (o una subclase) si el fichero entero es
+    inutilizable: vacío, sin las columnas obligatorias o con otra codificación.
+    Las filas sueltas mal formadas no lanzan nada: se cuentan como inválidas.
+    """
+
+    total = 0
+    invalid = 0
+    invalid_by_rule: Counter[str] = Counter()
+    by_category: Counter[str] = Counter()
+    by_status: Counter[str] = Counter()
+    scores: Counter[int] = Counter()
+    closed = 0
+    samples: list[InvalidRecord] = []
+
+    for line, row in iter_rows(lines):
+        total += 1
+        errors = validate_record(row)
+
+        if errors:
+            invalid += 1
+            invalid_by_rule.update(errors)
+            if len(samples) < MAX_INVALID_SAMPLES:
+                samples.append(
+                    InvalidRecord(line=line, ticket_id=safe_ticket_id(row), rules=tuple(errors))
+                )
+            continue
+
+        # A partir de aquí la fila es válida: los valores ya están comprobados.
+        by_category[field(row, "category")] += 1
+        status = field(row, "status")
+        by_status[status] += 1
+
+        if status == CLOSED_STATUS:
+            closed += 1
+            score = parse_score(field(row, "satisfaction_score"))
+            if score is not None:
+                scores[score] += 1
 
     scored = sum(scores.values())
     average = sum(score * count for score, count in scores.items()) / scored if scored else None
