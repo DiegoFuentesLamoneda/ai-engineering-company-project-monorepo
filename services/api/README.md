@@ -25,6 +25,7 @@ uv run --env-file .env uvicorn app.main:app --reload --port 8000
 uv run python -m unittest discover -s tests     # pruebas
 uv run seed                                     # carga los proveedores del BRIEFING
 uv run create-admin                             # crea el primer admin (o asciende una cuenta)
+uv run python ../../scripts/seed_incidents.py   # carga en el gestor el histórico del CSV (96 incidencias)
 ```
 
 `uv run seed` ([`app/seed.py`](./app/seed.py)) mete en la base de datos de TinyDB los 15 proveedores del [BRIEFING del directorio](../../docs/contexts/proyectos/supplier-directory.es.md). Se puede repetir sin miedo: salta los que ya están (por nombre) y dice cuántos ha insertado, cuántos ha saltado y cuántos hay en total. La base de datos es un fichero JSON en `storage/suppliers.json`. No se versiona: cada entorno crea la suya.
@@ -90,6 +91,7 @@ app/
    │  ├─ service.py     reglas de la subida y el último análisis. No importa fastapi
    │  ├─ schemas.py     Incident, IncidentCreate y StatusUpdate (valores del paquete compartido) y el contrato del análisis
    │  ├─ database.py    TinyDB, tablas incidents y seed_imports. Cambio de estado solo si nadie lo cambió antes
+   │  ├─ seed.py        inserta el histórico del CSV; lo lanza scripts/seed_incidents.py
    │  ├─ exceptions.py  errores del dominio, sin HTTP
    │  └─ dependencies.py
    ├─ suppliers/
