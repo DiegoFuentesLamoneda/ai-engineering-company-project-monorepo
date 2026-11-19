@@ -230,3 +230,25 @@ export const MANAGER_STATUS_VALUES: IncidentManagerStatus[] = [
   "resolved",
   "discarded",
 ];
+
+export const MANAGER_STATUS_BADGE_STYLES: Record<IncidentManagerStatus, string> = {
+  open: "bg-slate-700 text-slate-100",
+  in_progress: "bg-marca-600 text-white",
+  resolved: "bg-emerald-700 text-emerald-50",
+  discarded: "bg-red-900 text-red-100",
+};
+
+/**
+ * El ciclo de vida del briefing: a qué estados puede pasar cada uno. Resuelta
+ * y Descartada son finales. Quien decide es la API (ALLOWED_TRANSITIONS); aquí
+ * solo sirve para no ofrecer en la lista un cambio que rechazaría.
+ */
+export const MANAGER_STATUS_TRANSITIONS: Record<IncidentManagerStatus, IncidentManagerStatus[]> = {
+  open: ["in_progress", "discarded"],
+  in_progress: ["resolved", "discarded"],
+  resolved: [],
+  discarded: [],
+};
+
+/** La categoría crítica del briefing: tiene filtro directo y se marca en la lista. */
+export const SLA_BREACH_CATEGORY: IncidentManagerCategory = "sla_breach";

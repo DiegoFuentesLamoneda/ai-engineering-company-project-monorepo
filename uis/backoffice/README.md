@@ -40,7 +40,7 @@ Todo el backoffice pide sesión. Las cuentas son las de la API propia,
   30 minutos, la API responde `401` o se cierra en otra pestaña), `/login` lo explica.
 
 Vistas protegidas: `/`, `/candidates`, `/candidates/new`, `/candidates/[id]`,
-`/candidates/[id]/edit`, `/incidents/analyze`, `/incidents/new`, `/suppliers`, `/suppliers/new`, `/account/profile` y
+`/candidates/[id]/edit`, `/incidents`, `/incidents/analyze`, `/incidents/new`, `/suppliers`, `/suppliers/new`, `/account/profile` y
 `/account/change-password`.
 
 ### Mi perfil (`/account/profile`)
@@ -98,6 +98,22 @@ Análisis de la exportación CSV del helpdesk de soporte al cliente:
 
 El análisis lo hace la API propia, [`services/api`](../../services/api/), que debe estar
 arrancada (ver su README). El email de los clientes no aparece en ninguna parte del resultado.
+
+### Incidencias (`/incidents`)
+
+La lista del gestor de incidencias centralizado: todas las incidencias, la más reciente primero.
+
+- **Filtros** por estado, quién la reporta, sede y categoría, guardados en la URL:
+  `/incidents?branch=miami_office&status=open` es «lo de Miami sin empezar», y se puede pasar
+  como enlace.
+- **«Solo incumplimientos de SLA»**: un botón que activa el filtro de las incidencias críticas
+  con un clic. En la tabla, esas filas llevan la categoría marcada en rojo.
+- **Cambio de estado en la fila.** El desplegable solo ofrece los cambios que permite el ciclo de
+  vida (*Abierta* → *En curso* o *Descartada*; *En curso* → *Resuelta* o *Descartada*). Las
+  resueltas y descartadas dicen «Estado final».
+- **Estados de la pantalla**: cargando, error con «Reintentar» y vacío, con un texto distinto si
+  no hay incidencias o si los filtros no dejan ninguna.
+- Desde la cabecera se registra una incidencia nueva o se abre el análisis del CSV del helpdesk.
 
 ### Nueva incidencia (`/incidents/new`)
 
@@ -200,6 +216,7 @@ app/                         Rutas (App Router)
     candidates/new/          Alta
     candidates/[id]/         Detalle
     candidates/[id]/edit/    Edición
+    incidents/               Lista del gestor de incidencias
     incidents/analyze/       Análisis de incidencias (CSV)
     incidents/new/           Alta de incidencia en el gestor
     suppliers/               Directorio de proveedores
@@ -224,9 +241,13 @@ components/
   Candidate*.tsx             Interfaz del tracker
   Incident*.tsx              Análisis del CSV de incidencias (subida, resultado, descarga)
   IncidentForm.tsx           Alta de incidencia en el gestor
+  IncidentManager*.tsx       Filtros y tabla del gestor de incidencias
+  IncidentStatusControl.tsx  Estado de una incidencia y cambio al siguiente
   Supplier*.tsx              Filtros, tabla, edición por fila y alta de proveedores
 hooks/                       Lógica de datos reutilizable
   useIncidentAnalysis.ts     Estado del análisis: fichero, carga, error y resultado
+  useIncidentFilters.ts      Filtros del gestor leídos de la URL y validados
+  useIncidents.ts            Lista del gestor: carga, reintento y cambio de estado optimista
   useSupplierFilters.ts      Filtros de proveedores leídos de la URL y validados
   useSuppliers.ts            Listado de proveedores: carga, error y refresco de una fila
 lib/
@@ -384,6 +405,23 @@ directamente, no para quien rellena el formulario.
 
 **Los desplegables del gestor empiezan vacíos.** Con *Central* preseleccionada, una incidencia de
 Miami se quedaría en Valencia por no mirar el campo. Vacío, hay que elegir.
+
+**El cambio de estado es optimista.** Al elegir el estado nuevo, la fila cambia en el acto y el
+`PATCH` va detrás. Si la API lo rechaza, la fila vuelve a como estaba y aparece el error debajo.
+Si lo acepta, la fila se sustituye por la que devuelve la API, con su `updated_at` nuevo. Es lo
+que pide el briefing: quien gestiona veinte incidencias seguidas no espera a la red en cada una.
+
+**Tras cambiar el estado, la fila se queda aunque ya no cumpla el filtro.** Con el filtro
+*Abierta*, pasar una a *En curso* no la hace desaparecer de golpe: quien la ha cambiado ve el
+resultado y, si falla, el error. Sale de la lista en la siguiente carga.
+
+**El 409 y el 404 se explican con palabras de la pantalla.** El mensaje de la API nombra los
+estados con su valor interno (`'open'`), así que la fila muestra su propio texto: alguien ha
+cambiado la incidencia mientras tanto, o ya no existe, y hay que recargar la lista.
+
+**El análisis del CSV se movió a `/incidents/analyze`.** `/incidents` es ahora el gestor, que es
+lo que se usa cada día. El analizador sigue a un clic desde su cabecera. El cambio se adelantó de
+la fase del panel de resumen a esta porque la lista necesitaba la ruta.
 
 **La moneda no se elige: la fija el país.** El formulario no tiene campo de moneda. España
 factura en EUR y EE. UU. en USD (BRIEFING), así que el formulario la deduce y la API rechaza una

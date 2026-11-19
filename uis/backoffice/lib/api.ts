@@ -17,7 +17,12 @@ import type {
   UserCreated,
 } from "@/types/auth";
 import type { IncidentAnalysis } from "@/types/incident";
-import type { Incident, IncidentInput } from "@/types/incident-manager";
+import type {
+  Incident,
+  IncidentFilters,
+  IncidentInput,
+  IncidentManagerStatus,
+} from "@/types/incident-manager";
 import type {
   Supplier,
   SupplierFilters,
@@ -357,6 +362,29 @@ export function createIncident(input: IncidentInput): Promise<Incident> {
   return request<Incident>(
     "/api/incidents",
     { method: "POST", body: JSON.stringify(input) },
+    NEXOVA_API,
+  );
+}
+
+/** La lista, la más reciente primero. Los filtros vacíos no viajan. */
+export function getIncidents(filters: IncidentFilters = {}): Promise<Incident[]> {
+  const params = new URLSearchParams();
+  for (const [clave, valor] of Object.entries(filters)) {
+    if (valor) params.set(clave, valor);
+  }
+  const query = params.toString();
+
+  return request<Incident[]>(`/api/incidents${query ? `?${query}` : ""}`, {}, NEXOVA_API);
+}
+
+/**
+ * Cambia el estado. La API aplica el ciclo de vida: un salto que no permite,
+ * o un cambio que otra persona hizo antes, responde 409.
+ */
+export function updateIncidentStatus(id: string, status: IncidentManagerStatus): Promise<Incident> {
+  return request<Incident>(
+    `/api/incidents/${id}/status`,
+    { method: "PATCH", body: JSON.stringify({ status }) },
     NEXOVA_API,
   );
 }

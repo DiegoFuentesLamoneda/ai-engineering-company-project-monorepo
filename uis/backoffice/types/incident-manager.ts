@@ -45,6 +45,14 @@ export interface Incident extends IncidentInput {
   updated_at: string;
 }
 
+/** Filtros de GET /api/incidents. Todos opcionales y combinables. */
+export interface IncidentFilters {
+  status?: IncidentManagerStatus;
+  origin?: IncidentOrigin;
+  branch?: Branch;
+  category?: IncidentManagerCategory;
+}
+
 export interface IncidentSummary {
   total: number;
   /** Todos los valores, en el orden del briefing, también los que están a 0. */
