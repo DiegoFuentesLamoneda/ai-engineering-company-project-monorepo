@@ -40,7 +40,7 @@ Todo el backoffice pide sesión. Las cuentas son las de la API propia,
   30 minutos, la API responde `401` o se cierra en otra pestaña), `/login` lo explica.
 
 Vistas protegidas: `/`, `/candidates`, `/candidates/new`, `/candidates/[id]`,
-`/candidates/[id]/edit`, `/incidents`, `/incidents/new`, `/suppliers`, `/suppliers/new`, `/account/profile` y
+`/candidates/[id]/edit`, `/incidents/analyze`, `/incidents/new`, `/suppliers`, `/suppliers/new`, `/account/profile` y
 `/account/change-password`.
 
 ### Mi perfil (`/account/profile`)
@@ -84,7 +84,7 @@ el proceso de **Asistente de Dirección** (sede de Valencia):
 - **Notas internas**: listar, añadir y eliminar.
 - **Alta** de nuevas candidaturas (`POST`) y **edición** de las existentes (`PUT`).
 
-### Incidencias (`/incidents`)
+### Análisis de incidencias (`/incidents/analyze`)
 
 Análisis de la exportación CSV del helpdesk de soporte al cliente:
 
@@ -200,7 +200,7 @@ app/                         Rutas (App Router)
     candidates/new/          Alta
     candidates/[id]/         Detalle
     candidates/[id]/edit/    Edición
-    incidents/               Análisis de incidencias
+    incidents/analyze/       Análisis de incidencias (CSV)
     incidents/new/           Alta de incidencia en el gestor
     suppliers/               Directorio de proveedores
     suppliers/new/           Alta de proveedor
