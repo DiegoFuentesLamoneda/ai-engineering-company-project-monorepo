@@ -6,7 +6,7 @@ Hoy tiene dos dominios:
 
 | Dominio | Qué hace | Rutas |
 | --- | --- | --- |
-| [`incidents`](./app/domains/incidents/) | Analiza la exportación CSV del helpdesk de soporte (Roberto Díaz). La validación y las métricas son las del paquete [`packages/shared/incident-analysis/`](../../packages/shared/incident-analysis/), las mismas que usa el script [`scripts/analyze.py`](../../scripts/analyze.py). También guarda las incidencias del gestor centralizado (modelo y repositorio listos; las rutas llegan con el resto del hito) | `POST /api/incidents/analyze` · `GET /api/incidents/results/export` |
+| [`incidents`](./app/domains/incidents/) | Analiza la exportación CSV del helpdesk de soporte (Roberto Díaz). La validación y las métricas son las del paquete [`packages/shared/incident-analysis/`](../../packages/shared/incident-analysis/), las mismas que usa el script [`scripts/analyze.py`](../../scripts/analyze.py). También es el gestor de incidencias centralizado: alta, consulta con filtros, cambio de estado por el ciclo de vida y resumen | `POST /api/incidents/analyze` · `GET /api/incidents/results/export` · el gestor en `/api/incidents` (ver abajo) |
 | [`suppliers`](./app/domains/suppliers/) | Directorio oficial de proveedores externos (Patricia Solís). Persistido en TinyDB, con las reglas del [BRIEFING](../../docs/contexts/proyectos/supplier-directory.es.md) | `/suppliers` (ver abajo) |
 
 ## Puesta en marcha
@@ -66,6 +66,7 @@ Los dos secretos (el del JWT y la API key de Resend) van en `.env`, que no se ve
 ```
 app/
 ├─ main.py              compone la app: configuración, CORS y routers. Nada más
+├─ errors.py            el 500 genérico: mensaje fijo para quien llama, el traceback al log
 ├─ config.py            configuración tipada, validada al arrancar
 ├─ dependencies.py      dependencias transversales (get_settings)
 ├─ mailer.py            envío de emails: Resend si hay API key, el log si no. El único que habla con Resend
@@ -87,9 +88,10 @@ app/
    │  ├─ exceptions.py  InvalidResetTokenError (un solo mensaje, el motivo aparte), contraseña actual mal o repetida
    │  └─ dependencies.py  el repositorio de tokens, el mailer y la IP de quien llama
    ├─ incidents/        análisis del CSV y gestor de incidencias centralizado
-   │  ├─ router.py      HTTP: recibe la subida, llama al service, elige el código
-   │  ├─ service.py     reglas de la subida y el último análisis. No importa fastapi
-   │  ├─ schemas.py     Incident, IncidentCreate y StatusUpdate (valores del paquete compartido) y el contrato del análisis
+   │  ├─ router.py      HTTP: el analizador (`router`) y el gestor (`manager`). Llama al service y elige el código
+   │  ├─ service.py     reglas de la subida y el último análisis; alta, filtros, ciclo de vida y resumen del gestor. No importa fastapi
+   │  ├─ schemas.py     Incident, IncidentCreate, StatusUpdate e IncidentSummary (valores del paquete compartido), el 400 del gestor y el contrato del análisis
+   │  ├─ validation_errors.py  el 400 del gestor: traduce cada error de validación a campo, código y mensaje en español
    │  ├─ database.py    TinyDB, tablas incidents y seed_imports. Cambio de estado solo si nadie lo cambió antes
    │  ├─ seed.py        inserta el histórico del CSV; lo lanza scripts/seed_incidents.py
    │  ├─ exceptions.py  errores del dominio, sin HTTP
@@ -153,7 +155,7 @@ El `404` solo lo ve un admin. A cualquier otro, una cuenta ajena le da `403` exi
 
 ## Rutas de `incidents`
 
-Las dos piden token (`Authorization: Bearer <token>`). Sin él, o con uno que no vale, `401` antes de leer la subida.
+Todas piden token (`Authorization: Bearer <token>`). Sin él, o con uno que no vale, `401` antes de leer la subida.
 
 ### `POST /api/incidents/analyze`
 
@@ -181,6 +183,52 @@ Todos los errores tienen la forma `{"detail": "mensaje"}`, en español y listos 
 ### `GET /api/incidents/results/export`
 
 El último análisis como CSV descargable (`results.csv`, una métrica por fila). Es **byte a byte el mismo fichero** que escribe el script. Devuelve `404` si todavía no se ha analizado nada.
+
+### Gestor de incidencias
+
+Las incidencias que registra el equipo y el histórico del helpdesk (`scripts/seed_incidents.py`). Los valores de estado, categoría, origen y sede son **códigos** del paquete compartido (`open`, `sla_breach`, `remote`…).
+
+| Ruta | Qué hace | Códigos |
+| --- | --- | --- |
+| `POST /api/incidents` | Registra una incidencia. Nace `open`, con `created_at` = `updated_at`. Cabecera `Location` con su URL | `201` · `400` |
+| `GET /api/incidents` | Lista, la más reciente primero. Filtros opcionales y combinables: `?status=`, `?origin=`, `?branch=`, `?category=` (`?category=sla_breach` para las críticas). Sin incidencias, `[]` | `200` · `400` |
+| `GET /api/incidents/summary` | Totales por estado, categoría, origen y sede. Salen **todos** los valores, en el orden del catálogo, también los que están a 0 | `200` |
+| `GET /api/incidents/{id}` | Una incidencia por su UUID | `200` · `400` · `404` |
+| `PATCH /api/incidents/{id}/status` | Cuerpo `{"status": "..."}`. Solo los cambios que permite el ciclo de vida (`ALLOWED_TRANSITIONS`) | `200` · `400` · `404` · `409` |
+
+Y en todas, `401` sin token y `500` si algo falla de forma no prevista.
+
+**El `400` dice qué campo falla.** Además del `detail`, trae la lista `errors` con un código estable por campo, para que el formulario lo traduzca a su idioma:
+
+```json
+{
+  "detail": "El campo 'title' no puede estar vacío. El campo 'branch' es obligatorio.",
+  "errors": [
+    {"field": "title", "code": "blank", "message": "El campo 'title' no puede estar vacío."},
+    {"field": "branch", "code": "missing", "message": "El campo 'branch' es obligatorio."}
+  ]
+}
+```
+
+| `code` | Cuándo |
+| --- | --- |
+| `missing` | Falta un campo obligatorio |
+| `blank` | Texto vacío o solo espacios |
+| `too_long` | Supera el máximo (título 120, descripción 2000) |
+| `invalid_choice` | Un valor fuera del catálogo. El mensaje lista los válidos |
+| `not_text` | Se esperaba texto |
+| `not_allowed` | Un campo que no se puede enviar, como `status` o `id` en el alta |
+| `invalid_id` | El `{id}` de la ruta no es un UUID |
+| `invalid_body` | El cuerpo no es JSON o no es un objeto (`field: "body"`) |
+| `invalid` | Cualquier otro |
+
+**El `409` es un choque con el estado actual**, con `{"detail": "..."}`:
+
+- el ciclo no permite el cambio: "Una incidencia en 'open' no puede pasar a 'resolved'. Desde 'open' solo se puede pasar a: in_progress, discarded.";
+- ya estaba en ese estado, o está en un estado final;
+- alguien la cambió entre la lectura y la escritura: "Vuelve a cargarla y decide con el estado actual."
+
+**El `500` no enseña nada interno:** `{"detail": "Ha ocurrido un error inesperado en el servidor. Inténtalo de nuevo en unos minutos."}`. El traceback va al log (`nexova.errors`).
 
 ## Rutas de `suppliers`
 
@@ -219,7 +267,7 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 
 - un email repetido (`409`);
 - una contraseña mala (`401`);
-- las 8 rutas de `incidents` y `suppliers` sin token (`401`);
+- las 8 rutas de `incidents` (las del analizador) y `suppliers` sin token (`401`);
 - un token caducado, uno manipulado y uno firmado con otro secreto (`401`);
 - cinco `403` distintos: listar, ver, editar y borrar a otro, y hacerse admin;
 - el admin cambiando un rol;
@@ -240,6 +288,11 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 - **La base de datos se abre al arrancar el servidor, no al importar** (`lifespan` en [`main.py`](./app/main.py)), y se cierra al pararlo. Crear la app para las pruebas o para leer el OpenAPI no toca el fichero.
 - **El modelo `Incident` no define sus valores válidos.** Estados, categorías, orígenes y sedes son los `StrEnum` de [`incident_analysis.catalog`](../../packages/shared/incident-analysis/incident_analysis/catalog.py), los mismos que usa el seed. Toda incidencia nace `open` (`IncidentCreate` no acepta `status`), el título va de 1 a 120 caracteres, la descripción de 1 a 2000, las fechas llevan zona horaria y `updated_at` nunca es anterior a `created_at`.
 - **El cambio de estado se escribe solo si nadie lo cambió antes** (`IncidentRepository.update_status`). Se pasa el estado que se leyó y, dentro del cerrojo, se comprueba que sigue siendo ese. Si dos personas pasan a la vez una incidencia `in_progress` a `resolved` y a `discarded`, la segunda no pisa a la primera sin saberlo.
+- **El `400` del gestor solo cambia las rutas del gestor.** El enunciado pide `400` con el campo que falla; FastAPI da `422` con los mensajes de Pydantic en inglés. Se hace con una clase de ruta propia (`IncidentManagerRoute`, en [`validation_errors.py`](./app/domains/incidents/validation_errors.py)) y no con un manejador global: el analizador, proveedores y usuarios siguen con su `422`, que es el contrato que ya usa el backoffice. Por eso el gestor es un `APIRouter` aparte (`manager`) con el mismo prefijo.
+- **Los errores del `400` llevan un `code` además del mensaje.** El mensaje en español es para quien lee la API; el formulario se guía por el código y escribe el suyo. Nunca se repite lo que escribió el usuario, salvo un valor corto de un desplegable (40 caracteres como mucho).
+- **Un cambio de estado imposible es `409`, no `400`.** La petición está bien formada; lo que choca es el estado en que está la incidencia. Es lo mismo que hace proveedores al borrar un suspendido. Un cambio perdido por llegar segundo también es `409`, con otro mensaje.
+- **El `500` es un middleware por dentro de CORS** ([`errors.py`](./app/errors.py)). Sin él, Starlette responde texto plano y por fuera de CORS: el navegador oculta la respuesta y el frontend ve un "Failed to fetch". Así sale el JSON de siempre, con las cabeceras de CORS, y el traceback solo en el log.
+- **`/summary` devuelve los ceros.** Todos los estados, categorías, orígenes y sedes, aunque no tengan incidencias: el panel pinta siempre las mismas filas y una base vacía no rompe nada.
 - **El `id` de un usuario es un UUID**, no el número de TinyDB. TinyDB reutiliza los números borrados, y el token de una cuenta eliminada identificaría a la siguiente que se registrase.
 - **Quién puede hacer qué lo decide el service**, no el router ([`users/service.py`](./app/domains/users/service.py)). Cada uno ve, edita y borra su propia cuenta. Un `admin`, cualquiera, y es el único que lista usuarios y cambia roles. `manager` todavía no tiene permisos propios. La comprobación de permiso va antes que la de existencia: así quien no es admin no puede averiguar qué IDs existen.
 - **El login no dice qué ha fallado.** Un email desconocido, una contraseña incorrecta y una cuenta desactivada dan la misma respuesta. Con un email desconocido se verifica igualmente contra un hash de relleno, para que tarde lo mismo y el tiempo de respuesta no delate qué emails tienen cuenta.
@@ -286,4 +339,5 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 - **La IP de la auditoría es la de quien abre la conexión.** Detrás de un proxy o un balanceador sería la del proxy. No se lee `X-Forwarded-For` porque, sin un proxy de confianza delante, cualquiera puede escribir ahí la IP que quiera. Al desplegar detrás de uno, se arranca uvicorn con `--proxy-headers --forwarded-allow-ips <IP del proxy>`.
 - **Cambiar la contraseña con `PUT /users/{id}` no queda en la auditoría.** Solo se auditan las tres rutas de AUTH-03. `PUT /users/{id}` es la gestión de cuentas de AUTH-01 (la propia persona o un admin) y queda fuera del ticket.
 - **La purga de 90 días solo ocurre al escribir.** Si nadie usa las tres rutas en meses, las entradas viejas siguen en el fichero hasta la siguiente solicitud.
+- **`/docs` sigue anunciando un `422` en las rutas del gestor, que nunca sale.** FastAPI lo añade a toda ruta con parámetros, y la clase de ruta lo convierte en `400` antes de responder. Quitarlo del OpenAPI obliga a reescribir el esquema generado; no compensa para una línea de documentación.
 - **Todas las cuentas tienen los mismos permisos sobre proveedores e incidencias.** El candado pide estar identificado, no un rol. Dar o quitar permisos por rol (que solo un `manager` cambie tarifas, por ejemplo) es una decisión de negocio que el enunciado no fija.

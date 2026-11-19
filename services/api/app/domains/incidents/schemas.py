@@ -105,6 +105,40 @@ class Incident(BaseModel):
         return self
 
 
+class IncidentSummary(BaseModel):
+    """Respuesta de `GET /api/incidents/summary`: totales para la dirección.
+
+    Cada desglose trae todos los valores posibles, en el orden del briefing,
+    también los que tienen 0. Así el panel pinta siempre las mismas filas y
+    una base de datos vacía devuelve ceros, no un error ni un objeto vacío.
+    """
+
+    total: int
+    by_status: dict[IncidentStatus, int]
+    by_category: dict[IncidentCategory, int]
+    by_origin: dict[IncidentOrigin, int]
+    by_branch: dict[Branch, int]
+
+
+class FieldError(BaseModel):
+    """Un campo que no pasó la validación."""
+
+    # Nombre del campo tal y como viaja: `title`, `branch`, `status`…
+    field: str
+    # Qué le pasa, como código estable: el formulario lo traduce a su idioma.
+    # missing · blank · too_long · invalid_choice · not_text · not_allowed ·
+    # invalid_id · invalid_body · invalid
+    code: str
+    message: str
+
+
+class ValidationErrorResponse(BaseModel):
+    """El 400 del gestor: `detail` para leerlo y `errors` para marcar cada campo."""
+
+    detail: str
+    errors: list[FieldError]
+
+
 # --- Análisis del CSV --------------------------------------------------------
 
 

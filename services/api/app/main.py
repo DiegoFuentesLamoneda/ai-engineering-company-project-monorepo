@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import Settings, load_settings
 from .domains.auth.router import router as auth_router
 from .domains.incidents.database import IncidentRepository
+from .domains.incidents.router import manager as incident_manager_router
 from .domains.incidents.router import router as incidents_router
 from .domains.incidents.service import ResultsStore
 from .domains.password_resets.database import PasswordResetRepository
@@ -26,6 +27,7 @@ from .domains.suppliers.database import SupplierRepository
 from .domains.suppliers.router import router as suppliers_router
 from .domains.users.database import UserRepository
 from .domains.users.router import router as users_router
+from .errors import UnexpectedErrorMiddleware
 from .mailer import build_mailer
 
 
@@ -85,6 +87,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.incident_results = ResultsStore()
 
+    # Antes que CORS: cada middleware nuevo envuelve a los anteriores, así que
+    # CORS queda por fuera y también pone sus cabeceras al 500 (ver errors.py).
+    app.add_middleware(UnexpectedErrorMiddleware)
+
     # El backoffice corre en otro origen (:3000): sin esto, el navegador
     # bloquea las respuestas. Lista explícita, nunca '*'.
     app.add_middleware(
@@ -102,6 +108,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(users_router)
     app.include_router(profiles_router)
     app.include_router(incidents_router)
+    app.include_router(incident_manager_router)
     app.include_router(suppliers_router)
     return app
 
