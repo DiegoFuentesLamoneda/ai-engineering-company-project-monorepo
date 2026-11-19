@@ -22,6 +22,7 @@ import type {
   IncidentFilters,
   IncidentInput,
   IncidentManagerStatus,
+  IncidentSummary,
 } from "@/types/incident-manager";
 import type {
   Supplier,
@@ -387,6 +388,11 @@ export function updateIncidentStatus(id: string, status: IncidentManagerStatus):
     { method: "PATCH", body: JSON.stringify({ status }) },
     NEXOVA_API,
   );
+}
+
+/** Totales de todas las incidencias, sin filtros: el panel de resumen. */
+export function getIncidentSummary(): Promise<IncidentSummary> {
+  return request<IncidentSummary>("/api/incidents/summary", {}, NEXOVA_API);
 }
 
 // --- Directorio de proveedores (services/api) ---

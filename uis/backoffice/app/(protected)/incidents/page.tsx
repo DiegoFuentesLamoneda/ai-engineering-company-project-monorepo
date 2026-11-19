@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import IncidentManagerFilters from "@/components/IncidentManagerFilters";
-import IncidentManagerList from "@/components/IncidentManagerList";
+import IncidentManager from "@/components/IncidentManager";
 
 export const metadata: Metadata = {
   title: "Incidencias · Backoffice · Nexova Solutions",
@@ -41,8 +40,7 @@ export default function IncidentsPage() {
 
       {/* useSearchParams necesita una frontera de Suspense para poder prerenderizar. */}
       <Suspense fallback={<p className="text-sm text-slate-400">Cargando…</p>}>
-        <IncidentManagerFilters />
-        <IncidentManagerList />
+        <IncidentManager />
       </Suspense>
     </div>
   );

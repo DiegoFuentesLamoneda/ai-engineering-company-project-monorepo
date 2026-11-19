@@ -14,10 +14,20 @@ import {
 
 const CLASE_CABECERA = "sticky top-0 z-10 bg-marca-800 px-4 py-3 font-medium";
 
-export default function IncidentManagerList() {
+interface Props {
+  /** Se llama cuando la API confirma un cambio de estado, no cuando lo rechaza. */
+  onEstadoCambiado?: () => void;
+}
+
+export default function IncidentManagerList({ onEstadoCambiado }: Props) {
   const filtros = useIncidentFilters();
   const { incidents, isLoading, error, recargar, cambiarEstado } = useIncidents(filtros);
   const hayFiltros = Object.values(filtros).some(Boolean);
+
+  async function cambiarYAvisar(...args: Parameters<typeof cambiarEstado>) {
+    await cambiarEstado(...args);
+    onEstadoCambiado?.();
+  }
 
   if (isLoading) {
     return (
@@ -131,7 +141,7 @@ export default function IncidentManagerList() {
                     {formatearFechaHora(incident.created_at)}
                   </td>
                   <td className="px-4 py-3">
-                    <IncidentStatusControl incident={incident} onCambiar={cambiarEstado} />
+                    <IncidentStatusControl incident={incident} onCambiar={cambiarYAvisar} />
                   </td>
                 </tr>
               );

@@ -103,6 +103,9 @@ arrancada (ver su README). El email de los clientes no aparece en ninguna parte 
 
 La lista del gestor de incidencias centralizado: todas las incidencias, la más reciente primero.
 
+- **Resumen arriba**: cuántas hay en cada estado y cuántas son incumplimientos de SLA, cada
+  cifra con un enlace a la lista ya filtrada, y el reparto por sede, por quién la reporta y por
+  categoría. Son los totales de todas las incidencias, no de los filtros activos.
 - **Filtros** por estado, quién la reporta, sede y categoría, guardados en la URL:
   `/incidents?branch=miami_office&status=open` es «lo de Miami sin empezar», y se puede pasar
   como enlace.
@@ -241,13 +244,15 @@ components/
   Candidate*.tsx             Interfaz del tracker
   Incident*.tsx              Análisis del CSV de incidencias (subida, resultado, descarga)
   IncidentForm.tsx           Alta de incidencia en el gestor
-  IncidentManager*.tsx       Filtros y tabla del gestor de incidencias
+  IncidentManager*.tsx       Gestor de incidencias: contenedor, filtros y tabla
+  IncidentSummaryPanel.tsx   Totales del gestor; si fallan, un aviso y la lista sigue
   IncidentStatusControl.tsx  Estado de una incidencia y cambio al siguiente
   Supplier*.tsx              Filtros, tabla, edición por fila y alta de proveedores
 hooks/                       Lógica de datos reutilizable
   useIncidentAnalysis.ts     Estado del análisis: fichero, carga, error y resultado
   useIncidentFilters.ts      Filtros del gestor leídos de la URL y validados
   useIncidents.ts            Lista del gestor: carga, reintento y cambio de estado optimista
+  useIncidentSummary.ts      Resumen del gestor, que se vuelve a pedir tras cada cambio
   useSupplierFilters.ts      Filtros de proveedores leídos de la URL y validados
   useSuppliers.ts            Listado de proveedores: carga, error y refresco de una fila
 lib/
@@ -418,6 +423,15 @@ resultado y, si falla, el error. Sale de la lista en la siguiente carga.
 **El 409 y el 404 se explican con palabras de la pantalla.** El mensaje de la API nombra los
 estados con su valor interno (`'open'`), así que la fila muestra su propio texto: alguien ha
 cambiado la incidencia mientras tanto, o ya no existe, y hay que recargar la lista.
+
+**El resumen falla solo.** Resumen y lista piden sus datos por separado. Si `/summary` no
+responde, en su sitio sale una línea de aviso con «Reintentar» y la lista funciona igual: quien
+gestiona incidencias puede seguir trabajando sin los totales, pero no sin la lista.
+
+**El resumen se actualiza con cada cambio de estado.** Cuando la API confirma un cambio, la lista
+avisa al contenedor (`IncidentManager`) y el resumen se vuelve a pedir. Si no, el panel diría
+«Abiertas: 5» al lado de la que se acaba de pasar a *En curso*. Al refrescar se siguen viendo los
+números anteriores hasta que llegan los nuevos, sin parpadeo.
 
 **El análisis del CSV se movió a `/incidents/analyze`.** `/incidents` es ahora el gestor, que es
 lo que se usa cada día. El analizador sigue a un clic desde su cabecera. El cambio se adelantó de
