@@ -22,7 +22,7 @@ python scripts/analyze.py scripts/incidents-nexova.csv
 
 - **Required argument:** the path to the CSV. Without it, the script prints its usage and exits.
 - **Requirements:** Python 3.11 or later. No dependencies: the logic lives in
-  [`packages/incident-analysis`](../packages/incident-analysis/), the same code the API uses.
+  [`packages/shared/incident-analysis`](../packages/shared/incident-analysis/), the same code the API uses.
 - [`incidents-nexova.csv`](./incidents-nexova.csv) is the briefing's test file:
   100 records, 96 valid and 4 invalid.
 - `results.csv` is in `.gitignore`: it is an output, not versioned.

@@ -14,7 +14,7 @@ _Última actualización: 19 de noviembre de 2026 (recuperación y cambio de cont
 | 3 — Talent Pipeline Tracker | Listado, filtros y búsqueda sin recarga, detalle, cambio de estado y etapa, notas internas, alta y edición de candidaturas | [`uis/backoffice/`](../uis/backoffice/) | `feature/talent-pipeline-tracker` | #3 · fusionada el 16/09/2026 |
 | 4 — Ingeniería impulsada por IA | Banco de memoria, `AGENTS.md`, reglas y skills en `.agents/`, traslado del tracker a `uis/backoffice/` con panel de entrada propio, CI del backoffice | [`memory-bank/`](../memory-bank/) · [`.agents/`](../.agents/) · [`uis/backoffice/`](../uis/backoffice/) | `feature/agent-memory-bank` | #4 · fusionada el 16/09/2026 |
 | 5 — Backend (5a) | Propuesta de arquitectura del backend | [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHITECTURE_PROPOSAL.md) | `feature/backend-architecture-proposal` | #5 · fusionada el 18/09/2026 |
-| Analizador de incidencias | Paquete de análisis, script por consola, `POST /api/incidents/analyze` con su exportación y página `/incidents` | [`packages/incident-analysis/`](../packages/incident-analysis/) · [`scripts/analyze.py`](../scripts/analyze.py) · [`services/api/`](../services/api/) | `feature/incidents-analyzer` | #6 · fusionada el 18/11/2026 |
+| Analizador de incidencias | Paquete de análisis, script por consola, `POST /api/incidents/analyze` con su exportación y página `/incidents` | [`packages/shared/incident-analysis/`](../packages/shared/incident-analysis/) · [`scripts/analyze.py`](../scripts/analyze.py) · [`services/api/`](../services/api/) | `feature/incidents-analyzer` | #6 · fusionada el 18/11/2026 |
 | Directorio de proveedores | API `/suppliers` sobre TinyDB con seeder y página `/suppliers` | [`services/api/`](../services/api/) · [`uis/backoffice/`](../uis/backoffice/) | `feature/supplier-directory` | #7 · fusionada el 18/11/2026 |
 | Autenticación de la API (AUTH-01) | Cuentas, perfiles, login con JWT y candado en las rutas de `incidents` y `suppliers` | [`services/api/`](../services/api/) | `feature/auth-api` | #8 · fusionada el 18/11/2026 |
 
@@ -71,7 +71,7 @@ Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/con
 
 | Paso | Estado |
 | --- | --- |
-| Lógica compartida en [`packages/incident-analysis/`](../packages/incident-analysis/): validación, métricas, exportación e informe. 44 pruebas, incluida la de aceptación contra el briefing | ✅ |
+| Lógica compartida en [`packages/shared/incident-analysis/`](../packages/shared/incident-analysis/): validación, métricas, exportación e informe. 44 pruebas, incluida la de aceptación contra el briefing | ✅ |
 | Script [`scripts/analyze.py`](../scripts/analyze.py): 100 / 96 / 4 y todos los desgloses coinciden con el briefing | ✅ |
 | API en [`services/api/`](../services/api/): `POST /api/incidents/analyze` y `GET /api/incidents/results/export`. 18 pruebas del service y la configuración; rutas, errores y CORS verificados con el servidor arrancado; la exportación es idéntica byte a byte a la del script | ✅ |
 | Página [`/incidents`](../uis/backoffice/components/IncidentAnalyzer.tsx) en el backoffice: subida por arrastre o selector, totales, desglose por categoría y estado, índice de satisfacción, registros inválidos por regla con sus filas y descarga del CSV. Verificada en el navegador con la API arrancada: cifras del briefing, CSV descargado idéntico byte a byte al del script, y errores 400 y 415 mostrados con el mensaje de la API | ✅ |

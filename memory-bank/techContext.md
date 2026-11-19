@@ -12,7 +12,7 @@
 | [`uis/talent-lab/`](../uis/talent-lab/) | Banco de pruebas manual de `talent-core`: dispara sus 18 funciones desde botones | HTML + Tailwind 4 + el `dist/` de `talent-core` | 2 |
 | [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas, análisis de incidencias de soporte y directorio de proveedores, con login, registro, perfil y recuperación y cambio de contraseña | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias · Directorio de proveedores · AUTH-02 · AUTH-03 |
 | [`packages/shared/`](../packages/shared/) | `@repo/shared-types` — viene de la plantilla, prácticamente vacío | TypeScript | — |
-| [`packages/incident-analysis/`](../packages/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte. Lógica única que comparten el script y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias |
+| [`packages/shared/incident-analysis/`](../packages/shared/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte. Lógica única que comparten el script y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias |
 | [`scripts/analyze.py`](../scripts/analyze.py) | Analizador de tickets por consola, con exportación a `results.csv` | Python 3, usa `incident-analysis` | Analizador de incidencias |
 | [`scripts/sync_contexts.py`](../scripts/sync_contexts.py) | Descarga los contextos del syllabus y los coloca en `docs/contexts/` | Python 3, solo stdlib | — |
 | [`services/api/`](../services/api/) | Backend de Nexova. Dominios: `incidents` (análisis del CSV subido y exportación del último análisis), `suppliers` (directorio de proveedores con su seeder, `uv run seed`), `users` y `profiles` (cuentas y sus datos personales, con `uv run create-admin`) `auth` (login con JWT) y `password_resets` (enlace de restablecimiento por email, cambio de contraseña y su auditoría). Todo menos el registro, el login y la recuperación de contraseña pide token. Envía email con Resend | Python 3.11+, FastAPI, Pydantic 2, uvicorn, TinyDB, python-jose, libpass, uv | Analizador de incidencias · Directorio de proveedores · Autenticación (AUTH-01) · AUTH-03 |
@@ -86,7 +86,7 @@ Funciones puras sin estado, probadas con el runner de `node:test` (112 pruebas).
 
 ### El análisis de tickets vive en un paquete Python, no en el script ni en la API
 
-`packages/incident-analysis/` es la **única** implementación de la validación y las métricas del CSV de tickets. El script `scripts/analyze.py` y la API la importan, no la copian. Es un criterio de evaluación del proyecto, y si estuviera duplicada, el día que cambiara una regla los dos darían números distintos. Mismo papel que `talent-core` en TypeScript.
+`packages/shared/incident-analysis/` es la **única** implementación de la validación y las métricas del CSV de tickets. El script `scripts/analyze.py` y la API la importan, no la copian. Es un criterio de evaluación del proyecto, y si estuviera duplicada, el día que cambiara una regla los dos darían números distintos. Mismo papel que `talent-core` en TypeScript.
 
 - **Librería estándar, sin pandas.** Se lee el CSV en streaming con `csv.DictReader`: la memoria no crece con el tamaño del fichero, que en producción puede llegar al millón de líneas.
 - **El script no exige instalar el paquete**: añade su carpeta a `sys.path`. La API sí lo instala, en modo editable, desde su `pyproject.toml`.
@@ -209,7 +209,7 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 | `uis/talent-lab/` | `npm run dev` · `npm run build` (compila la librería + el CSS) |
 | `uis/backoffice/` | `npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` |
 | `packages/talent-core/` | `npm run typecheck` · `npm test` · `npm run demo` · `npm run build` |
-| `packages/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
+| `packages/shared/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
 | `scripts/` | `python analyze.py incidents-nexova.csv` |
 | `services/api/` | `uv sync` · `uv run seed` · `uv run create-admin` · `uv run --env-file .env uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
 

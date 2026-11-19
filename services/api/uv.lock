@@ -358,7 +358,7 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = "==0.162.0" },
     { name = "libpass", extras = ["bcrypt"], specifier = "==1.9.4" },
-    { name = "nexova-incident-analysis", editable = "../../packages/incident-analysis" },
+    { name = "nexova-incident-analysis", editable = "../../packages/shared/incident-analysis" },
     { name = "python-jose", extras = ["cryptography"], specifier = "==3.5.0" },
     { name = "python-multipart", specifier = "==0.0.33" },
     { name = "tinydb", specifier = "==4.9.0" },
@@ -368,7 +368,7 @@ requires-dist = [
 [[package]]
 name = "nexova-incident-analysis"
 version = "0.1.0"
-source = { editable = "../../packages/incident-analysis" }
+source = { editable = "../../packages/shared/incident-analysis" }
 
 [[package]]
 name = "opentelemetry-api"

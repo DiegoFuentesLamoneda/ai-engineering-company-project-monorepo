@@ -5,7 +5,7 @@ Uso (desde scripts/):
 
 Valida el fichero, imprime el resumen y ofrece exportarlo a results.csv (en
 la carpeta desde la que se ejecuta). Toda la lógica vive en el paquete
-packages/incident-analysis, que es el mismo que usa la API: este archivo solo
+packages/shared/incident-analysis, que es el mismo que usa la API: este archivo solo
 lee argumentos, imprime y pregunta.
 
 Ningún email de cliente aparece en la salida, ni en los errores.
@@ -21,7 +21,7 @@ from pathlib import Path
 # su carpeta a la ruta de importación. Si está instalado con `pip install -e`,
 # esta línea no cambia nada.
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "packages" / "incident-analysis"))
+sys.path.insert(0, str(REPO_ROOT / "packages" / "shared" / "incident-analysis"))
 
 from incident_analysis import (  # noqa: E402  (va después de ajustar sys.path)
     IncidentFileError,

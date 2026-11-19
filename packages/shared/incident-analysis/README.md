@@ -1,8 +1,8 @@
 # `incident-analysis` — análisis de ficheros de tickets de soporte
 
-Valida el CSV que exporta el helpdesk del servicio de soporte externalizado y calcula sus métricas. Es **la única implementación** de esa lógica en el monorepo: la usan el script [`scripts/analyze.py`](../../scripts/analyze.py) y la API [`services/api/`](../../services/api/). Si una regla cambia, cambia aquí y los dos consumidores se enteran a la vez.
+Valida el CSV que exporta el helpdesk del servicio de soporte externalizado y calcula sus métricas. Es **la única implementación** de esa lógica en el monorepo: la usan el script [`scripts/analyze.py`](../../../scripts/analyze.py) y la API [`services/api/`](../../../services/api/). Si una regla cambia, cambia aquí y los dos consumidores se enteran a la vez.
 
-La especificación es el briefing [`incidents-file-analysis.es.md`](../../docs/contexts/proyectos/incidents-file-analysis.es.md). Campos, categorías, estados, reglas y valores esperados se copian de ahí **literalmente**, en [`schema.py`](./incident_analysis/schema.py).
+La especificación es el briefing [`incidents-file-analysis.es.md`](../../../docs/contexts/proyectos/incidents-file-analysis.es.md). Campos, categorías, estados, reglas y valores esperados se copian de ahí **literalmente**, en [`schema.py`](./incident_analysis/schema.py).
 
 ## Por qué existe
 
@@ -36,6 +36,6 @@ Desde esta carpeta:
 python -m unittest discover -s tests -t tests   # 44 pruebas
 ```
 
-No hace falta instalarlo a mano en la API: `uv sync` desde [`services/api/`](../../services/api/) lo instala en modo editable.
+No hace falta instalarlo a mano en la API: `uv sync` desde [`services/api/`](../../../services/api/) lo instala en modo editable.
 
-La prueba [`test_briefing.py`](./tests/test_briefing.py) comprueba los valores esperados del briefing contra [`scripts/incidents-nexova.csv`](../../scripts/incidents-nexova.csv). Si falla, el análisis no se entrega.
+La prueba [`test_briefing.py`](./tests/test_briefing.py) comprueba los valores esperados del briefing contra [`scripts/incidents-nexova.csv`](../../../scripts/incidents-nexova.csv). Si falla, el análisis no se entrega.

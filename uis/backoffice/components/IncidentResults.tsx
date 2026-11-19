@@ -15,7 +15,7 @@ interface Props {
 
 /**
  * El analisis de un CSV, tal y como lo devuelve la API. Aqui no se calcula
- * nada: totales, porcentajes y media vienen hechos de packages/incident-analysis,
+ * nada: totales, porcentajes y media vienen hechos de packages/shared/incident-analysis,
  * los mismos que imprime el script. Este componente solo los presenta.
  */
 export default function IncidentResults({ analysis, fileName }: Props) {

@@ -319,7 +319,7 @@ dice en pantalla. Un panel que enseña números parciales como si fueran totales
 partir de ahí nadie se fía de ninguno.
 
 **Incidencias: el navegador no calcula nada.** Totales, porcentajes y media llegan hechos de la
-API, que usa el mismo paquete que el script (`packages/incident-analysis`). Si el front volviera a
+API, que usa el mismo paquete que el script (`packages/shared/incident-analysis`). Si el front volviera a
 calcular, habría dos implementaciones que con el tiempo darían cifras distintas.
 
 **El análisis no vive en la URL.** A diferencia de los filtros del tracker, un fichero no cabe en
