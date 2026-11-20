@@ -72,13 +72,12 @@ export default function ResetPasswordForm() {
     setEnviando(true);
     setErrorGeneral(null);
 
+    let cambiada = false;
     try {
       await resetPassword(token, password);
-      // Se queda "enviando" a propósito: el botón sigue desactivado hasta que
-      // la navegación termina.
+      cambiada = true;
       router.replace(`${LOGIN_PATH}?reason=password-reset`);
     } catch (e) {
-      setEnviando(false);
       if (!(e instanceof ApiError)) {
         setErrorGeneral("No se ha podido cambiar la contraseña. Inténtalo de nuevo.");
       } else if (e.status === 400) {
@@ -89,6 +88,10 @@ export default function ResetPasswordForm() {
       } else {
         setErrorGeneral(e.message);
       }
+    } finally {
+      // Si sale bien, se queda "enviando" a propósito: el botón sigue
+      // desactivado hasta que la navegación termina. Si falla, se reactiva.
+      if (!cambiada) setEnviando(false);
     }
   }
 

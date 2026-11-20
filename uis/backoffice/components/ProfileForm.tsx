@@ -18,12 +18,15 @@ type Valores = Record<Campo, string>;
 
 const CAMPOS: Campo[] = ["name", "phone", "address"];
 
-/** En el formulario un dato que falta es "", en la API es null. */
-function aValores(perfil: Profile): Valores {
+/**
+ * En el formulario un dato que falta es "", en la API es null. Si el perfil
+ * entero no llega, el formulario sale vacío en vez de romperse.
+ */
+function aValores(perfil: Profile | null | undefined): Valores {
   return {
-    name: perfil.name ?? "",
-    phone: perfil.phone ?? "",
-    address: perfil.address ?? "",
+    name: perfil?.name ?? "",
+    phone: perfil?.phone ?? "",
+    address: perfil?.address ?? "",
   };
 }
 
@@ -65,15 +68,17 @@ export default function ProfileForm() {
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // Cada «Reintentar» suma uno y vuelve a pedir el perfil.
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     let vigente = true;
     getMe()
       .then((me) => {
         if (!vigente) return;
-        setEmail(me.email);
-        setGuardado(aValores(me.profile));
-        setValores(aValores(me.profile));
+        setEmail(me?.email ?? null);
+        setGuardado(aValores(me?.profile));
+        setValores(aValores(me?.profile));
       })
       .catch((e) => {
         if (!vigente) return;
@@ -82,7 +87,13 @@ export default function ProfileForm() {
     return () => {
       vigente = false;
     };
-  }, []);
+  }, [intento]);
+
+  function reintentarCarga() {
+    // Se quita el error para que vuelva a salir "Cargando tu perfil…".
+    setErrorCarga(null);
+    setIntento((n) => n + 1);
+  }
 
   function cambiar(campo: Campo, valor: string) {
     setValores((anteriores) => ({ ...anteriores, [campo]: valor }));
@@ -149,9 +160,16 @@ export default function ProfileForm() {
 
   if (errorCarga) {
     return (
-      <div className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
+      <div role="alert" className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
         <p className="font-medium">No se ha podido cargar tu perfil</p>
         <p className="mt-1">{errorCarga}</p>
+        <button
+          type="button"
+          onClick={reintentarCarga}
+          className="mt-3 rounded-md border border-red-400 px-3 py-1.5 text-sm font-medium text-red-50 transition-colors hover:bg-red-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-400"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
@@ -172,7 +190,7 @@ export default function ProfileForm() {
     >
       <div>
         <p className="mb-1 text-xs uppercase tracking-wide text-slate-400">Email</p>
-        <p className="text-sm text-white">{email}</p>
+        <p className="text-sm text-white">{email ?? "—"}</p>
         <p className="mt-1 text-xs text-slate-500">
           Es el email con el que entras. No se puede cambiar desde aquí.
         </p>

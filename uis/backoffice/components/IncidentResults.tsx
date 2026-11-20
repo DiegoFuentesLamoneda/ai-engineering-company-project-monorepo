@@ -37,9 +37,9 @@ export default function IncidentResults({ analysis, fileName }: Props) {
           id="por-categoria"
           title="Por categoría"
           header="Categoría"
-          rows={analysis.by_category.map((fila) => ({
+          rows={(analysis.by_category ?? []).map((fila) => ({
             key: fila.category,
-            label: INCIDENT_CATEGORY_LABELS[fila.category],
+            label: INCIDENT_CATEGORY_LABELS[fila.category] ?? fila.category,
             count: fila.count,
             percentage: fila.percentage,
           }))}
@@ -48,9 +48,9 @@ export default function IncidentResults({ analysis, fileName }: Props) {
           id="por-estado"
           title="Por estado"
           header="Estado"
-          rows={analysis.by_status.map((fila) => ({
+          rows={(analysis.by_status ?? []).map((fila) => ({
             key: fila.status,
-            label: INCIDENT_STATUS_LABELS[fila.status],
+            label: INCIDENT_STATUS_LABELS[fila.status] ?? fila.status,
             count: fila.count,
             percentage: fila.percentage,
           }))}
@@ -65,13 +65,15 @@ export default function IncidentResults({ analysis, fileName }: Props) {
 // --- Totales ---
 
 function Totals({ analysis }: { analysis: IncidentAnalysis }) {
+  // Una cifra que no llegue se pinta como 0, no como "NaN".
+  const invalidos = analysis.invalid_records ?? 0;
   const tarjetas = [
-    { label: "Registros totales", value: analysis.total_records, tone: "text-white" },
-    { label: "Válidos", value: analysis.valid_records, tone: "text-emerald-300" },
+    { label: "Registros totales", value: analysis.total_records ?? 0, tone: "text-white" },
+    { label: "Válidos", value: analysis.valid_records ?? 0, tone: "text-emerald-300" },
     {
       label: "Inválidos",
-      value: analysis.invalid_records,
-      tone: analysis.invalid_records > 0 ? "text-acento-400" : "text-white",
+      value: invalidos,
+      tone: invalidos > 0 ? "text-acento-400" : "text-white",
     },
   ];
 
@@ -95,7 +97,8 @@ function Totals({ analysis }: { analysis: IncidentAnalysis }) {
 // --- Registros invalidos ---
 
 function InvalidRecords({ analysis }: { analysis: IncidentAnalysis }) {
-  if (analysis.invalid_records === 0) {
+  const invalidos = analysis.invalid_records ?? 0;
+  if (invalidos === 0) {
     return (
       <p className="rounded-lg border border-emerald-800 bg-emerald-950 px-4 py-3 text-sm text-emerald-100">
         Todos los registros son válidos.
@@ -103,9 +106,9 @@ function InvalidRecords({ analysis }: { analysis: IncidentAnalysis }) {
     );
   }
 
-  const reglas = analysis.invalid_by_rule.filter((regla) => regla.count > 0);
+  const reglas = (analysis.invalid_by_rule ?? []).filter((regla) => regla.count > 0);
   const sumaPorRegla = reglas.reduce((suma, regla) => suma + regla.count, 0);
-  const muestras = analysis.invalid_samples;
+  const muestras = analysis.invalid_samples ?? [];
 
   return (
     <section
@@ -113,8 +116,8 @@ function InvalidRecords({ analysis }: { analysis: IncidentAnalysis }) {
       className="rounded-lg border border-acento-600 bg-marca-900 p-5"
     >
       <h3 id="registros-invalidos" className="font-semibold text-acento-300">
-        {formatearNumero(analysis.invalid_records)}{" "}
-        {analysis.invalid_records === 1
+        {formatearNumero(invalidos)}{" "}
+        {invalidos === 1
           ? "registro no válido, excluido"
           : "registros no válidos, excluidos"}{" "}
         de las métricas
@@ -123,13 +126,13 @@ function InvalidRecords({ analysis }: { analysis: IncidentAnalysis }) {
       <ul className="mt-3 space-y-1 text-sm">
         {reglas.map((regla) => (
           <li key={regla.rule} className="flex justify-between gap-4">
-            <span className="text-slate-300">{INCIDENT_RULE_LABELS[regla.rule]}</span>
+            <span className="text-slate-300">{INCIDENT_RULE_LABELS[regla.rule] ?? regla.rule}</span>
             <span className="tabular-nums text-white">{formatearNumero(regla.count)}</span>
           </li>
         ))}
       </ul>
 
-      {sumaPorRegla > analysis.invalid_records && (
+      {sumaPorRegla > invalidos && (
         <p className="mt-3 text-xs text-slate-400">
           Un registro puede incumplir varias reglas a la vez: por eso la suma es
           mayor que el número de registros no válidos.
@@ -161,7 +164,9 @@ function InvalidRecords({ analysis }: { analysis: IncidentAnalysis }) {
                       )}
                     </td>
                     <td className="px-3 py-2 text-slate-300">
-                      {muestra.rules.map((regla) => INCIDENT_RULE_LABELS[regla]).join(" · ")}
+                      {(muestra.rules ?? [])
+                        .map((regla) => INCIDENT_RULE_LABELS[regla] ?? regla)
+                        .join(" · ")}
                     </td>
                   </tr>
                 ))}
@@ -169,10 +174,10 @@ function InvalidRecords({ analysis }: { analysis: IncidentAnalysis }) {
             </table>
           </div>
 
-          {analysis.invalid_records > muestras.length && (
+          {invalidos > muestras.length && (
             <p className="mt-2 text-xs text-slate-400">
               Se muestran las primeras {muestras.length} de{" "}
-              {formatearNumero(analysis.invalid_records)}.
+              {formatearNumero(invalidos)}.
             </p>
           )}
         </details>
@@ -252,7 +257,10 @@ function Breakdown({
 // --- Indice de satisfaccion ---
 
 function SatisfactionIndex({ analysis }: { analysis: IncidentAnalysis }) {
-  const { average_score, scored_records, distribution } = analysis.satisfaction;
+  // Sin bloque de satisfacción se enseña como "sin puntuaciones", no se rompe.
+  const average_score = analysis.satisfaction?.average_score ?? null;
+  const scored_records = analysis.satisfaction?.scored_records ?? 0;
+  const distribution = analysis.satisfaction?.distribution ?? [];
   const maximo = Math.max(1, ...distribution.map((fila) => fila.count));
 
   return (
@@ -291,7 +299,8 @@ function SatisfactionIndex({ analysis }: { analysis: IncidentAnalysis }) {
           {distribution.map((fila) => (
             <li key={fila.score} className="flex items-center gap-3 text-sm">
               <span className="w-40 shrink-0 text-slate-300">
-                {fila.score} · {SATISFACTION_SCORE_LABELS[fila.score]}
+                {fila.score}
+                {SATISFACTION_SCORE_LABELS[fila.score] && ` · ${SATISFACTION_SCORE_LABELS[fila.score]}`}
               </span>
               <span
                 aria-hidden="true"

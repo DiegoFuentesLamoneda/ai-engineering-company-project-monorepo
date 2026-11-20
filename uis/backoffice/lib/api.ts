@@ -344,7 +344,8 @@ export function deleteCandidate(id: string): Promise<void> {
 /** Desenvuelve el sobre { data, meta } y devuelve solo el array. */
 export async function getNotes(recordId: string): Promise<Note[]> {
   const respuesta = await request<NotesResponse>(`/records/${recordId}/notes`);
-  return respuesta.data;
+  // La API mock es de terceros: si un día falta el sobre, lista vacía.
+  return respuesta?.data ?? [];
 }
 
 export function createNote(recordId: string, content: string): Promise<Note> {

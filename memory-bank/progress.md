@@ -172,7 +172,7 @@ Rama `feature/error-handling-audit`, **apilada sobre `feature/incident-manager`*
 | 2 — API: `422` sin `input` (B1), configuración sin el valor (B2), cortes de conexión con Resend (B3), `503` de almacenamiento (B6) y solo código y tipo de Resend en el log (B7); S5 en el mismo archivo. B4 y B5 ya estaban cubiertos. 368 pruebas | ✅ |
 | 3 — Scripts: `sync_contexts.py` cuenta los fallos y sale con `1` (S1), `seed` y `create-admin` sin trazas y Ctrl+C limpio (S2, S4), `OSError` en lectura, escritura y base de datos (S3), comprobaciones en `pandas_clean.py` (S6). 375 pruebas | ✅ |
 | 4 — Base del backoffice: `error.tsx`, `global-error.tsx` y `not-found.tsx` en español con «Reintentar» y enlace al panel (F1), JSON ilegible (F3), textos por código sin el número (F6), la configuración que falta solo a la consola de desarrollo (F7), `localStorage` lleno o bloqueado (F12). Typecheck, lint y build en verde | ✅ |
-| 5 — Pantallas del backoffice: reintentar, `?.` y valores por defecto, `finally` (F2, F4, F5, F8–F11) | ⬜ |
+| 5 — Pantallas del backoffice: «Reintentar» en candidaturas, resumen del proceso, proveedores, notas y perfil (F5); `?.` y valores por defecto en hooks, listas, ficha y paneles de incidencias (F2, F4, F9); mensajes propios en el formulario de candidatura (F8); `finally` en login, registro y nueva contraseña sin perder el bloqueo tras un envío correcto (F10); enlace «Mi cuenta» si `getMe` falla (F11). Typecheck, lint y build en verde | ✅ |
 | 6 — Verificación y cierre: typecheck, lint, build, pruebas, Playwright con los estados de error, banco de memoria, ficha y PR | ⬜ |
 
 ## Próximo

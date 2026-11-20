@@ -16,7 +16,7 @@ function textoRenovacion(dias: number): string {
 
 export default function SupplierList() {
   const filtros = useSupplierFilters();
-  const { suppliers, isLoading, error, reemplazar } = useSuppliers(filtros);
+  const { suppliers, isLoading, error, recargar, reemplazar } = useSuppliers(filtros);
 
   if (isLoading) {
     return <p className="py-12 text-center text-sm text-slate-400">Cargando proveedores…</p>;
@@ -24,9 +24,16 @@ export default function SupplierList() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
+      <div role="alert" className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
         <p className="font-medium">No se han podido cargar los proveedores</p>
         <p className="mt-1">{error}</p>
+        <button
+          type="button"
+          onClick={recargar}
+          className="mt-3 rounded-md border border-red-400 px-3 py-1.5 text-sm font-medium text-red-50 transition-colors hover:bg-red-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-400"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
@@ -90,21 +97,23 @@ export default function SupplierList() {
                 >
                   <td className="px-4 py-3">
                     <span className={`font-medium ${suspendido ? "text-slate-400" : "text-white"}`}>
-                      {supplier.name}
+                      {supplier.name ?? "Sin nombre"}
                     </span>
                     {supplier.contact_email && (
                       <span className="block text-xs text-slate-500">{supplier.contact_email}</span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3">{COUNTRY_LABELS[supplier.country]}</td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    {COUNTRY_LABELS[supplier.country] ?? supplier.country ?? "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <ul className="flex max-w-xs flex-wrap gap-1">
-                      {supplier.categories.map((categoria) => (
+                      {(supplier.categories ?? []).map((categoria) => (
                         <li
                           key={categoria}
                           className="rounded border border-marca-700 px-1.5 py-0.5 text-xs"
                         >
-                          {CATEGORY_LABELS[categoria]}
+                          {CATEGORY_LABELS[categoria] ?? categoria}
                         </li>
                       ))}
                     </ul>

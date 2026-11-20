@@ -51,18 +51,22 @@ export default function LoginForm() {
     setEnviando(true);
     setErrorGeneral(null);
 
+    let dentro = false;
     try {
       await login(email.trim(), password);
+      dentro = true;
     } catch (e) {
       setErrorGeneral(
         e instanceof ApiError ? e.message : "No se ha podido iniciar sesión. Inténtalo de nuevo.",
       );
       // La contraseña se vacía tras un fallo; el email se deja para corregirlo.
       setPassword("");
-      setEnviando(false);
+    } finally {
+      // Si sale bien, enviando se queda a true: el botón sigue desactivado
+      // hasta que GuestGuard navega y no se puede enviar dos veces. En
+      // cualquier otro caso, pase lo que pase, el botón se vuelve a activar.
+      if (!dentro) setEnviando(false);
     }
-    // Si sale bien, enviando se queda a true: el botón sigue desactivado
-    // hasta que GuestGuard navega y no se puede enviar dos veces.
   }
 
   return (

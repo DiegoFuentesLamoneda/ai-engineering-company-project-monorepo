@@ -6,7 +6,7 @@ import { formatearFechaHora } from "@/lib/format";
 import { useNotes } from "@/hooks/useNotes";
 
 export default function CandidateNotes({ recordId }: { recordId: string }) {
-  const { notes, setNotes, isLoading, error } = useNotes(recordId);
+  const { notes, setNotes, isLoading, error, recargar } = useNotes(recordId);
 
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -94,9 +94,19 @@ export default function CandidateNotes({ recordId }: { recordId: string }) {
       {isLoading && <p className="text-sm text-slate-400">Cargando notas…</p>}
 
       {!isLoading && error && (
-        <p className="rounded-md border border-red-800 bg-red-950 px-3 py-2 text-sm text-red-100">
-          {error}
-        </p>
+        <div
+          role="alert"
+          className="rounded-md border border-red-800 bg-red-950 px-3 py-2 text-sm text-red-100"
+        >
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={recargar}
+            className="mt-2 rounded-md border border-red-400 px-3 py-1 text-sm font-medium text-red-50 transition-colors hover:bg-red-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-400"
+          >
+            Reintentar
+          </button>
+        </div>
       )}
 
       {!isLoading && !error && notes.length === 0 && (

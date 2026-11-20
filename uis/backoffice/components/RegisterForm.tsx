@@ -86,6 +86,7 @@ export default function RegisterForm() {
     setErrorGeneral(null);
     setErrores({});
 
+    let dentro = false;
     try {
       await register({
         email: valores.email.trim(),
@@ -94,9 +95,8 @@ export default function RegisterForm() {
         phone: textOrNull(valores.phone),
         address: textOrNull(valores.address),
       });
+      dentro = true;
     } catch (e) {
-      setEnviando(false);
-
       if (!(e instanceof ApiError)) {
         setErrorGeneral("No se ha podido crear la cuenta. Inténtalo de nuevo.");
         return;
@@ -122,6 +122,10 @@ export default function RegisterForm() {
           ? "La API ha rechazado el registro. Revisa los campos marcados."
           : e.message,
       );
+    } finally {
+      // Si sale bien, enviando se queda a true hasta que la guardia navega:
+      // así no se envía dos veces. Si falla, por la vía que sea, se reactiva.
+      if (!dentro) setEnviando(false);
     }
   }
 

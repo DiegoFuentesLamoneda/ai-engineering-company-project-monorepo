@@ -28,7 +28,7 @@ function contarPor(
 }
 
 export default function PipelineSummary() {
-  const { candidates, total, isLoading, error } = useCandidates({
+  const { candidates, total, isLoading, error, recargar } = useCandidates({
     limit: TAMANO_MUESTRA,
   });
 
@@ -42,9 +42,16 @@ export default function PipelineSummary() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
+      <div role="alert" className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
         <p className="font-medium">No se ha podido cargar el estado del proceso</p>
         <p className="mt-1">{error}</p>
+        <button
+          type="button"
+          onClick={recargar}
+          className="mt-3 rounded-md border border-red-400 px-3 py-1.5 text-sm font-medium text-red-50 transition-colors hover:bg-red-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-400"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
