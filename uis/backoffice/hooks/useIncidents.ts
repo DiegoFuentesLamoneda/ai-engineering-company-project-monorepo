@@ -42,7 +42,7 @@ export function useIncidents(filters: IncidentFilters): EstadoIncidencias {
       try {
         const respuesta = await getIncidents(JSON.parse(claveFiltros));
         if (cancelado) return;
-        setIncidents(respuesta);
+        setIncidents(respuesta ?? []);
       } catch (e) {
         if (cancelado) return;
         setError(e instanceof ApiError ? e.message : "Error inesperado.");

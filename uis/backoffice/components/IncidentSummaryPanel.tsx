@@ -42,7 +42,7 @@ function Reparto({ titulo, valores, textos, cuentas, destacado }: RepartoProps) 
           return (
             <li key={valor} className="flex items-center gap-3 text-xs">
               <span className={`w-40 shrink-0 ${esDestacado ? "text-red-200" : "text-slate-300"}`}>
-                {textos[valor]}
+                {textos[valor] ?? valor}
               </span>
               <span className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-marca-950">
                 <span
@@ -100,7 +100,11 @@ export default function IncidentSummaryPanel({ revision }: Props) {
     );
   }
 
-  const criticas = summary.by_category[SLA_BREACH_CATEGORY];
+  // Si a la respuesta le falta un reparto, sus cifras salen a 0 en vez de romper el panel.
+  const total = summary.total ?? 0;
+  const porEstado = summary.by_status ?? {};
+  const porCategoria = summary.by_category ?? {};
+  const criticas = porCategoria[SLA_BREACH_CATEGORY] ?? 0;
 
   return (
     <section aria-labelledby="titulo-resumen" className="mb-8 space-y-4">
@@ -109,7 +113,7 @@ export default function IncidentSummaryPanel({ revision }: Props) {
           Resumen
         </h2>
         <p className="text-xs text-slate-400">
-          {summary.total} {summary.total === 1 ? "incidencia" : "incidencias"} en total, sin
+          {total} {total === 1 ? "incidencia" : "incidencias"} en total, sin
           filtros
         </p>
       </div>
@@ -128,7 +132,7 @@ export default function IncidentSummaryPanel({ revision }: Props) {
               {MANAGER_STATUS_LABELS[estado]}
             </span>
             <p className="mt-3 text-3xl font-semibold tabular-nums text-white">
-              {summary.by_status[estado]}
+              {porEstado[estado] ?? 0}
             </p>
           </Link>
         ))}
@@ -149,19 +153,19 @@ export default function IncidentSummaryPanel({ revision }: Props) {
           titulo="Por sede"
           valores={BRANCH_VALUES}
           textos={BRANCH_LABELS}
-          cuentas={summary.by_branch}
+          cuentas={summary.by_branch ?? {}}
         />
         <Reparto
           titulo="Por quién la reporta"
           valores={ORIGIN_VALUES}
           textos={ORIGIN_LABELS}
-          cuentas={summary.by_origin}
+          cuentas={summary.by_origin ?? {}}
         />
         <Reparto
           titulo="Por categoría"
           valores={MANAGER_CATEGORY_VALUES}
           textos={MANAGER_CATEGORY_LABELS}
-          cuentas={summary.by_category}
+          cuentas={porCategoria}
           destacado={SLA_BREACH_CATEGORY}
         />
       </div>

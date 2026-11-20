@@ -12,6 +12,7 @@ This folder holds **cross-cutting documentation** for the monorepo: architecture
 | Document | What it is |
 | --- | --- |
 | [`ARCHITECTURE_PROPOSAL.md`](./ARCHITECTURE_PROPOSAL.md) | Backend architecture proposal: chosen pattern, structure of `services/nexova-api/`, router organisation, frontend/backend coexistence, technical decisions and risks. Milestone 5 |
+| [`ERROR_HANDLING_AUDIT.md`](./ERROR_HANDLING_AUDIT.md) | Error-handling audit of the whole repository (in Spanish): findings by layer and severity, their status and what is out of scope |
 | [`contexts/`](./contexts/) | Syllabus contexts synced with [`scripts/sync_contexts.py`](../scripts/sync_contexts.py). **Not edited by hand** |
 | [`screenshots/`](./screenshots/) | Evidence images linked from pull requests. `auth-03-reset-email.png`: the AUTH-03 reset email as it reached a real inbox, with the token covered |
 | `contexts-archive/` | Contexts for the other companies in the track. **Never read, never searched** — see [`AGENTS.md`](../AGENTS.md) |

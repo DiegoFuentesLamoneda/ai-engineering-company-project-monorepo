@@ -11,19 +11,51 @@ problemas:
 
 Por eso es un middleware y no un `exception_handler(Exception)`: se añade
 antes que CORS, que queda por fuera y pone sus cabeceras también al 500.
+
+Junto a él, dos manejadores para errores que sí se esperan y tienen su código:
+
+- `validation_error_handler`: el 422 de FastAPI sin el campo `input`, que
+  devolvía tal cual lo que escribió el usuario (contraseñas incluidas).
+- `storage_unavailable_handler`: el 503 cuando no se puede leer o escribir
+  un fichero de TinyDB (ver `json_storage.py`).
 """
 
 from __future__ import annotations
 
 import logging
 
-from fastapi import status
+from fastapi import Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger("nexova.errors")
 
 GENERIC_ERROR = "Ha ocurrido un error inesperado en el servidor. Inténtalo de nuevo en unos minutos."
+
+STORAGE_UNAVAILABLE = "El servicio no está disponible en este momento. Inténtalo de nuevo en unos minutos."
+
+# Lo que se devuelve de cada error de validación. Fuera quedan `input` (el
+# valor recibido: una contraseña, un token) y `ctx` (que puede repetirlo).
+VALIDATION_ERROR_KEYS = ("loc", "msg", "type")
+
+
+class StorageUnavailableError(RuntimeError):
+    """Un fichero de TinyDB no se puede leer o escribir: corrupto, sin permisos o sin disco."""
+
+
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """El 422 de siempre, con la misma lista en `detail`, pero sin repetir lo que se envió."""
+    errors = [{key: error[key] for key in VALIDATION_ERROR_KEYS if key in error} for error in exc.errors()]
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content={"detail": errors})
+
+
+async def storage_unavailable_handler(request: Request, exc: StorageUnavailableError) -> JSONResponse:
+    """503: no es un fallo del código ni de la petición, es la base de datos. El detalle, al log."""
+    logger.exception("Almacenamiento no disponible en %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content={"detail": STORAGE_UNAVAILABLE}
+    )
 
 
 class UnexpectedErrorMiddleware:

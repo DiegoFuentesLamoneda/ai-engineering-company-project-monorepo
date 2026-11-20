@@ -23,9 +23,9 @@ from uuid import UUID
 
 from incident_analysis import Branch, IncidentCategory, IncidentOrigin, IncidentStatus
 from tinydb import Query, TinyDB
-from tinydb.storages import JSONStorage
 from tinydb.table import Document
 
+from ...json_storage import SafeJSONStorage
 from .schemas import Incident
 
 TABLE = "incidents"
@@ -42,7 +42,7 @@ class IncidentRepository:
     def __init__(self, path: Path) -> None:
         self._db = TinyDB(
             path,
-            storage=JSONStorage,
+            storage=SafeJSONStorage,
             create_dirs=True,
             encoding="utf-8",
             # Fichero legible a simple vista, con tildes y sangría.

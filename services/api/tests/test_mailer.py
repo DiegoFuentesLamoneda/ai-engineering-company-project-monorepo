@@ -8,6 +8,7 @@ Se ejecutan desde services/api:
 
 from __future__ import annotations
 
+import http.client
 import io
 import json
 import unittest
@@ -90,12 +91,26 @@ class ResendMailerTests(unittest.TestCase):
         self.assertLessEqual(opener.timeouts[0], 10)
 
     def test_rejected_email_raises_without_leaking_the_key(self):
-        opener = FakeOpener(error=http_error(422, '{"message": "Invalid `to` field"}'))
+        body = '{"name": "validation_error", "message": "Solo puedes enviar a tu email (dueña@nexova.es)"}'
+        opener = FakeOpener(error=http_error(422, body))
         with self.assertRaises(EmailDeliveryError) as caught:
             self.send(opener)
         self.assertIn("422", str(caught.exception))
-        self.assertIn("Invalid", str(caught.exception))
+        self.assertIn("validation_error", str(caught.exception))
         self.assertNotIn(API_KEY, str(caught.exception))
+        # El mensaje de Resend puede llevar el email de la cuenta: no se copia.
+        self.assertNotIn("dueña@nexova.es", str(caught.exception))
+
+    def test_rejected_email_without_a_json_body_still_says_the_code(self):
+        opener = FakeOpener(error=http_error(502, "<html>Bad Gateway</html>"))
+        with self.assertRaises(EmailDeliveryError) as caught:
+            self.send(opener)
+        self.assertEqual(str(caught.exception), "Resend respondió 502")
+
+    def test_connection_cut_mid_response_raises_delivery_error(self):
+        for error in (ConnectionResetError("cortada"), http.client.RemoteDisconnected("cerrada")):
+            with self.subTest(error=type(error).__name__), self.assertRaises(EmailDeliveryError):
+                self.send(FakeOpener(error=error))
 
     def test_network_failure_raises_delivery_error(self):
         opener = FakeOpener(error=urllib.error.URLError("sin red"))

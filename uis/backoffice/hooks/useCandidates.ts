@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ApiError, getCandidates, type CandidateFilters } from "@/lib/api";
 import type { Candidate } from "@/types/candidate";
 
@@ -9,6 +9,8 @@ interface EstadoCandidaturas {
   total: number;
   isLoading: boolean;
   error: string | null;
+  /** Vuelve a pedir la lista: el botón «Reintentar». */
+  recargar: () => void;
 }
 
 /**
@@ -20,6 +22,8 @@ export function useCandidates(filters: CandidateFilters): EstadoCandidaturas {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Cada «Reintentar» suma uno y vuelve a lanzar el efecto con los mismos filtros.
+  const [intento, setIntento] = useState(0);
 
   // Los objetos se comparan por referencia, asi que usamos una clave estable
   // para que el efecto solo se dispare cuando cambie el contenido del filtro.
@@ -35,8 +39,9 @@ export function useCandidates(filters: CandidateFilters): EstadoCandidaturas {
       try {
         const respuesta = await getCandidates(JSON.parse(claveFiltros));
         if (cancelado) return;
-        setCandidates(respuesta.data);
-        setTotal(respuesta.total);
+        // La API mock es de terceros: si un dia falta el sobre, lista vacia.
+        setCandidates(respuesta?.data ?? []);
+        setTotal(respuesta?.total ?? 0);
       } catch (e) {
         if (cancelado) return;
         setError(e instanceof ApiError ? e.message : "Error inesperado.");
@@ -53,7 +58,9 @@ export function useCandidates(filters: CandidateFilters): EstadoCandidaturas {
       // Descarta la respuesta si mientras tanto han cambiado los filtros.
       cancelado = true;
     };
-  }, [claveFiltros]);
+  }, [claveFiltros, intento]);
 
-  return { candidates, total, isLoading, error };
+  const recargar = useCallback(() => setIntento((n) => n + 1), []);
+
+  return { candidates, total, isLoading, error, recargar };
 }

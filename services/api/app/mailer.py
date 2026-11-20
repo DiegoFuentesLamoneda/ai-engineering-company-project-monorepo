@@ -20,6 +20,7 @@ email solo llega a la dirección con la que se creó la cuenta de Resend):
 
 from __future__ import annotations
 
+import http.client
 import json
 import logging
 import sys
@@ -112,11 +113,23 @@ class ResendMailer:
             with self._opener(request, timeout=TIMEOUT_SECONDS) as response:
                 response.read()
         except urllib.error.HTTPError as error:
-            detail = error.read().decode("utf-8", errors="replace")[:300]
-            raise EmailDeliveryError(f"Resend respondió {error.code}: {detail}") from None
-        except (urllib.error.URLError, TimeoutError) as error:
+            # Solo el código y el tipo de error de Resend: su mensaje puede
+            # llevar el email de la cuenta, y este texto acaba en el log.
+            raise EmailDeliveryError(f"Resend respondió {error.code}{_resend_error_name(error)}") from None
+        except (OSError, http.client.HTTPException) as error:
+            # OSError cubre URLError, TimeoutError y los cortes de conexión a
+            # mitad de respuesta; HTTPException, una respuesta mal formada.
             raise EmailDeliveryError(f"No se pudo contactar con Resend: {error}") from None
         logger.info("Email enviado a %s: %s", mask_email(message.to), message.subject)
+
+
+def _resend_error_name(error: urllib.error.HTTPError) -> str:
+    """El campo `name` del cuerpo de error de Resend (`validation_error`…), si lo hay."""
+    try:
+        name = json.loads(error.read()).get("name")
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return f" ({name})" if isinstance(name, str) else ""
 
 
 class LogMailer:
@@ -149,7 +162,7 @@ def _main(argv: list[str]) -> int:
     """Envía un email de prueba con la configuración de `.env`."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     if len(argv) != 1:
-        print("Uso: uv run --env-file .env python -m app.mailer <email-destino>")
+        print("Uso: uv run --env-file .env python -m app.mailer <email-destino>", file=sys.stderr)
         return 2
     mailer = build_mailer(load_settings())
     message = EmailMessage(
@@ -161,7 +174,7 @@ def _main(argv: list[str]) -> int:
     try:
         mailer.send(message)
     except EmailDeliveryError as error:
-        print(f"Error: {error}")
+        print(f"Error: {error}", file=sys.stderr)
         return 1
     return 0
 

@@ -31,10 +31,12 @@ DEFAULT_CSV = REPO_ROOT / "scripts" / "incidents-nexova.csv"
 sys.path.insert(0, str(REPO_ROOT / "services" / "api"))
 
 from incident_analysis import REJECTION_LABELS, IncidentFileError, SeedPlan, plan_seed_file  # noqa: E402
+from pydantic import ValidationError  # noqa: E402
 
 from app.config import load_settings  # noqa: E402
 from app.domains.incidents.database import IncidentRepository  # noqa: E402
 from app.domains.incidents.seed import SeedResult, seed_incidents  # noqa: E402
+from app.errors import StorageUnavailableError  # noqa: E402
 
 
 def render_rejected(plan: SeedPlan) -> list[str]:
@@ -86,10 +88,29 @@ def main(argv: list[str] | None = None) -> int:
     except IncidentFileError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
+    except OSError as exc:
+        # Existe pero no se puede abrir: sin permisos, o bloqueado por otro programa.
+        print(f"Error: no se pudo abrir '{args.csv_path}': {exc.strerror}.", file=sys.stderr)
+        return 1
 
-    settings = load_settings()
-    with IncidentRepository(settings.incidents_db_path) as repo:
-        result = seed_incidents(repo, plan)
+    try:
+        settings = load_settings()
+    except ValidationError as exc:
+        reasons = "; ".join(f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in exc.errors())
+        print(f"Error: configuración no válida ({reasons}). Revisa las variables NEXOVA_API_*.", file=sys.stderr)
+        return 1
+
+    try:
+        with IncidentRepository(settings.incidents_db_path) as repo:
+            result = seed_incidents(repo, plan)
+    except StorageUnavailableError as exc:
+        # El motivo concreto (JSON roto, sin permisos) es la causa.
+        print(f"Error: {exc} ({exc.__cause__}). Revisa el fichero y vuelve a lanzarlo.", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        # Al abrir: la carpeta no se puede crear o el fichero no se puede abrir.
+        print(f"Error: no se pudo abrir la base de datos: {exc}", file=sys.stderr)
+        return 1
 
     print(f"CSV: {args.csv_path.name} · {plan.total_records} registros, {len(plan.drafts)} válidos")
     print("\n".join(render_rejected(plan)))

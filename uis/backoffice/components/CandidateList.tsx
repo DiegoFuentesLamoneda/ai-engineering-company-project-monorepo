@@ -10,7 +10,7 @@ export default function CandidateList() {
   const filtros = useCandidateFilters();
   // Arrastramos los filtros activos al detalle para poder volver al mismo sitio.
   const consulta = useSearchParams().toString();
-  const { candidates, total, isLoading, error } = useCandidates({
+  const { candidates, total, isLoading, error, recargar } = useCandidates({
     ...filtros,
     limit: 100,
   });
@@ -25,9 +25,16 @@ export default function CandidateList() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
+      <div role="alert" className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
         <p className="font-medium">No se han podido cargar las candidaturas</p>
         <p className="mt-1">{error}</p>
+        <button
+          type="button"
+          onClick={recargar}
+          className="mt-3 rounded-md border border-red-400 px-3 py-1.5 text-sm font-medium text-red-50 transition-colors hover:bg-red-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-400"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
@@ -71,22 +78,23 @@ export default function CandidateList() {
                     }
                     className="font-medium text-acento-400 underline underline-offset-4 hover:text-acento-300"
                   >
-                    {candidate.full_name}
+                    {candidate.full_name ?? "Sin nombre"}
                   </Link>
                   <span className="block text-xs text-slate-400">
                     {candidate.email}
                   </span>
                 </td>
-                <td className="px-4 py-3">{candidate.position}</td>
+                <td className="px-4 py-3">{candidate.position ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[candidate.status]}`}
+                    className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[candidate.status] ?? "bg-marca-800 text-slate-200"}`}
                   >
-                    {STATUS_LABELS[candidate.status]}
+                    {/* Un valor que la mock añada mañana se ve tal cual, no en blanco. */}
+                    {STATUS_LABELS[candidate.status] ?? candidate.status ?? "—"}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-slate-300">
-                  {STAGE_LABELS[candidate.stage]}
+                  {STAGE_LABELS[candidate.stage] ?? candidate.stage ?? "—"}
                 </td>
               </tr>
             ))}

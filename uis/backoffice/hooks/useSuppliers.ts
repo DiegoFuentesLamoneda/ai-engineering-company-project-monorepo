@@ -8,6 +8,8 @@ interface EstadoProveedores {
   suppliers: Supplier[];
   isLoading: boolean;
   error: string | null;
+  /** Vuelve a pedir la lista: el botón «Reintentar». */
+  recargar: () => void;
   /** Sustituye una fila por la version que acaba de devolver la API. */
   reemplazar: (actualizado: Supplier) => void;
 }
@@ -20,6 +22,8 @@ export function useSuppliers(filters: SupplierFilters): EstadoProveedores {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Cada «Reintentar» suma uno y vuelve a lanzar el efecto con los mismos filtros.
+  const [intento, setIntento] = useState(0);
 
   // Clave estable: el efecto solo se repite si cambia el contenido del filtro.
   const claveFiltros = JSON.stringify(filters);
@@ -34,7 +38,7 @@ export function useSuppliers(filters: SupplierFilters): EstadoProveedores {
       try {
         const respuesta = await getSuppliers(JSON.parse(claveFiltros));
         if (cancelado) return;
-        setSuppliers(respuesta);
+        setSuppliers(respuesta ?? []);
       } catch (e) {
         if (cancelado) return;
         setError(e instanceof ApiError ? e.message : "Error inesperado.");
@@ -50,7 +54,9 @@ export function useSuppliers(filters: SupplierFilters): EstadoProveedores {
       // Descarta la respuesta si mientras tanto han cambiado los filtros.
       cancelado = true;
     };
-  }, [claveFiltros]);
+  }, [claveFiltros, intento]);
+
+  const recargar = useCallback(() => setIntento((n) => n + 1), []);
 
   // Los PATCH devuelven el proveedor completo: con eso basta para refrescar la
   // fila, sin pedir otra vez la lista. Ni la tarifa ni el estado cambian el
@@ -61,5 +67,5 @@ export function useSuppliers(filters: SupplierFilters): EstadoProveedores {
     );
   }, []);
 
-  return { suppliers, isLoading, error, reemplazar };
+  return { suppliers, isLoading, error, recargar, reemplazar };
 }

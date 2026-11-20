@@ -49,3 +49,14 @@ uv run --project services/api python scripts/seed_incidents.py
   The `ticket_id` is not stored in the incident.
 - **Rejected rows:** all of them are listed, with their line and `ticket_id`, never with the email.
 
+
+## Errors
+
+All three scripts follow the same rule: **an error is a message on `stderr` and exit code `1`, never a traceback**.
+That way a scheduled task or a pipeline that runs them stops and knows why.
+
+- **`analyze.py` and `seed_incidents.py`:** a file that does not exist or cannot be opened, a malformed CSV, invalid
+  configuration, a corrupt or read-only database, and `results.csv` open in another program (Excel locks it).
+- **`sync_contexts.py`:** network, timeout, a GitHub response without the tree (rate limit exhausted) and every
+  download or write that fails. If any fails, it carries on with the rest and ends in "Incompleto" with code `1`,
+  not "Listo".

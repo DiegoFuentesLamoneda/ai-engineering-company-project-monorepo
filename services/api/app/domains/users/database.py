@@ -16,9 +16,9 @@ from typing import Any
 from uuid import UUID
 
 from tinydb import Query, TinyDB
-from tinydb.storages import JSONStorage
 from tinydb.table import Document
 
+from ...json_storage import SafeJSONStorage
 from .exceptions import EmailAlreadyRegisteredError
 from .schemas import User
 
@@ -38,7 +38,7 @@ class UserRepository:
     def __init__(self, path: Path) -> None:
         self._db = TinyDB(
             path,
-            storage=JSONStorage,
+            storage=SafeJSONStorage,
             create_dirs=True,
             encoding="utf-8",
             ensure_ascii=False,

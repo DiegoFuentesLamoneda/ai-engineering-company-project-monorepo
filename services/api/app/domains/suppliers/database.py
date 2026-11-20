@@ -22,9 +22,9 @@ from pathlib import Path
 from typing import Any
 
 from tinydb import Query, TinyDB
-from tinydb.storages import JSONStorage
 from tinydb.table import Document
 
+from ...json_storage import SafeJSONStorage
 from .schemas import Category, Country, Supplier, SupplierCreate
 
 TABLE = "suppliers"
@@ -42,7 +42,7 @@ class SupplierRepository:
     def __init__(self, path: Path) -> None:
         self._db = TinyDB(
             path,
-            storage=JSONStorage,
+            storage=SafeJSONStorage,
             create_dirs=True,
             encoding="utf-8",
             # Fichero legible a simple vista, con tildes y sangría.

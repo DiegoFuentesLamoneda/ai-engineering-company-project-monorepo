@@ -32,6 +32,8 @@ uv run python ../../scripts/seed_incidents.py   # carga en el gestor el históri
 
 `uv run create-admin` ([`app/create_admin.py`](./app/create_admin.py)) pide un email. Si es nuevo, pide la contraseña dos veces sin mostrarla y crea una cuenta `admin` con su perfil vacío. Si el email ya tiene cuenta, la asciende a `admin` sin tocar su contraseña. Hace falta porque `POST /users` crea siempre cuentas `user` y solo un admin puede cambiar roles: sin el comando, el primer admin no podría existir. Aplica las mismas reglas que el alta por la API (email válido, contraseña de 8 caracteres a 72 bytes).
 
+Los dos comandos terminan igual cuando algo falla: un mensaje en `stderr` y código de salida `1`, sin traza. Cubren la configuración no válida (dicen qué variable, nunca su valor), la base de datos corrupta o sin permisos y, en `create-admin`, Ctrl+C o la entrada cerrada mientras pide el email o la contraseña («Cancelado. No se ha creado nada.»). Las pruebas están en [`tests/test_cli_errors.py`](./tests/test_cli_errors.py).
+
 ### Dependencias
 
 Se declaran en [`pyproject.toml`](./pyproject.toml) y sus versiones exactas, incluidas las indirectas, quedan fijadas en [`uv.lock`](./uv.lock). Los dos se versionan: así todo el equipo instala exactamente lo mismo. Para añadir una, `uv add <paquete>`, que actualiza ambos. Añadir una dependencia es una decisión de arquitectura y se consulta antes (ver [`AGENTS.md`](../../AGENTS.md) §7).
@@ -66,7 +68,8 @@ Los dos secretos (el del JWT y la API key de Resend) van en `.env`, que no se ve
 ```
 app/
 ├─ main.py              compone la app: configuración, CORS y routers. Nada más
-├─ errors.py            el 500 genérico: mensaje fijo para quien llama, el traceback al log
+├─ errors.py            el 500 genérico, el 422 sin `input` y el 503 de almacenamiento: mensaje para quien llama, el detalle al log
+├─ json_storage.py      el almacenamiento de TinyDB: un fichero ilegible es `StorageUnavailableError`
 ├─ config.py            configuración tipada, validada al arrancar
 ├─ dependencies.py      dependencias transversales (get_settings)
 ├─ mailer.py            envío de emails: Resend si hay API key, el log si no. El único que habla con Resend
@@ -292,6 +295,9 @@ Las capturas de los pasos 1, 2, 4, 5 y 6 van en la PR. El mismo recorrido, ampli
 - **Los errores del `400` llevan un `code` además del mensaje.** El mensaje en español es para quien lee la API; el formulario se guía por el código y escribe el suyo. Nunca se repite lo que escribió el usuario, salvo un valor corto de un desplegable (40 caracteres como mucho).
 - **Un cambio de estado imposible es `409`, no `400`.** La petición está bien formada; lo que choca es el estado en que está la incidencia. Es lo mismo que hace proveedores al borrar un suspendido. Un cambio perdido por llegar segundo también es `409`, con otro mensaje.
 - **El `500` es un middleware por dentro de CORS** ([`errors.py`](./app/errors.py)). Sin él, Starlette responde texto plano y por fuera de CORS: el navegador oculta la respuesta y el frontend ve un "Failed to fetch". Así sale el JSON de siempre, con las cabeceras de CORS, y el traceback solo en el log.
+- **El `422` no repite lo que se envió** (`validation_error_handler`, en [`errors.py`](./app/errors.py)). El de FastAPI trae `input` y `ctx` en cada error: una contraseña corta en `/auth/reset-password` volvía en la respuesta, y con ella el token. Ahora cada error lleva solo `loc`, `msg` y `type`, en la misma lista de siempre, que es lo que lee el backoffice.
+- **Un fichero de TinyDB ilegible es `503`, no `500`** ([`json_storage.py`](./app/json_storage.py)). Si el JSON está corrupto o el sistema niega el acceso, quien llama recibe «El servicio no está disponible en este momento» y el log, el fichero y la traza. Se captura en `read` y `write` del almacenamiento, la única operación que toca el disco, y no con un `try` en cada método de cada repositorio.
+- **La configuración no repite el valor que no valida** (`hide_input_in_errors`). Un secreto del JWT demasiado corto dice qué variable falla, pero no sale en la consola.
 - **`/summary` devuelve los ceros.** Todos los estados, categorías, orígenes y sedes, aunque no tengan incidencias: el panel pinta siempre las mismas filas y una base vacía no rompe nada.
 - **El `id` de un usuario es un UUID**, no el número de TinyDB. TinyDB reutiliza los números borrados, y el token de una cuenta eliminada identificaría a la siguiente que se registrase.
 - **Quién puede hacer qué lo decide el service**, no el router ([`users/service.py`](./app/domains/users/service.py)). Cada uno ve, edita y borra su propia cuenta. Un `admin`, cualquiera, y es el único que lista usuarios y cambia roles. `manager` todavía no tiene permisos propios. La comprobación de permiso va antes que la de existencia: así quien no es admin no puede averiguar qué IDs existen.

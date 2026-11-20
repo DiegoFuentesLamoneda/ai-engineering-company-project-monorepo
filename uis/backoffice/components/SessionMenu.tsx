@@ -15,6 +15,7 @@ import type { Me } from "@/types/auth";
  */
 export default function SessionMenu() {
   const [me, setMe] = useState<Me | null>(null);
+  const [sinDatos, setSinDatos] = useState(false);
 
   useEffect(() => {
     // Si la vista se desmonta antes de que llegue la respuesta, se ignora.
@@ -23,9 +24,12 @@ export default function SessionMenu() {
       .then((datos) => {
         if (vigente) setMe(datos);
       })
-      // Sin datos se enseña solo el botón. Un 401 ya lo gestiona lib/api.ts,
-      // que cierra la sesión, y la guardia lleva a /login.
-      .catch(() => {});
+      // Sin datos se enseña un enlace genérico a la cuenta, para que el menú
+      // no se quede a medias. Un 401 ya lo gestiona lib/api.ts, que cierra la
+      // sesión, y la guardia lleva a /login.
+      .catch(() => {
+        if (vigente) setSinDatos(true);
+      });
     return () => {
       vigente = false;
     };
@@ -40,10 +44,18 @@ export default function SessionMenu() {
     [],
   );
 
-  const nombre = me?.profile.name;
+  const nombre = me?.profile?.name;
 
   return (
     <div className="flex items-center justify-end gap-4">
+      {!me && sinDatos && (
+        <Link
+          href="/account/profile"
+          className="rounded-md text-sm font-medium text-white hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento-400"
+        >
+          Mi cuenta
+        </Link>
+      )}
       {me && (
         <Link
           href="/account/profile"

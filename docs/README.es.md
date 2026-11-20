@@ -10,6 +10,7 @@ Esta carpeta contiene la **documentación transversal** del monorepo: guías de 
 | Documento | Qué es |
 | --- | --- |
 | [`ARCHITECTURE_PROPOSAL.md`](./ARCHITECTURE_PROPOSAL.md) | Propuesta de arquitectura del backend: patrón elegido, estructura de `services/nexova-api/`, organización de routers, convivencia de frontend y backend, decisiones técnicas y riesgos. Hito 5 |
+| [`ERROR_HANDLING_AUDIT.md`](./ERROR_HANDLING_AUDIT.md) | Auditoría de gestión de errores de todo el repositorio: hallazgos por capa y severidad, su estado y lo que queda fuera de alcance |
 | [`contexts/`](./contexts/) | Contextos del syllabus sincronizados con [`scripts/sync_contexts.py`](../scripts/sync_contexts.py). **No se editan a mano** |
 | [`screenshots/`](./screenshots/) | Capturas de evidencia que enlazan las pull requests. `auth-03-reset-email.png`: el email de restablecimiento de AUTH-03 tal como llegó a un buzón real, con el token tapado |
 | `contexts-archive/` | Contextos de las otras empresas del track. **Ni se lee ni se busca** — ver [`AGENTS.md`](../AGENTS.md) |

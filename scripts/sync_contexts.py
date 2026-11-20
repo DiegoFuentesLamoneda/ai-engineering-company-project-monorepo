@@ -35,10 +35,10 @@ Tampoco toca los README.md que escribimos a mano.
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import re
 import sys
-import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -152,7 +152,7 @@ def destination_for(path: str) -> tuple[str, Path] | None:
     if re.match(r"^\d{2}-", parts[0]):
         # Hito numerado que aun no esta en MILESTONE_MAP: avisamos y lo colocamos
         # con el nombre de la carpeta de origen para no perderlo.
-        print(f"  ! hito no mapeado, usando nombre de origen: {parts[0]}")
+        print(f"  ! hito no mapeado, usando nombre de origen: {parts[0]}", file=sys.stderr)
         return company, root / f"{parts[0]}{suffix}"
 
     return company, root / "proyectos" / f"{parts[0]}{suffix}"
@@ -165,10 +165,18 @@ def main() -> int:
     args = parser.parse_args()
 
     print(f"Leyendo el arbol de {REPO}@{BRANCH} ...")
+    # OSError cubre la red, el tiempo de espera y los HTTP 4xx/5xx (URLError y
+    # HTTPError heredan de el); ValueError, una respuesta que no es JSON.
     try:
-        tree = json.loads(http_get(TREE_URL))["tree"]
-    except urllib.error.URLError as error:
+        payload = json.loads(http_get(TREE_URL))
+    except (OSError, http.client.HTTPException, ValueError) as error:
         print(f"No se pudo leer el arbol del repositorio: {error}", file=sys.stderr)
+        return 1
+    tree = payload.get("tree") if isinstance(payload, dict) else None
+    if not isinstance(tree, list):
+        # Con el limite de peticiones agotado, GitHub responde JSON sin "tree".
+        reason = payload.get("message") if isinstance(payload, dict) else None
+        print(f"GitHub no devolvio el arbol del repositorio: {reason or 'respuesta inesperada'}", file=sys.stderr)
         return 1
 
     plan: list[tuple[str, Path]] = []
@@ -194,16 +202,34 @@ def main() -> int:
         return 0
 
     written = 0
+    failed = 0
     for source, local_path in plan:
-        local_path.parent.mkdir(parents=True, exist_ok=True)
+        # Descarga y escritura en `try` separados: un fallo de red y un disco
+        # sin permisos se arreglan de forma distinta.
         try:
-            local_path.write_bytes(http_get(RAW_URL.format(path=source)))
-        except urllib.error.URLError as error:
+            content = http_get(RAW_URL.format(path=source))
+        except (OSError, http.client.HTTPException) as error:
             print(f"  ! fallo al descargar {source}: {error}", file=sys.stderr)
+            failed += 1
+            continue
+        try:
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            local_path.write_bytes(content)
+        except OSError as error:
+            print(f"  ! fallo al escribir {local_path.relative_to(PROJECT_ROOT)}: {error}", file=sys.stderr)
+            failed += 1
             continue
         written += 1
         if written % 25 == 0:
             print(f"  {written}/{len(plan)} ...")
+
+    if failed:
+        print(
+            f"\nIncompleto: {written} archivos escritos y {failed} con error (listados arriba)."
+            " Se puede volver a lanzar: los que ya estan se sobrescriben igual.",
+            file=sys.stderr,
+        )
+        return 1
 
     print(f"\nListo: {written} archivos escritos.")
     print("Los README.md de docs/contexts/ y docs/contexts-archive/ se mantienen a mano.")

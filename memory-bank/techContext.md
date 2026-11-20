@@ -113,7 +113,7 @@ Decidido en el hito 5 y razonado por extenso en [`docs/ARCHITECTURE_PROPOSAL.md`
 | Organización interna | Paquetes por dominio (`app/domains/<dominio>/`), no por tipo de archivo. Convención de `fastapi-best-practices`, inspirada en Netflix Dispatch, sobre la base del tutorial oficial *Bigger Applications* |
 | Capas | `router` (HTTP) → `service` (negocio) → `models` (persistencia). Un `service` nunca importa `fastapi`; un `router` nunca calcula; un dominio nunca importa los modelos de otro |
 | Rutas | Un `APIRouter` por dominio con `prefix` y `tags`. `main.py` solo compone. Sin prefijo de versión mientras los consumidores sean nuestras propias interfaces |
-| Errores | `422` para validación de forma (automático de Pydantic), `400` para reglas de negocio lanzadas desde el `service`. Un solo formato, `{"detail": "..."}`. Para subidas de ficheros, además: `413` demasiado grande y `415` tipo o codificación no aceptados |
+| Errores | `422` para validación de forma (automático de Pydantic), `400` para reglas de negocio lanzadas desde el `service`. Un solo formato, `{"detail": "..."}`. Para subidas de ficheros, además: `413` demasiado grande y `415` tipo o codificación no aceptados. `503` si no se puede leer o escribir un fichero de TinyDB. El `422` lleva solo `loc`, `msg` y `type` de cada error, nunca el valor recibido |
 | Salida de datos | Los schemas de respuesta son **siempre** distintos de los modelos de tabla. Es lo que impide que una nota interna salga por la API |
 | CORS | Lista explícita de orígenes, nunca comodín: `allow_credentials=True` lo prohíbe. `localhost` y `127.0.0.1` ambos incluidos —ya nos costó una tarde en el hito 4— |
 | Entorno | Configuración tipada y validada al arrancar en el backend (`app/config.py`, variables `NEXOVA_API_*`). Ninguna credencial en variables `NEXT_PUBLIC_`: se incrustan en el bundle durante el build y son públicas |
@@ -202,6 +202,18 @@ Decidido el 19–20/11/2026, con el gestor de incidencias centralizado.
 - **En el backoffice, el cambio de estado es optimista.** La fila cambia al momento y vuelve atrás con un mensaje propio si la API lo rechaza. La fila que deja de cumplir el filtro se queda hasta recargar, para que no desaparezca bajo el cursor.
 - **El resumen carga aparte de la lista y sin filtros.** Si `/summary` falla, solo cae el panel. Se vuelve a pedir tras cada cambio de estado confirmado (un contador, `revision`, sin librería de estado). Es el estado de toda la base, no de lo filtrado.
 - **Solo en español.** El briefing pide versión bilingüe solo si la interfaz ya la tenía, y el backoffice no la tiene.
+
+### Gestión de errores: una estrategia por capa
+
+Decidido el 20/11/2026, con la auditoría de [`ERROR_HANDLING_AUDIT.md`](../docs/ERROR_HANDLING_AUDIT.md). Es la regla para todo lo que se construya a partir de ahora.
+
+- **Backoffice: todo `fetch` pasa por [`lib/api.ts`](../uis/backoffice/lib/api.ts).** Convierte cualquier fallo en un `ApiError` con un texto en español y sin el código HTTP. `status 0` significa red o configuración. Un cuerpo que no se puede leer también se convierte en `ApiError`, nunca en `SyntaxError`. Los componentes no escriben mensajes para códigos concretos salvo en los formularios, que traducen el `code` o el campo.
+- **Cada carga tiene tres estados y una salida.** Cargando, éxito y error, con texto legible. Cada error lleva «Reintentar» (los hooks devuelven `recargar`, que sube un contador `intento`) o un enlace para volver. Si un bloque falla y el resto de la página no depende de él, solo cae ese bloque, como el resumen de incidencias.
+- **Los datos de la API se leen con `?.` y un valor de reserva**: `?? []`, `?? 0` y `?? "—"`. A una etiqueta que falta se le pinta el valor tal cual, para no dejar el hueco.
+- **El `finally` de los formularios de acceso solo reactiva el botón si el envío ha fallado.** Si sale bien, se queda bloqueado hasta la redirección.
+- **Páginas de error de Next** (`error.tsx`, `global-error.tsx` y `not-found.tsx`): en español y sin `error.message`, que es texto técnico. Como referencia solo se enseña el `digest`.
+- **API:** el `422` sin `input` (no devuelve lo que envió el usuario); el `503` cuando falla el almacenamiento; el `500`, en JSON. Cualquier fallo de un servicio externo, incluido un corte a mitad de respuesta, se traduce a un error propio, como el `EmailDeliveryError` de Resend, y en el log solo van su código y su tipo. Nunca salen trazas, valores de configuración ni secretos.
+- **Scripts:** `try/except` alrededor de cada lectura, escritura y apertura de base de datos. El mensaje va a `stderr` y el script sale con `sys.exit(1)`. Ctrl+C sale limpio. Un script que procesa varias cosas cuenta los fallos y sale con `1` si hubo alguno.
 
 ### CI acotada por rutas
 

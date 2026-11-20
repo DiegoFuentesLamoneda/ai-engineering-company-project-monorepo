@@ -53,13 +53,24 @@ export function lastSessionEnd(): SessionEndReason | null {
 }
 
 export function saveToken(token: string): void {
-  storage()?.setItem(TOKEN_KEY, token);
+  try {
+    storage()?.setItem(TOKEN_KEY, token);
+  } catch {
+    // Almacenamiento lleno o bloqueado: sin guardar el token no hay sesión,
+    // y quien llama (el login) enseña su propio mensaje.
+    throw new Error("No se ha podido guardar la sesión en este navegador.");
+  }
   ultimoCierre = null;
   notifyChange();
 }
 
 export function clearToken(reason: SessionEndReason = "ended"): void {
-  storage()?.removeItem(TOKEN_KEY);
+  try {
+    storage()?.removeItem(TOKEN_KEY);
+  } catch {
+    // Si el navegador bloquea el almacenamiento, el aviso a la pestaña sigue
+    // haciendo falta: la sesión se da por cerrada igualmente.
+  }
   ultimoCierre = reason;
   notifyChange();
 }

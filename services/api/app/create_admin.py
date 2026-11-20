@@ -28,6 +28,7 @@ from app.domains.users import service
 from app.domains.users.database import UserRepository
 from app.domains.users.exceptions import UserNotFoundError
 from app.domains.users.schemas import Email, Role, User, UserCreate
+from app.errors import StorageUnavailableError
 
 Outcome = Literal["created", "promoted", "already_admin"]
 
@@ -67,21 +68,39 @@ def main() -> None:
     # stderr también: ahí van los errores (`SystemExit`), con sus tildes.
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
-    settings = load_settings()
-    email = input("Email del admin: ")
-    with (
-        UserRepository(settings.users_db_path) as users,
-        ProfileRepository(settings.profiles_db_path) as profiles,
-    ):
-        try:
-            outcome, user = create_or_promote_admin(users, profiles, email, _ask_password)
-        except ValidationError as error:
-            # Solo los mensajes: el error completo repetiría la contraseña.
-            # Sin `loc` es el email, que se valida suelto, fuera del modelo.
-            reasons = "; ".join(
-                f"{'.'.join(map(str, e['loc'])) or 'email'}: {e['msg']}" for e in error.errors()
-            )
-            raise SystemExit(f"Datos no válidos ({reasons}). No se ha creado nada.") from None
+    try:
+        settings = load_settings()
+    except ValidationError as error:
+        reasons = "; ".join(f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in error.errors())
+        raise SystemExit(
+            f"Configuración no válida ({reasons}). Revisa las variables NEXOVA_API_* del .env."
+        ) from None
+    try:
+        email = input("Email del admin: ")
+        with (
+            UserRepository(settings.users_db_path) as users,
+            ProfileRepository(settings.profiles_db_path) as profiles,
+        ):
+            try:
+                outcome, user = create_or_promote_admin(users, profiles, email, _ask_password)
+            except ValidationError as error:
+                # Solo los mensajes: el error completo repetiría la contraseña.
+                # Sin `loc` es el email, que se valida suelto, fuera del modelo.
+                reasons = "; ".join(
+                    f"{'.'.join(map(str, e['loc'])) or 'email'}: {e['msg']}" for e in error.errors()
+                )
+                raise SystemExit(f"Datos no válidos ({reasons}). No se ha creado nada.") from None
+    except (KeyboardInterrupt, EOFError):
+        # Ctrl+C, o la entrada se cierra, mientras se pide el email o la
+        # contraseña: aún no se ha escrito nada. El salto de línea cierra la
+        # pregunta que quedó a medias.
+        raise SystemExit("\nCancelado. No se ha creado nada.") from None
+    except StorageUnavailableError as error:
+        # El motivo concreto (JSON roto, sin permisos) es la causa.
+        raise SystemExit(f"{error} ({error.__cause__}). Revisa el fichero y vuelve a lanzarlo.") from None
+    except OSError as error:
+        # Al abrir: la carpeta no se puede crear o el fichero no se puede abrir.
+        raise SystemExit(f"No se pudo abrir la base de datos: {error}") from None
     messages = {
         "created": "Cuenta admin creada.",
         "promoted": "La cuenta ya existía: ahora es admin. Su contraseña no cambia.",

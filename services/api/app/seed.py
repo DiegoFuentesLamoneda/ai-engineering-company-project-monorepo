@@ -17,11 +17,15 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import NoReturn
+
+from pydantic import ValidationError
 
 from app.config import load_settings
 from app.domains.suppliers.database import SupplierRepository
 from app.domains.suppliers.schemas import SupplierCreate
 from app.domains.suppliers.seed_data import SUPPLIERS_SEED
+from app.errors import StorageUnavailableError
 
 
 @dataclass(frozen=True)
@@ -54,13 +58,38 @@ def seed_suppliers(
     return SeedResult(inserted=inserted, skipped=len(suppliers) - inserted, total=repo.count())
 
 
+def _reasons(error: ValidationError) -> str:
+    """Campo y motivo de cada error, sin el valor recibido."""
+    return "; ".join(f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in error.errors())
+
+
+def _fail(message: str) -> NoReturn:
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
 def main() -> None:
     # En Windows, la salida redirigida usa la codificación antigua del sistema
     # y las tildes salen rotas. UTF-8 se lee bien en cualquier terminal.
+    # stderr también: ahí van los errores.
     sys.stdout.reconfigure(encoding="utf-8")
-    settings = load_settings()
-    with SupplierRepository(settings.suppliers_db_path) as repo:
-        result = seed_suppliers(repo)
+    sys.stderr.reconfigure(encoding="utf-8")
+    try:
+        settings = load_settings()
+    except ValidationError as error:
+        _fail(f"Configuración no válida ({_reasons(error)}). Revisa las variables NEXOVA_API_* del .env.")
+    try:
+        with SupplierRepository(settings.suppliers_db_path) as repo:
+            result = seed_suppliers(repo)
+    except ValidationError as error:
+        # seed_suppliers valida todo antes de escribir: no ha entrado nada.
+        _fail(f"El BRIEFING trae un proveedor no válido ({_reasons(error)}). No se ha insertado nada.")
+    except StorageUnavailableError as error:
+        # El motivo concreto (JSON roto, sin permisos) es la causa.
+        _fail(f"{error} ({error.__cause__}). Revisa el fichero y vuelve a lanzarlo.")
+    except OSError as error:
+        # Al abrir: la carpeta no se puede crear o el fichero no se puede abrir.
+        _fail(f"No se pudo abrir la base de datos: {error}")
     print(f"Base de datos: {settings.suppliers_db_path}")
     print(f"Proveedores insertados: {result.inserted}")
     print(f"Ya existían (saltados): {result.skipped}")

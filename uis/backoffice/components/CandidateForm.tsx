@@ -31,11 +31,12 @@ const VALORES_VACIOS: ValoresFormulario = {
 /** Convierte una candidatura existente en valores de formulario. */
 export function valoresDesdeCandidato(candidato: Candidate): ValoresFormulario {
   return {
-    full_name: candidato.full_name,
-    email: candidato.email,
-    phone: candidato.phone,
-    position: candidato.position,
-    experience_years: String(candidato.experience_years),
+    // Si la API mock deja un dato sin llegar, el campo sale vacío, no "undefined".
+    full_name: candidato.full_name ?? "",
+    email: candidato.email ?? "",
+    phone: candidato.phone ?? "",
+    position: candidato.position ?? "",
+    experience_years: String(candidato.experience_years ?? ""),
     linkedin_url: candidato.linkedin_url ?? "",
     cv_url: candidato.cv_url ?? "",
   };
@@ -82,6 +83,20 @@ function validar(valores: ValoresFormulario): Record<string, string> {
 
   return errores;
 }
+
+/**
+ * Lo que se enseña bajo cada campo cuando lo rechaza la API. La validación
+ * de arriba ya cubre lo habitual; esto es para lo que solo sabe la API.
+ */
+const MENSAJES_API_POR_CAMPO: Record<string, string> = {
+  full_name: "La API no ha aceptado el nombre completo. Revísalo.",
+  email: "La API no ha aceptado el email. Revisa el formato.",
+  phone: "La API no ha aceptado el teléfono. Revísalo.",
+  position: "La API no ha aceptado el puesto. Revísalo.",
+  experience_years: "Introduce un número igual o mayor que cero.",
+  linkedin_url: "La URL de LinkedIn no es válida.",
+  cv_url: "La URL del CV no es válida.",
+};
 
 interface CampoProps {
   id: keyof ValoresFormulario;
@@ -195,12 +210,22 @@ export default function CandidateForm({ modo, candidateId, valoresIniciales }: P
       router.push(`/candidates/${candidato.id}`);
       router.refresh();
     } catch (e) {
-      if (e instanceof ApiError) {
-        // El 422 trae el error de cada campo: lo pintamos bajo su input.
-        setErrores(e.fieldErrors);
+      if (!(e instanceof ApiError)) {
+        setErrorGeneral("No se ha podido guardar la candidatura. Inténtalo de nuevo.");
+      } else if (Object.keys(e.fieldErrors).length > 0) {
+        // El 422 de la API mock dice qué campo falla, pero en inglés: bajo
+        // cada input va nuestro texto en español, no el suyo.
+        const erroresApi: Record<string, string> = {};
+        for (const campo of Object.keys(e.fieldErrors)) {
+          erroresApi[campo] = MENSAJES_API_POR_CAMPO[campo] ?? "Revisa este dato.";
+        }
+        setErrores(erroresApi);
+        setErrorGeneral("Revisa los campos marcados.");
+      } else if (e.status === 0) {
+        // Sin red o sin configurar: el texto lo escribe lib/api.ts, en español.
         setErrorGeneral(e.message);
       } else {
-        setErrorGeneral("No se ha podido guardar. Inténtalo de nuevo.");
+        setErrorGeneral("No se ha podido guardar la candidatura. Inténtalo de nuevo.");
       }
     } finally {
       setEnviando(false);

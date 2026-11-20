@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ApiError, getNotes } from "@/lib/api";
 import type { Note } from "@/types/candidate";
 
@@ -13,6 +13,8 @@ export function useNotes(recordId: string) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Cada «Reintentar» suma uno y vuelve a pedir las notas.
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
@@ -39,7 +41,9 @@ export function useNotes(recordId: string) {
     return () => {
       cancelado = true;
     };
-  }, [recordId]);
+  }, [recordId, intento]);
 
-  return { notes, setNotes, isLoading, error };
+  const recargar = useCallback(() => setIntento((n) => n + 1), []);
+
+  return { notes, setNotes, isLoading, error, recargar };
 }

@@ -94,9 +94,9 @@ export default function CandidateDetail({ id }: { id: string }) {
       <header className="mt-4 mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">
-            {candidate.full_name}
+            {candidate.full_name ?? "Sin nombre"}
           </h1>
-          <p className="mt-1 text-sm text-slate-400">{candidate.position}</p>
+          <p className="mt-1 text-sm text-slate-400">{candidate.position ?? "—"}</p>
         </div>
 
         <Link
@@ -163,17 +163,22 @@ export default function CandidateDetail({ id }: { id: string }) {
 
         <dl className="grid gap-5 sm:grid-cols-2">
           <Dato etiqueta="Email">
-            <a
-              href={`mailto:${candidate.email}`}
-              className="text-acento-400 underline underline-offset-4"
-            >
-              {candidate.email}
-            </a>
+            {candidate.email ? (
+              <a
+                href={`mailto:${candidate.email}`}
+                className="text-acento-400 underline underline-offset-4"
+              >
+                {candidate.email}
+              </a>
+            ) : (
+              "—"
+            )}
           </Dato>
 
-          <Dato etiqueta="Teléfono">{candidate.phone}</Dato>
-          <Dato etiqueta="Puesto">{candidate.position}</Dato>
-          <Dato etiqueta="Años de experiencia">{candidate.experience_years}</Dato>
+          {/* Un dato que la API mock no mande se ve como "—", no como hueco. */}
+          <Dato etiqueta="Teléfono">{candidate.phone ?? "—"}</Dato>
+          <Dato etiqueta="Puesto">{candidate.position ?? "—"}</Dato>
+          <Dato etiqueta="Años de experiencia">{candidate.experience_years ?? "—"}</Dato>
 
           <Dato etiqueta="LinkedIn">
             {candidate.linkedin_url ? (
