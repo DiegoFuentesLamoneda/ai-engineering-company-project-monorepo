@@ -11,7 +11,7 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-from pydantic import BaseModel, Field, SecretStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 # Desarrollo: el backoffice en :3000. localhost y 127.0.0.1 son orígenes
 # distintos para el navegador aunque apunten a la misma máquina, así que van
@@ -70,6 +70,11 @@ DEFAULT_EMAIL_FROM = "Nexova Solutions <onboarding@resend.dev>"
 
 
 class Settings(BaseModel):
+    # Si un valor no valida, el error dice qué variable falla pero no repite
+    # el valor: un secreto del JWT demasiado corto no acaba en la consola ni
+    # en el log del despliegue.
+    model_config = ConfigDict(hide_input_in_errors=True)
+
     cors_origins: list[str] = Field(min_length=1)
     max_upload_mb: int = Field(gt=0)
     suppliers_db_path: Path = DEFAULT_SUPPLIERS_DB_PATH

@@ -162,6 +162,19 @@ Rama `feature/incident-manager`, **apilada sobre `feature/password-reset`** (PR 
 | 7 — Panel de resumen ([`IncidentSummaryPanel`](../uis/backoffice/components/IncidentSummaryPanel.tsx)): totales por estado, incumplimientos de SLA y reparto por sede, origen y categoría. Carga aparte de la lista: si `/summary` falla, un aviso y la lista sigue. Se vuelve a pedir tras cada cambio de estado confirmado | ✅ |
 | 8 — Verificación y cierre (20/11/2026): Playwright contra la API real, 22/22 comprobaciones (alta desde el formulario, filtros, SLA, `PATCH` real con el resumen al día, `409` simulado que devuelve la fila a «Abierta», `/summary` y la lista caídos con «Reintentar»); capturas en [`docs/screenshots/`](../docs/screenshots/); banco de memoria; ficha en la biblioteca y PR hacia `feature/password-reset`: [#11](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/11), abierta el 20/11/2026 y entregada en 4Geeks esa misma noche, del 19 al 20/11, para la evaluación del campus. Apilada sobre #10: hasta que se fusione, su diff incluye los commits de AUTH-02 y AUTH-03 | ✅ |
 
+## Auditoría de gestión de errores — en curso
+
+Rama `feature/error-handling-audit`, **apilada sobre `feature/incident-manager`** (PR #11 abierta): audita todo lo construido, incluido lo que aún está en revisión. Proyecto «Gestión de Errores»: auditar el repositorio y aplicar una estrategia de errores coherente en frontend, backend y scripts, sin funcionalidades nuevas ni refactorizaciones ajenas. El enunciado lo pegó Diego el 20/11/2026. Informe y estado de cada hallazgo: [`ERROR_HANDLING_AUDIT.md`](../docs/ERROR_HANDLING_AUDIT.md).
+
+| Fase | Estado |
+| --- | --- |
+| 1 — Auditoría: tres revisores en paralelo con el prompt del enunciado, hallazgos altos comprobados a mano. 25 hallazgos (B1–B7, F1–F12, S1–S6) y lo que queda fuera de alcance, con el motivo | ✅ |
+| 2 — API: `422` sin `input` (B1), configuración sin el valor (B2), cortes de conexión con Resend (B3), `503` de almacenamiento (B6) y solo código y tipo de Resend en el log (B7); S5 en el mismo archivo. B4 y B5 ya estaban cubiertos. 368 pruebas | ✅ |
+| 3 — Scripts (S1–S4, S6) | ⬜ |
+| 4 — Base del backoffice: páginas de error y 404, `lib/api.ts`, almacenamiento de la sesión (F1, F3, F6, F7, F12) | ⬜ |
+| 5 — Pantallas del backoffice: reintentar, `?.` y valores por defecto, `finally` (F2, F4, F5, F8–F11) | ⬜ |
+| 6 — Verificación y cierre: typecheck, lint, build, pruebas, Playwright con los estados de error, banco de memoria, ficha y PR | ⬜ |
+
 ## Próximo
 
 Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), memoria y harness de agentes (8), workflows agénticos (9) y tiempo real (10).

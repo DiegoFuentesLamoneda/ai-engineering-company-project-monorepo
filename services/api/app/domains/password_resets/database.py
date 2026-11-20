@@ -13,9 +13,9 @@ from pathlib import Path
 from uuid import UUID
 
 from tinydb import Query, TinyDB
-from tinydb.storages import JSONStorage
 from tinydb.table import Document
 
+from ...json_storage import SafeJSONStorage
 from .schemas import AuditEntry, AuditEvent, ResetToken
 
 TOKENS_TABLE = "tokens"
@@ -33,7 +33,7 @@ class PasswordResetRepository:
     def __init__(self, path: Path) -> None:
         self._db = TinyDB(
             path,
-            storage=JSONStorage,
+            storage=SafeJSONStorage,
             create_dirs=True,
             encoding="utf-8",
             ensure_ascii=False,

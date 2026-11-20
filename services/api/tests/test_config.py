@@ -52,6 +52,13 @@ class LoadSettingsTests(unittest.TestCase):
             with self.subTest(env=env), self.assertRaises(ValidationError):
                 load_settings(env)
 
+    def test_errors_never_print_the_value_received(self):
+        # Un secreto del JWT demasiado corto no puede acabar en la consola.
+        with self.assertRaises(ValidationError) as caught:
+            load_settings({"NEXOVA_API_JWT_SECRET_KEY": "secreto-corto-filtrado"})
+        self.assertIn("jwt_secret_key", str(caught.exception))
+        self.assertNotIn("secreto-corto-filtrado", str(caught.exception))
+
 
 class JwtSettingsTests(unittest.TestCase):
     def test_secret_is_optional_until_the_api_needs_it(self):
@@ -88,6 +95,13 @@ class JwtSettingsTests(unittest.TestCase):
         for env in cases:
             with self.subTest(env=env), self.assertRaises(ValidationError):
                 load_settings(env)
+
+    def test_errors_never_print_the_value_received(self):
+        # Un secreto del JWT demasiado corto no puede acabar en la consola.
+        with self.assertRaises(ValidationError) as caught:
+            load_settings({"NEXOVA_API_JWT_SECRET_KEY": "secreto-corto-filtrado"})
+        self.assertIn("jwt_secret_key", str(caught.exception))
+        self.assertNotIn("secreto-corto-filtrado", str(caught.exception))
 
 
 class PasswordResetSettingsTests(unittest.TestCase):
@@ -137,6 +151,13 @@ class PasswordResetSettingsTests(unittest.TestCase):
         for env in cases:
             with self.subTest(env=env), self.assertRaises(ValidationError):
                 load_settings(env)
+
+    def test_errors_never_print_the_value_received(self):
+        # Un secreto del JWT demasiado corto no puede acabar en la consola.
+        with self.assertRaises(ValidationError) as caught:
+            load_settings({"NEXOVA_API_JWT_SECRET_KEY": "secreto-corto-filtrado"})
+        self.assertIn("jwt_secret_key", str(caught.exception))
+        self.assertNotIn("secreto-corto-filtrado", str(caught.exception))
 
 
 if __name__ == "__main__":

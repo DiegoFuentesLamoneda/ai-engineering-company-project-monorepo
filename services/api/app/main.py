@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator
 from contextlib import ExitStack, asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, load_settings
@@ -27,7 +28,12 @@ from .domains.suppliers.database import SupplierRepository
 from .domains.suppliers.router import router as suppliers_router
 from .domains.users.database import UserRepository
 from .domains.users.router import router as users_router
-from .errors import UnexpectedErrorMiddleware
+from .errors import (
+    StorageUnavailableError,
+    UnexpectedErrorMiddleware,
+    storage_unavailable_handler,
+    validation_error_handler,
+)
 from .mailer import build_mailer
 
 
@@ -102,6 +108,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Para que el frontend pueda leer el nombre del fichero descargado.
         expose_headers=["Content-Disposition"],
     )
+
+    # Errores previstos con su código (ver errors.py). Las rutas del gestor de
+    # incidencias siguen con su 400 propio: lo resuelven antes de llegar aquí.
+    app.add_exception_handler(RequestValidationError, validation_error_handler)
+    app.add_exception_handler(StorageUnavailableError, storage_unavailable_handler)
 
     app.include_router(auth_router)
     app.include_router(password_resets_router)
