@@ -32,6 +32,8 @@ uv run python ../../scripts/seed_incidents.py   # carga en el gestor el históri
 
 `uv run create-admin` ([`app/create_admin.py`](./app/create_admin.py)) pide un email. Si es nuevo, pide la contraseña dos veces sin mostrarla y crea una cuenta `admin` con su perfil vacío. Si el email ya tiene cuenta, la asciende a `admin` sin tocar su contraseña. Hace falta porque `POST /users` crea siempre cuentas `user` y solo un admin puede cambiar roles: sin el comando, el primer admin no podría existir. Aplica las mismas reglas que el alta por la API (email válido, contraseña de 8 caracteres a 72 bytes).
 
+Los dos comandos terminan igual cuando algo falla: un mensaje en `stderr` y código de salida `1`, sin traza. Cubren la configuración no válida (dicen qué variable, nunca su valor), la base de datos corrupta o sin permisos y, en `create-admin`, Ctrl+C o la entrada cerrada mientras pide el email o la contraseña («Cancelado. No se ha creado nada.»). Las pruebas están en [`tests/test_cli_errors.py`](./tests/test_cli_errors.py).
+
 ### Dependencias
 
 Se declaran en [`pyproject.toml`](./pyproject.toml) y sus versiones exactas, incluidas las indirectas, quedan fijadas en [`uv.lock`](./uv.lock). Los dos se versionan: así todo el equipo instala exactamente lo mismo. Para añadir una, `uv add <paquete>`, que actualiza ambos. Añadir una dependencia es una decisión de arquitectura y se consulta antes (ver [`AGENTS.md`](../../AGENTS.md) §7).

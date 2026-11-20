@@ -47,3 +47,14 @@ uv run --project services/api python scripts/seed_incidents.py
   El `ticket_id` no se guarda en la incidencia.
 - **Filas rechazadas:** se listan todas, con su línea y su `ticket_id`, nunca con el email.
 
+
+## Errores
+
+Los tres scripts siguen la misma regla: **un error es un mensaje en `stderr` y código de salida `1`, nunca una traza**.
+Así, una tarea programada o un pipeline que los lance se para y sabe por qué.
+
+- **`analyze.py` y `seed_incidents.py`:** fichero que no existe o no se puede abrir, CSV mal formado, configuración
+  no válida, base de datos corrupta o sin permisos, y `results.csv` abierto en otro programa (Excel lo bloquea).
+- **`sync_contexts.py`:** red, tiempo de espera, respuesta de GitHub sin el árbol (límite de peticiones agotado) y
+  cada descarga o escritura que falla. Si falla alguna, sigue con las demás y termina en «Incompleto» con código `1`,
+  no en «Listo».

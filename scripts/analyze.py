@@ -62,13 +62,26 @@ def main(argv: list[str] | None = None) -> int:
     except IncidentFileError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
+    except OSError as exc:
+        # Existe pero no se puede abrir: sin permisos, o bloqueado por otro programa.
+        print(f"Error: no se pudo abrir '{args.csv_path}': {exc.strerror}.", file=sys.stderr)
+        return 1
 
     print(render_report(result, args.csv_path.name))
 
     if ask_to_export():
         output = Path(RESULTS_FILE)
-        with output.open("w", encoding="utf-8", newline="") as handle:
-            count = write_results_csv(result, handle)
+        try:
+            with output.open("w", encoding="utf-8", newline="") as handle:
+                count = write_results_csv(result, handle)
+        except OSError as exc:
+            # El caso típico en Windows: results.csv sigue abierto en Excel.
+            print(
+                f"Error: no se pudo escribir {output.resolve()}: {exc.strerror}."
+                " Si está abierto en otro programa, ciérralo y vuelve a lanzarlo.",
+                file=sys.stderr,
+            )
+            return 1
         print(f"Saved {count} metrics to {output.resolve()}")
     else:
         print("Export skipped.")
