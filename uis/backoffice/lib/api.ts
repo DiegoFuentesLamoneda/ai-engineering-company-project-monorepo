@@ -112,16 +112,27 @@ interface ErrorBody {
   errors?: Array<{ field: string; code: string; message: string }>;
 }
 
+// Solo cuando la respuesta no trae su propio mensaje. El login sí lo trae
+// («Email o contraseña incorrectos.»), así que el 401 de aquí es el de otra
+// API, y no puede hablar de credenciales.
 const MENSAJES_POR_ESTADO: Record<number, string> = {
-  400: "La peticion no es valida.",
-  401: "Email o contraseña incorrectos.",
+  400: "La petición no es válida.",
+  401: "No tienes acceso. Vuelve a iniciar sesión.",
+  403: "No tienes permiso para hacer esto.",
   404: "No se ha encontrado el recurso.",
   409: "La operación no está permitida en el estado actual.",
   413: "El fichero es demasiado grande.",
-  415: "El tipo de fichero no es valido.",
-  422: "Hay datos que no son validos.",
-  500: "Error del servidor. Intentalo de nuevo.",
+  415: "El tipo de fichero no es válido.",
+  422: "Hay datos que no son válidos.",
+  429: "Demasiadas peticiones seguidas. Espera un momento y vuelve a intentarlo.",
+  500: "Error del servidor. Inténtalo de nuevo.",
+  502: "El servidor no responde. Inténtalo de nuevo en unos minutos.",
+  503: "El servicio no está disponible ahora mismo. Inténtalo de nuevo en unos minutos.",
+  504: "El servidor ha tardado demasiado en responder. Inténtalo de nuevo.",
 };
+
+/** Para cualquier otro código: legible y sin el número, que no dice nada a quien lo lee. */
+const MENSAJE_GENERICO = "Algo ha fallado. Inténtalo de nuevo.";
 
 /** Traduce cualquiera de los dos formatos de error a un ApiError. */
 async function construirError(res: Response): Promise<ApiError> {
@@ -175,7 +186,7 @@ async function construirError(res: Response): Promise<ApiError> {
     body?.error ??
     (typeof body?.detail === "string" ? body.detail : undefined) ??
     MENSAJES_POR_ESTADO[res.status] ??
-    `Error inesperado (${res.status}).`;
+    MENSAJE_GENERICO;
 
   return new ApiError(mensaje, res.status, fieldErrors, fieldCodes);
 }
@@ -190,7 +201,15 @@ async function send(
   options: RequestInit = {},
 ): Promise<Response> {
   if (!api.baseUrl) {
-    throw new ApiError(`Falta la variable ${api.variable} en .env.local`, 0);
+    // Es un fallo de configuración, no del usuario: el nombre de la variable
+    // le sirve a quien desarrolla, y solo se escribe en su consola.
+    if (process.env.NODE_ENV === "development") {
+      console.error(`Falta la variable ${api.variable} en .env.local`);
+    }
+    throw new ApiError(
+      "El servicio no está disponible ahora mismo. Si sigue así, avisa al equipo de soporte.",
+      0,
+    );
   }
 
   const headers = new Headers(options.headers);
@@ -249,7 +268,13 @@ async function request<T>(
     return undefined as T;
   }
 
-  return (await res.json()) as T;
+  // Un 2xx con un cuerpo que no es JSON (la página HTML de un proxy, una
+  // respuesta cortada) haría saltar un SyntaxError en pantalla.
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new ApiError("El servidor ha enviado una respuesta que no se puede leer. Inténtalo de nuevo.", res.status);
+  }
 }
 
 export interface CandidateFilters {

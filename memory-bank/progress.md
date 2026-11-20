@@ -171,7 +171,7 @@ Rama `feature/error-handling-audit`, **apilada sobre `feature/incident-manager`*
 | 1 — Auditoría: tres revisores en paralelo con el prompt del enunciado, hallazgos altos comprobados a mano. 25 hallazgos (B1–B7, F1–F12, S1–S6) y lo que queda fuera de alcance, con el motivo | ✅ |
 | 2 — API: `422` sin `input` (B1), configuración sin el valor (B2), cortes de conexión con Resend (B3), `503` de almacenamiento (B6) y solo código y tipo de Resend en el log (B7); S5 en el mismo archivo. B4 y B5 ya estaban cubiertos. 368 pruebas | ✅ |
 | 3 — Scripts: `sync_contexts.py` cuenta los fallos y sale con `1` (S1), `seed` y `create-admin` sin trazas y Ctrl+C limpio (S2, S4), `OSError` en lectura, escritura y base de datos (S3), comprobaciones en `pandas_clean.py` (S6). 375 pruebas | ✅ |
-| 4 — Base del backoffice: páginas de error y 404, `lib/api.ts`, almacenamiento de la sesión (F1, F3, F6, F7, F12) | ⬜ |
+| 4 — Base del backoffice: `error.tsx`, `global-error.tsx` y `not-found.tsx` en español con «Reintentar» y enlace al panel (F1), JSON ilegible (F3), textos por código sin el número (F6), la configuración que falta solo a la consola de desarrollo (F7), `localStorage` lleno o bloqueado (F12). Typecheck, lint y build en verde | ✅ |
 | 5 — Pantallas del backoffice: reintentar, `?.` y valores por defecto, `finally` (F2, F4, F5, F8–F11) | ⬜ |
 | 6 — Verificación y cierre: typecheck, lint, build, pruebas, Playwright con los estados de error, banco de memoria, ficha y PR | ⬜ |
 

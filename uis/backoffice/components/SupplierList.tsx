@@ -27,9 +27,6 @@ export default function SupplierList() {
       <div className="rounded-lg border border-red-800 bg-red-950 p-4 text-sm text-red-100">
         <p className="font-medium">No se han podido cargar los proveedores</p>
         <p className="mt-1">{error}</p>
-        <p className="mt-2 text-red-200">
-          ¿Está arrancada la API? Ver <code>services/api/README.md</code>.
-        </p>
       </div>
     );
   }
