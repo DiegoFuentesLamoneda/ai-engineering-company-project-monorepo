@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 19 de noviembre de 2026 (recuperación y cambio de contraseña, AUTH-03)._
+_Última actualización: 20 de noviembre de 2026 (gestor de incidencias centralizado)._
 
 ## Entregado
 
@@ -14,7 +14,7 @@ _Última actualización: 19 de noviembre de 2026 (recuperación y cambio de cont
 | 3 — Talent Pipeline Tracker | Listado, filtros y búsqueda sin recarga, detalle, cambio de estado y etapa, notas internas, alta y edición de candidaturas | [`uis/backoffice/`](../uis/backoffice/) | `feature/talent-pipeline-tracker` | #3 · fusionada el 16/09/2026 |
 | 4 — Ingeniería impulsada por IA | Banco de memoria, `AGENTS.md`, reglas y skills en `.agents/`, traslado del tracker a `uis/backoffice/` con panel de entrada propio, CI del backoffice | [`memory-bank/`](../memory-bank/) · [`.agents/`](../.agents/) · [`uis/backoffice/`](../uis/backoffice/) | `feature/agent-memory-bank` | #4 · fusionada el 16/09/2026 |
 | 5 — Backend (5a) | Propuesta de arquitectura del backend | [`docs/ARCHITECTURE_PROPOSAL.md`](../docs/ARCHITECTURE_PROPOSAL.md) | `feature/backend-architecture-proposal` | #5 · fusionada el 18/09/2026 |
-| Analizador de incidencias | Paquete de análisis, script por consola, `POST /api/incidents/analyze` con su exportación y página `/incidents` | [`packages/shared/incident-analysis/`](../packages/shared/incident-analysis/) · [`scripts/analyze.py`](../scripts/analyze.py) · [`services/api/`](../services/api/) | `feature/incidents-analyzer` | #6 · fusionada el 18/11/2026 |
+| Analizador de incidencias | Paquete de análisis, script por consola, `POST /api/incidents/analyze` con su exportación y página de análisis (hoy en `/incidents/analyze`) | [`packages/shared/incident-analysis/`](../packages/shared/incident-analysis/) · [`scripts/analyze.py`](../scripts/analyze.py) · [`services/api/`](../services/api/) | `feature/incidents-analyzer` | #6 · fusionada el 18/11/2026 |
 | Directorio de proveedores | API `/suppliers` sobre TinyDB con seeder y página `/suppliers` | [`services/api/`](../services/api/) · [`uis/backoffice/`](../uis/backoffice/) | `feature/supplier-directory` | #7 · fusionada el 18/11/2026 |
 | Autenticación de la API (AUTH-01) | Cuentas, perfiles, login con JWT y candado en las rutas de `incidents` y `suppliers` | [`services/api/`](../services/api/) | `feature/auth-api` | #8 · fusionada el 18/11/2026 |
 
@@ -74,7 +74,7 @@ Rama `feature/incidents-analyzer`, salida de `main`. Especificación: [`docs/con
 | Lógica compartida en [`packages/shared/incident-analysis/`](../packages/shared/incident-analysis/): validación, métricas, exportación e informe. 44 pruebas, incluida la de aceptación contra el briefing | ✅ |
 | Script [`scripts/analyze.py`](../scripts/analyze.py): 100 / 96 / 4 y todos los desgloses coinciden con el briefing | ✅ |
 | API en [`services/api/`](../services/api/): `POST /api/incidents/analyze` y `GET /api/incidents/results/export`. 18 pruebas del service y la configuración; rutas, errores y CORS verificados con el servidor arrancado; la exportación es idéntica byte a byte a la del script | ✅ |
-| Página [`/incidents`](../uis/backoffice/components/IncidentAnalyzer.tsx) en el backoffice: subida por arrastre o selector, totales, desglose por categoría y estado, índice de satisfacción, registros inválidos por regla con sus filas y descarga del CSV. Verificada en el navegador con la API arrancada: cifras del briefing, CSV descargado idéntico byte a byte al del script, y errores 400 y 415 mostrados con el mensaje de la API | ✅ |
+| Página [`/incidents`](../uis/backoffice/components/IncidentAnalyzer.tsx) en el backoffice (desde el gestor de incidencias, en `/incidents/analyze`): subida por arrastre o selector, totales, desglose por categoría y estado, índice de satisfacción, registros inválidos por regla con sus filas y descarga del CSV. Verificada en el navegador con la API arrancada: cifras del briefing, CSV descargado idéntico byte a byte al del script, y errores 400 y 415 mostrados con el mensaje de la API | ✅ |
 | Capturas (consola e interfaz) y PR hacia `main`: [#6](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/6), abierta el 04/11/2026 para la evaluación del campus y fusionada el 18/11/2026 | ✅ |
 
 ## Directorio de proveedores — entregado (#7)
@@ -145,13 +145,30 @@ Rama `feature/password-reset`, **apilada sobre `feature/auth-frontend`** (PR #9 
 | 8 — Verificación de extremo a extremo con un email real (18/11/2026). Clave de Resend propia del entorno local (`nexova-api-local`), solo *Sending access*: envía, y listar dominios da `401 restricted_api_key`; la de acceso completo que crea el alta de Resend, borrada. Diego hizo el recorrido en el navegador con la API real y bases temporales: alta, «¿Olvidaste tu contraseña?», el email llegó a la bandeja de entrada (no a spam), contraseña nueva, `/login` con la nueva; el mismo enlace otra vez da el error de enlace no válido. La auditoría lo anotó todo, incluido un primer intento con una errata en el email (`unknown_account`, sin envío). Ni la clave ni nada con forma de clave en el historial (gitleaks), los archivos versionados, el log ni el build del backoffice | ✅ |
 | 9 — Cierre (19/11/2026): los logs `nexova.*` salen en la consola desde `INFO`, para ver también cuándo un email sale bien; captura del email con el token tapado en [`docs/screenshots/`](../docs/screenshots/); «avisar del enlace gastado al abrirlo» anotado como posible mejora en el [README del backoffice](../uis/backoffice/README.md); banco de memoria ([`techContext.md`](./techContext.md): decisión de email transaccional); ficha en la biblioteca y PR hacia `main`: [#10](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/10), abierta el 19/11/2026 para la evaluación del campus. Apilada sobre #9: hasta que se fusione, su diff incluye los commits de AUTH-02 | ✅ |
 
+## Gestor de incidencias centralizado — en revisión (#11)
+
+Rama `feature/incident-manager`, **apilada sobre `feature/password-reset`** (PR #10 abierta): las rutas nuevas llevan el candado de AUTH-01 y las pantallas necesitan la sesión de AUTH-02. Especificación: [`centralized-incident-manager.es.md`](../docs/contexts/proyectos/centralized-incident-manager.es.md). Un solo sitio para las incidencias que hoy llegan por email, Slack o de viva voz. Lo piden Sergio Molina (CTO), Roberto Díaz (Customer Support Lead) y Laura Mendoza (CEO).
+
+**Decisiones de Diego (19/11/2026):** el gestor guarda en su propio fichero de TinyDB, aparte del analizador; el vocabulario del briefing vive en `packages/shared/incident-analysis/`, que pasa a `packages/shared/` para que lo usen el seed y la API; etiquetas de estados, categorías y orígenes aprobadas; interfaz solo en español.
+
+| Fase | Estado |
+| --- | --- |
+| 1 — `incident-analysis` se mueve a [`packages/shared/`](../packages/shared/incident-analysis/) (en su propio commit) y gana el vocabulario del gestor, [`catalog.py`](../packages/shared/incident-analysis/incident_analysis/catalog.py), y la transformación de una fila del CSV en incidencia, [`seeding.py`](../packages/shared/incident-analysis/incident_analysis/seeding.py). 76 pruebas | ✅ |
+| 2 — Modelo `Incident` y su repositorio: [`database.py`](../services/api/app/domains/incidents/database.py), TinyDB en `storage/incidents.json` con las tablas `incidents` y `seed_imports`. `id` UUID, toda incidencia nace `open`, y el cambio de estado solo se escribe si nadie lo cambió antes | ✅ |
+| 3 — Seed: [`scripts/seed_incidents.py`](../scripts/seed_incidents.py) carga las 96 filas válidas del CSV del analizador. Repetirlo no duplica (`seed_imports` recuerda qué `ticket_id` entró) | ✅ |
+| 4 — Rutas en [`router.py`](../services/api/app/domains/incidents/router.py): `POST`, `GET` con filtros combinables, `GET /{id}`, `PATCH /{id}/status` y `GET /summary`. `400` con el campo y un `code`, `404`, `409` para un cambio que no permite el ciclo de vida, y `500` en JSON con las cabeceras de CORS. 355 pruebas | ✅ |
+| 5 — Alta en `/incidents/new` ([`IncidentForm`](../uis/backoffice/components/IncidentForm.tsx)): errores bajo cada campo, escritos a partir del `code` de la API, y ayuda literal del briefing en categoría y origen | ✅ |
+| 6 — Lista en `/incidents` ([`IncidentManagerList`](../uis/backoffice/components/IncidentManagerList.tsx)): filtros en la URL, botón «Solo incumplimientos de SLA», estados de carga, error con «Reintentar» y vacío, y cambio de estado optimista que vuelve atrás si la API lo rechaza. El analizador se mueve a `/incidents/analyze` | ✅ |
+| 7 — Panel de resumen ([`IncidentSummaryPanel`](../uis/backoffice/components/IncidentSummaryPanel.tsx)): totales por estado, incumplimientos de SLA y reparto por sede, origen y categoría. Carga aparte de la lista: si `/summary` falla, un aviso y la lista sigue. Se vuelve a pedir tras cada cambio de estado confirmado | ✅ |
+| 8 — Verificación y cierre (20/11/2026): Playwright contra la API real, 22/22 comprobaciones (alta desde el formulario, filtros, SLA, `PATCH` real con el resumen al día, `409` simulado que devuelve la fila a «Abierta», `/summary` y la lista caídos con «Reintentar»); capturas en [`docs/screenshots/`](../docs/screenshots/); banco de memoria; ficha en la biblioteca y PR hacia `feature/password-reset`: [#11](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/11), abierta el 20/11/2026 para la evaluación del campus. Apilada sobre #10: hasta que se fusione, su diff incluye los commits de AUTH-02 y AUTH-03 | ✅ |
+
 ## Próximo
 
 Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), memoria y harness de agentes (8), workflows agénticos (9) y tiempo real (10).
 
 **Qué proyecto toca lo marca la web de 4Geeks**, y Diego pega el enunciado al empezar. Que un contexto esté en `docs/contexts/` no lo convierte en el siguiente.
 
-**Rama del siguiente proyecto (19/11/2026):** las PRs #9 (AUTH-02) y #10 (AUTH-03, apilada sobre #9) siguen abiertas, a la espera de la revisión del campus. Si el siguiente proyecto necesita algo de la autenticación del backoffice o de la API, su rama sale de `feature/password-reset`, que ya lo contiene todo, y se apila. Si no lo necesita, sale de `main`. Al fusionar, primero #9 y después #10, con *merge commit*, como el 18/11.
+**Rama del siguiente proyecto (20/11/2026):** las PRs #9 (AUTH-02), #10 (AUTH-03, apilada sobre #9) y #11 (gestor de incidencias, apilada sobre #10) siguen abiertas, a la espera de la revisión del campus. Si el siguiente proyecto necesita algo de ellas, su rama sale de `feature/incident-manager`, que ya lo contiene todo, y se apila. Si no lo necesita, sale de `main`. Al fusionar, en orden #9, #10 y #11, con *merge commit*, como el 18/11.
 
 ## Deuda técnica y decisiones aplazadas
 
@@ -168,4 +185,5 @@ Telemetría (6), pipelines de datos (6b), RAG sobre la base de candidatos (7), m
 | **Remitente de pruebas de Resend** | El email sale de `onboarding@resend.dev`, que solo entrega al email con el que se creó la cuenta de Resend. Para que llegue a cualquier persona de Nexova hace falta verificar un dominio propio en Resend (registros DNS) y cambiar `NEXOVA_API_EMAIL_FROM`, con una clave propia de ese entorno. Se hace al desplegar |
 | **"El último análisis" en memoria** | `GET /api/incidents/results/export` exporta el último análisis del proceso: se pierde al reiniciar, es común a todos los usuarios y no funciona con varios workers. Solución prevista: un `analysis_id` en la respuesta del `POST`. Cambia el contrato del enunciado, así que se aplaza hasta que haya más de un usuario |
 | **Pruebas automáticas de las rutas HTTP** | Resuelto con AUTH-01: [`tests/http_client.py`](../services/api/tests/http_client.py) prueba las rutas por ASGI, sin `httpx`. El frontend se prueba con scripts de Playwright fuera del repositorio: no hay pruebas automáticas del backoffice en la CI más allá de typecheck, lint y build |
+| **Antigüedad de las incidencias abiertas** | Laura Mendoza quiere saber «cuánto tiempo llevan sin resolver». La lista muestra cuándo se registró cada una, pero el resumen no calcula antigüedades ni tiempos de resolución, porque el contrato de `/summary` del enunciado no los incluye. Es la siguiente mejora natural del gestor, junto a asignar responsable al pasar a «En curso» |
 | **Dependencia de una API mock compartida** | Los datos los escriben también otros alumnos. Ninguna funcionalidad puede asumir que un registro concreto sigue existiendo. El backend propio **no la envuelve**: convivirán |
