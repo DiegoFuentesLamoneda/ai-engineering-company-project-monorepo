@@ -3,7 +3,7 @@
 > Qué está entregado, qué está en curso y qué viene después.
 > **Se actualiza en el mismo commit que cierra un trabajo.** Es el paso 3 del flujo de [`AGENTS.md`](../AGENTS.md).
 
-_Última actualización: 20 de noviembre de 2026 (gestor de incidencias centralizado)._
+_Última actualización: 20 de noviembre de 2026 (auditoría de gestión de errores)._
 
 ## Entregado
 
@@ -162,7 +162,7 @@ Rama `feature/incident-manager`, **apilada sobre `feature/password-reset`** (PR 
 | 7 — Panel de resumen ([`IncidentSummaryPanel`](../uis/backoffice/components/IncidentSummaryPanel.tsx)): totales por estado, incumplimientos de SLA y reparto por sede, origen y categoría. Carga aparte de la lista: si `/summary` falla, un aviso y la lista sigue. Se vuelve a pedir tras cada cambio de estado confirmado | ✅ |
 | 8 — Verificación y cierre (20/11/2026): Playwright contra la API real, 22/22 comprobaciones (alta desde el formulario, filtros, SLA, `PATCH` real con el resumen al día, `409` simulado que devuelve la fila a «Abierta», `/summary` y la lista caídos con «Reintentar»); capturas en [`docs/screenshots/`](../docs/screenshots/); banco de memoria; ficha en la biblioteca y PR hacia `feature/password-reset`: [#11](https://github.com/DiegoFuentesLamoneda/ai-engineering-company-project-monorepo/pull/11), abierta el 20/11/2026 y entregada en 4Geeks esa misma noche, del 19 al 20/11, para la evaluación del campus. Apilada sobre #10: hasta que se fusione, su diff incluye los commits de AUTH-02 y AUTH-03 | ✅ |
 
-## Auditoría de gestión de errores — en curso
+## Auditoría de gestión de errores — entregada
 
 Rama `feature/error-handling-audit`, **apilada sobre `feature/incident-manager`** (PR #11 abierta): audita todo lo construido, incluido lo que aún está en revisión. Proyecto «Gestión de Errores»: auditar el repositorio y aplicar una estrategia de errores coherente en frontend, backend y scripts, sin funcionalidades nuevas ni refactorizaciones ajenas. El enunciado lo pegó Diego el 20/11/2026. Informe y estado de cada hallazgo: [`ERROR_HANDLING_AUDIT.md`](../docs/ERROR_HANDLING_AUDIT.md).
 
@@ -173,7 +173,7 @@ Rama `feature/error-handling-audit`, **apilada sobre `feature/incident-manager`*
 | 3 — Scripts: `sync_contexts.py` cuenta los fallos y sale con `1` (S1), `seed` y `create-admin` sin trazas y Ctrl+C limpio (S2, S4), `OSError` en lectura, escritura y base de datos (S3), comprobaciones en `pandas_clean.py` (S6). 375 pruebas | ✅ |
 | 4 — Base del backoffice: `error.tsx`, `global-error.tsx` y `not-found.tsx` en español con «Reintentar» y enlace al panel (F1), JSON ilegible (F3), textos por código sin el número (F6), la configuración que falta solo a la consola de desarrollo (F7), `localStorage` lleno o bloqueado (F12). Typecheck, lint y build en verde | ✅ |
 | 5 — Pantallas del backoffice: «Reintentar» en candidaturas, resumen del proceso, proveedores, notas y perfil (F5); `?.` y valores por defecto en hooks, listas, ficha y paneles de incidencias (F2, F4, F9); mensajes propios en el formulario de candidatura (F8); `finally` en login, registro y nueva contraseña sin perder el bloqueo tras un envío correcto (F10); enlace «Mi cuenta» si `getMe` falla (F11). Typecheck, lint y build en verde | ✅ |
-| 6 — Verificación y cierre: typecheck, lint, build, pruebas, Playwright con los estados de error, banco de memoria, ficha y PR | ⬜ |
+| 6 — Verificación y cierre (20/11/2026): 375 pruebas, typecheck, lint y build en verde; skill de etiquetas sin hallazgos; Playwright fuera del repo contra una API aislada, 13/13 escenarios de error (red caída, `404`, carga lenta, «Reintentar» que recupera, 404 de ruta), capturas `error-handling-*` en [`docs/screenshots/`](../docs/screenshots/); estrategia por capa en [`techContext.md`](./techContext.md); ficha en la biblioteca y PR hacia `feature/incident-manager`: PR_PENDIENTE | ✅ |
 
 ## Próximo
 

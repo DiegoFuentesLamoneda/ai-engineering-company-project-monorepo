@@ -203,6 +203,18 @@ Decidido el 19–20/11/2026, con el gestor de incidencias centralizado.
 - **El resumen carga aparte de la lista y sin filtros.** Si `/summary` falla, solo cae el panel. Se vuelve a pedir tras cada cambio de estado confirmado (un contador, `revision`, sin librería de estado). Es el estado de toda la base, no de lo filtrado.
 - **Solo en español.** El briefing pide versión bilingüe solo si la interfaz ya la tenía, y el backoffice no la tiene.
 
+### Gestión de errores: una estrategia por capa
+
+Decidido el 20/11/2026, con la auditoría de [`ERROR_HANDLING_AUDIT.md`](../docs/ERROR_HANDLING_AUDIT.md). Es la regla para todo lo que se construya a partir de ahora.
+
+- **Backoffice: todo `fetch` pasa por [`lib/api.ts`](../uis/backoffice/lib/api.ts).** Convierte cualquier fallo en un `ApiError` con un texto en español y sin el código HTTP. `status 0` significa red o configuración. Un cuerpo que no se puede leer también se convierte en `ApiError`, nunca en `SyntaxError`. Los componentes no escriben mensajes para códigos concretos salvo en los formularios, que traducen el `code` o el campo.
+- **Cada carga tiene tres estados y una salida.** Cargando, éxito y error, con texto legible. Cada error lleva «Reintentar» (los hooks devuelven `recargar`, que sube un contador `intento`) o un enlace para volver. Si un bloque falla y el resto de la página no depende de él, solo cae ese bloque, como el resumen de incidencias.
+- **Los datos de la API se leen con `?.` y un valor de reserva**: `?? []`, `?? 0` y `?? "—"`. A una etiqueta que falta se le pinta el valor tal cual, para no dejar el hueco.
+- **El `finally` de los formularios de acceso solo reactiva el botón si el envío ha fallado.** Si sale bien, se queda bloqueado hasta la redirección.
+- **Páginas de error de Next** (`error.tsx`, `global-error.tsx` y `not-found.tsx`): en español y sin `error.message`, que es texto técnico. Como referencia solo se enseña el `digest`.
+- **API:** el `422` sin `input` (no devuelve lo que envió el usuario); el `503` cuando falla el almacenamiento; el `500`, en JSON. Cualquier fallo de un servicio externo, incluido un corte a mitad de respuesta, se traduce a un error propio, como el `EmailDeliveryError` de Resend, y en el log solo van su código y su tipo. Nunca salen trazas, valores de configuración ni secretos.
+- **Scripts:** `try/except` alrededor de cada lectura, escritura y apertura de base de datos. El mensaje va a `stderr` y el script sale con `sys.exit(1)`. Ctrl+C sale limpio. Un script que procesa varias cosas cuenta los fallos y sale con `1` si hubo alguno.
+
 ### CI acotada por rutas
 
 Cada workflow se dispara solo cuando cambia su carpeta. Ver [`.github/workflows/`](../.github/workflows/):

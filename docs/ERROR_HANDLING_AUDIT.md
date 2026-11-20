@@ -58,6 +58,33 @@ Estado: ✅ corregido · ⬜ pendiente · ➖ se deja como está (con el motivo)
 
 Sin `fetch`, sin `localStorage` y sin `console.*`. El formulario de la web pública simula el envío por decisión del hito 1, así que no tiene estados de red que gestionar. ➖
 
+## Verificación
+
+Hecha el 20/11/2026, con todas las correcciones en la rama.
+
+| Comprobación | Resultado |
+| --- | --- |
+| Pruebas de la API (`uv run python -m unittest discover -s tests`) | ✅ 375 OK |
+| Backoffice: `npm run typecheck`, `npm run lint` y `npm run build` | ✅ En verde |
+| Skill [`verificar-etiquetas-de-dominio`](../.agents/skills/verificar-etiquetas-de-dominio/SKILL.md) | ✅ Mapas con 4 estados y 5 etapas; los dos `grep` sin resultados; ningún texto con guion bajo en el panel, candidaturas, proveedores ni incidencias |
+| Recorrido en el navegador | ✅ 13/13 escenarios |
+
+**Cómo se probó en el navegador.** Un script de Playwright, fuera del repositorio para no añadir dependencias, con el Chromium que ya estaba descargado en el equipo. El backoffice se arrancó en modo desarrollo y la API en un puerto aparte, con las bases de datos en una carpeta temporal y una cuenta de prueba, sin tocar los datos locales. Cada fallo se provoca interceptando la petición (red cortada, `404` o respuesta lenta); después se quita la interceptación y se pulsa «Reintentar».
+
+| Escenario | Lo que se ve | Captura |
+| --- | --- | --- |
+| Login con la contraseña mal (`401` real) | «Email o contraseña incorrectos.» y el botón se reactiva | — |
+| Login con la API caída | «No se ha podido conectar con el servidor.» y el botón se reactiva | [login-sin-api](./screenshots/error-handling-login-sin-api.png) |
+| Candidaturas sin el tracker | Título, causa y «Reintentar»; al reintentar, la lista vuelve (100 filas) | [candidaturas-error](./screenshots/error-handling-candidaturas-error.png) |
+| Ficha de una candidatura que no existe (`404`) | «No se ha podido cargar la candidatura» y «Volver al listado» | [candidatura-404](./screenshots/error-handling-candidatura-404.png) |
+| Proveedores con respuesta lenta | «Cargando proveedores…» | [proveedores-cargando](./screenshots/error-handling-proveedores-cargando.png) |
+| Proveedores sin la API | Error con «Reintentar»; al reintentar, los 15 proveedores | — |
+| Incidencias con `/summary` caído | Aviso de una línea con «Reintentar», y la lista sigue debajo; al reintentar, el resumen vuelve | [incidencias-resumen-error](./screenshots/error-handling-incidencias-resumen-error.png) |
+| Perfil con `/auth/me` caído | «No se ha podido cargar tu perfil» con «Reintentar», y el menú enseña «Mi cuenta» (F11) | [perfil-error](./screenshots/error-handling-perfil-error.png) |
+| Una ruta que no existe | La página 404 en español con «Volver al panel» | [ruta-404](./screenshots/error-handling-ruta-404.png) |
+
+**Valores de reserva con el valor crudo.** En [`CandidateList`](../uis/backoffice/components/CandidateList.tsx) (`STATUS_LABELS[…] ?? candidate.status`) y [`IncidentResults`](../uis/backoffice/components/IncidentResults.tsx) (`INCIDENT_STATUS_LABELS[…] ?? fila.status`), el valor de la API solo se pinta si le falta la etiqueta, es decir, si la API manda un valor que `CONTEXT.md` no define. Los mapas están tipados como `Record<…>` y cubren todos los valores conocidos, así que con datos válidos no aparece nunca. Se deja así a propósito: es mejor ver un valor raro que una celda vacía, y lo ve quien tiene que avisar del cambio de contrato.
+
 ## Fuera de alcance
 
 Encontrado en la auditoría, pero arreglarlo es una funcionalidad o un cambio de diseño, no gestión de errores. Pasa a la deuda técnica de [`progress.md`](../memory-bank/progress.md).
