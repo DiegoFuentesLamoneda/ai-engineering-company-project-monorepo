@@ -5,6 +5,12 @@ import type {
   IncidentStatus,
   SatisfactionScore,
 } from "@/types/incident";
+import type {
+  Branch,
+  IncidentManagerCategory,
+  IncidentManagerStatus,
+  IncidentOrigin,
+} from "@/types/incident-manager";
 import type { Category, Country, SupplierStatus } from "@/types/supplier";
 
 /**
@@ -142,3 +148,107 @@ export const CATEGORY_VALUES: Category[] = [
 ];
 
 export const SUPPLIER_STATUS_VALUES: SupplierStatus[] = ["active", "suspended"];
+
+// --- Gestor de incidencias (docs/contexts/proyectos/centralized-incident-manager.es.md) ---
+// Las sedes son la tabla "Oficinas de Nexova" del briefing, literal. El
+// briefing no da nombre corto a estados, categorías ni orígenes: estas
+// etiquetas las aprobó Diego el 19/11/2026.
+
+export const BRANCH_LABELS: Record<Branch, string> = {
+  central: "Central — Sede Valencia",
+  valencia_operations: "Valencia — Operaciones",
+  miami_office: "Miami Office",
+  remote: "Remoto (empleado sin sede fija)",
+};
+
+export const MANAGER_CATEGORY_LABELS: Record<IncidentManagerCategory, string> = {
+  technical_failure: "Fallo técnico",
+  process_error: "Error de proceso",
+  client_complaint: "Queja de cliente",
+  candidate_issue: "Incidencia con candidato",
+  staff_issue: "Incidencia de personal (RR. HH.)",
+  sla_breach: "Incumplimiento de SLA",
+  data_quality: "Calidad de datos",
+  other: "Otra",
+};
+
+/** La descripción de cada categoría, literal del briefing: la ayuda del formulario. */
+export const MANAGER_CATEGORY_DESCRIPTIONS: Record<IncidentManagerCategory, string> = {
+  technical_failure:
+    "Fallo de sistema o herramienta tecnológica (ATS, HubSpot, Zendesk, infraestructura)",
+  process_error:
+    "Error en un proceso operativo: selección, incorporación, formación, facturación",
+  client_complaint:
+    "Queja o reclamación de un cliente corporativo sobre el servicio prestado",
+  candidate_issue:
+    "Problema reportado por o relacionado con un candidato en proceso de selección",
+  staff_issue: "Incidencia interna de RRHH: ausencia, conflicto, accidente, baja",
+  sla_breach: "Incumplimiento de SLA comprometido con un cliente",
+  data_quality: "Error o inconsistencia en datos de candidatos, clientes o reportes",
+  other: "Cualquier incidencia que no encaje en las categorías anteriores",
+};
+
+export const ORIGIN_LABELS: Record<IncidentOrigin, string> = {
+  customer: "Cliente corporativo",
+  branch: "Personal de una oficina",
+  internal: "Detección interna",
+};
+
+/** Cuándo se usa cada origen, literal del briefing. */
+export const ORIGIN_DESCRIPTIONS: Record<IncidentOrigin, string> = {
+  customer: "Reportada por un cliente corporativo (empresa que contrata servicios de Nexova)",
+  branch: "Reportada por personal de una de las oficinas de Nexova",
+  internal: "Detectada internamente por tecnología, operaciones o dirección",
+};
+
+export const MANAGER_STATUS_LABELS: Record<IncidentManagerStatus, string> = {
+  open: "Abierta",
+  in_progress: "En curso",
+  resolved: "Resuelta",
+  discarded: "Descartada",
+};
+
+/** Orden en desplegables y filtros: el del briefing. */
+export const BRANCH_VALUES: Branch[] = ["central", "valencia_operations", "miami_office", "remote"];
+
+export const MANAGER_CATEGORY_VALUES: IncidentManagerCategory[] = [
+  "technical_failure",
+  "process_error",
+  "client_complaint",
+  "candidate_issue",
+  "staff_issue",
+  "sla_breach",
+  "data_quality",
+  "other",
+];
+
+export const ORIGIN_VALUES: IncidentOrigin[] = ["customer", "branch", "internal"];
+
+export const MANAGER_STATUS_VALUES: IncidentManagerStatus[] = [
+  "open",
+  "in_progress",
+  "resolved",
+  "discarded",
+];
+
+export const MANAGER_STATUS_BADGE_STYLES: Record<IncidentManagerStatus, string> = {
+  open: "bg-slate-700 text-slate-100",
+  in_progress: "bg-marca-600 text-white",
+  resolved: "bg-emerald-700 text-emerald-50",
+  discarded: "bg-red-900 text-red-100",
+};
+
+/**
+ * El ciclo de vida del briefing: a qué estados puede pasar cada uno. Resuelta
+ * y Descartada son finales. Quien decide es la API (ALLOWED_TRANSITIONS); aquí
+ * solo sirve para no ofrecer en la lista un cambio que rechazaría.
+ */
+export const MANAGER_STATUS_TRANSITIONS: Record<IncidentManagerStatus, IncidentManagerStatus[]> = {
+  open: ["in_progress", "discarded"],
+  in_progress: ["resolved", "discarded"],
+  resolved: [],
+  discarded: [],
+};
+
+/** La categoría crítica del briefing: tiene filtro directo y se marca en la lista. */
+export const SLA_BREACH_CATEGORY: IncidentManagerCategory = "sla_breach";

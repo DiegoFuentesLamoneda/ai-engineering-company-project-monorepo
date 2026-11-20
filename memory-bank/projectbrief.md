@@ -89,6 +89,21 @@ Lo fija el briefing [`incidents-file-analysis.es.md`](../docs/contexts/proyectos
 
 **`customer_email` es un dato personal**: nunca se imprime, se registra ni se exporta, ni siquiera en un mensaje de error. Por eso el fichero no puede enviarse a herramientas de IA externas.
 
+### Vocabulario del gestor de incidencias centralizado
+
+Lo fija el briefing [`centralized-incident-manager.es.md`](../docs/contexts/proyectos/centralized-incident-manager.es.md). Lo piden **Sergio Molina** (CTO: ver todos los problemas en un sitio y medir tiempos de resolución), **Roberto Díaz** (Customer Support Lead) y **Laura Mendoza** (CEO: cuántas críticas hay abiertas, de qué oficina vienen y cuánto llevan sin resolver). Los valores se usan literalmente; las etiquetas de estado, categoría y origen las aprobó Diego el 19/11/2026, y las de sede son las del briefing:
+
+| Término | Qué significa aquí | Valores en el código → etiqueta |
+| --- | --- | --- |
+| **Incidencia** | Un problema técnico u operativo registrado en el gestor. No es un ticket del helpdesk legado: el seed convierte los tickets válidos en incidencias | `Incident` |
+| **Estado** | Ciclo de vida: `open → in_progress → resolved`, y `discarded` desde `open` o `in_progress`. `resolved` y `discarded` son finales | `open` Abierta · `in_progress` En curso · `resolved` Resuelta · `discarded` Descartada |
+| **Categoría** | Tipo de incidencia. La ayuda del formulario lleva la descripción literal del briefing | `technical_failure` Fallo técnico · `process_error` Error de proceso · `client_complaint` Queja de cliente · `candidate_issue` Incidencia con candidato · `staff_issue` Incidencia de personal (RR. HH.) · `sla_breach` Incumplimiento de SLA · `data_quality` Calidad de datos · `other` Otra |
+| **Incidencia crítica** | La de categoría `sla_breach`. Se filtra con un clic («Solo incumplimientos de SLA») y va en rojo en la lista y en el resumen | `?category=sla_breach` |
+| **Origen** | Quién la reporta | `customer` Cliente corporativo · `branch` Personal de una oficina · `internal` Detección interna |
+| **Sede** | De qué oficina viene. `central` cuando no corresponde a una oficina concreta. `remote` es una sede más, y su etiqueta no se confunde con las de Valencia | `central` Central — Sede Valencia · `valencia_operations` Valencia — Operaciones · `miami_office` Miami Office · `remote` Remoto (empleado sin sede fija) |
+
+`branch` es a la vez un **origen** («personal de una oficina») y el nombre del campo **sede**. En la interfaz no se ve: los dos se muestran siempre con su etiqueta.
+
 ### Vocabulario de cuentas — autenticación de la API (AUTH-01)
 
 Lo fija el enunciado del ticket **AUTH-01**. Los valores se usan literalmente:

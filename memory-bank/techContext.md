@@ -10,12 +10,13 @@
 | [`uis/website/`](../uis/website/) | Web pública de Nexova: landing + formulario de registro de talento | HTML5, Tailwind 4 (CLI), JS sin dependencias | 1 |
 | [`packages/talent-core/`](../packages/talent-core/) | Motor de scoring de candidatos y matching de vacantes | TypeScript 5, `node:test`, `tsx` | 2 |
 | [`uis/talent-lab/`](../uis/talent-lab/) | Banco de pruebas manual de `talent-core`: dispara sus 18 funciones desde botones | HTML + Tailwind 4 + el `dist/` de `talent-core` | 2 |
-| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas, análisis de incidencias de soporte y directorio de proveedores, con login, registro, perfil y recuperación y cambio de contraseña | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias · Directorio de proveedores · AUTH-02 · AUTH-03 |
+| [`uis/backoffice/`](../uis/backoffice/) | Aplicación interna: panel de operaciones, seguimiento de candidaturas, gestor de incidencias centralizado con su análisis del CSV del helpdesk y directorio de proveedores, con login, registro, perfil y recuperación y cambio de contraseña | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind 4 | 3 · 4 · Analizador de incidencias · Directorio de proveedores · AUTH-02 · AUTH-03 · Gestor de incidencias |
 | [`packages/shared/`](../packages/shared/) | `@repo/shared-types` — viene de la plantilla, prácticamente vacío | TypeScript | — |
-| [`packages/incident-analysis/`](../packages/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte. Lógica única que comparten el script y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias |
+| [`packages/shared/incident-analysis/`](../packages/shared/incident-analysis/) | Validación y métricas de los CSV de tickets de soporte, y el vocabulario del gestor de incidencias con su ciclo de vida. Lógica única que comparten los scripts y la API | Python 3.11+, solo stdlib, `unittest` | Analizador de incidencias · Gestor de incidencias |
 | [`scripts/analyze.py`](../scripts/analyze.py) | Analizador de tickets por consola, con exportación a `results.csv` | Python 3, usa `incident-analysis` | Analizador de incidencias |
+| [`scripts/seed_incidents.py`](../scripts/seed_incidents.py) | Carga en el gestor de incidencias las filas válidas del CSV del analizador, sin duplicar | Python 3, usa `incident-analysis` y la API | Gestor de incidencias |
 | [`scripts/sync_contexts.py`](../scripts/sync_contexts.py) | Descarga los contextos del syllabus y los coloca en `docs/contexts/` | Python 3, solo stdlib | — |
-| [`services/api/`](../services/api/) | Backend de Nexova. Dominios: `incidents` (análisis del CSV subido y exportación del último análisis), `suppliers` (directorio de proveedores con su seeder, `uv run seed`), `users` y `profiles` (cuentas y sus datos personales, con `uv run create-admin`) `auth` (login con JWT) y `password_resets` (enlace de restablecimiento por email, cambio de contraseña y su auditoría). Todo menos el registro, el login y la recuperación de contraseña pide token. Envía email con Resend | Python 3.11+, FastAPI, Pydantic 2, uvicorn, TinyDB, python-jose, libpass, uv | Analizador de incidencias · Directorio de proveedores · Autenticación (AUTH-01) · AUTH-03 |
+| [`services/api/`](../services/api/) | Backend de Nexova. Dominios: `incidents` (análisis del CSV subido y exportación del último análisis, y el gestor de incidencias centralizado sobre TinyDB), `suppliers` (directorio de proveedores con su seeder, `uv run seed`), `users` y `profiles` (cuentas y sus datos personales, con `uv run create-admin`) `auth` (login con JWT) y `password_resets` (enlace de restablecimiento por email, cambio de contraseña y su auditoría). Todo menos el registro, el login y la recuperación de contraseña pide token. Envía email con Resend | Python 3.11+, FastAPI, Pydantic 2, uvicorn, TinyDB, python-jose, libpass, uv | Analizador de incidencias · Directorio de proveedores · Autenticación (AUTH-01) · AUTH-03 · Gestor de incidencias |
 
 Las carpetas `data/`, `agents/`, `mcps/`, `workflows/`, `infra/` e `internal/` existen con su README pero **están vacías a propósito**. Se llenarán en los hitos que las necesiten. No se crean subcarpetas "por si acaso".
 
@@ -48,7 +49,7 @@ Consecuencias prácticas: los datos que devuelve **pueden cambiar o desaparecer*
 
 El prefijo `NEXT_PUBLIC_` incrusta la variable en el bundle del navegador — **es pública**. Nunca debe usarse para credenciales.
 
-El backoffice habla además con la API propia, `services/api/`, para el análisis de incidencias y el directorio de proveedores: variable **`NEXT_PUBLIC_NEXOVA_API_URL`** (`http://localhost:8000` en local). Las dos APIs pasan por el mismo `request()` de `lib/api.ts`, cada una con su URL base.
+El backoffice habla además con la API propia, `services/api/`, para el gestor y el análisis de incidencias y el directorio de proveedores: variable **`NEXT_PUBLIC_NEXOVA_API_URL`** (`http://localhost:8000` en local). Las dos APIs pasan por el mismo `request()` de `lib/api.ts`, cada una con su URL base.
 
 > **Desde AUTH-02 (18/11/2026), el backoffice hace login** y manda el token en `Authorization: Bearer` en cada llamada a la API propia. La API mock del tracker no lo recibe: no es nuestra y no lo pide. Cómo se guarda la sesión y por qué, en la decisión «Backoffice: sesión con el token en `localStorage` y guardia en el cliente».
 
@@ -86,7 +87,7 @@ Funciones puras sin estado, probadas con el runner de `node:test` (112 pruebas).
 
 ### El análisis de tickets vive en un paquete Python, no en el script ni en la API
 
-`packages/incident-analysis/` es la **única** implementación de la validación y las métricas del CSV de tickets. El script `scripts/analyze.py` y la API la importan, no la copian. Es un criterio de evaluación del proyecto, y si estuviera duplicada, el día que cambiara una regla los dos darían números distintos. Mismo papel que `talent-core` en TypeScript.
+`packages/shared/incident-analysis/` es la **única** implementación de la validación y las métricas del CSV de tickets. El script `scripts/analyze.py` y la API la importan, no la copian. Es un criterio de evaluación del proyecto, y si estuviera duplicada, el día que cambiara una regla los dos darían números distintos. Mismo papel que `talent-core` en TypeScript.
 
 - **Librería estándar, sin pandas.** Se lee el CSV en streaming con `csv.DictReader`: la memoria no crece con el tamaño del fichero, que en producción puede llegar al millón de líneas.
 - **El script no exige instalar el paquete**: añade su carpeta a `sys.path`. La API sí lo instala, en modo editable, desde su `pyproject.toml`.
@@ -189,6 +190,19 @@ Decidido el 18/11/2026, con AUTH-02. El enunciado fija dos cosas: el token va en
 - **Sin librería de estado, como el tracker.** El menú de sesión se entera de un cambio de perfil con un evento del navegador (`nexova:profile`), no con un *store* global. Si aparecen más datos compartidos entre vistas, se reevalúa.
 - **Solo se protege el backoffice.** Es la única aplicación Next.js y la única que llama a la API propia. `uis/website/` es pública por enunciado, y `uis/talent-lab/` no carga datos de nadie.
 
+### Gestor de incidencias: el vocabulario en el paquete compartido y errores pensados para la interfaz
+
+Decidido el 19–20/11/2026, con el gestor de incidencias centralizado.
+
+- **Estados, categorías, orígenes y sedes se definen una sola vez**, como `StrEnum` en [`incident_analysis.catalog`](../packages/shared/incident-analysis/incident_analysis/catalog.py), con el ciclo de vida (`ALLOWED_TRANSITIONS`). Los usan el modelo de la API y el seed. Por eso `incident-analysis` pasó a `packages/shared/`, que es donde la plantilla pone lo que comparten varios proyectos. El backoffice repite los valores en TypeScript ([`types/incident-manager.ts`](../uis/backoffice/types/incident-manager.ts)) porque no puede importar Python, igual que con `talent-core` al revés.
+- **El gestor y el analizador conviven en el dominio `incidents`, pero no comparten datos.** El analizador trabaja con el CSV subido y el último análisis en memoria; el gestor, con su fichero de TinyDB (`incidents.json`, `NEXOVA_API_INCIDENTS_DB_PATH`). El seed lleva el histórico del CSV al gestor una vez y recuerda qué tickets entraron, para no duplicarlos.
+- **Excepción a la tabla de errores: las rutas del gestor dan `400`, no `422`, en la validación de forma.** Lo pide el enunciado, con el campo que falla. Se hace con una clase de ruta propia en un `APIRouter` aparte, no con un manejador global: el resto de la API sigue con el `422` que ya usa el backoffice. Cada error lleva un `code` estable, y el formulario escribe su texto a partir de él, no del mensaje.
+- **`409` para un cambio de estado que el ciclo de vida no permite, y también para el que llega segundo.** El repositorio solo escribe si el estado sigue siendo el que se leyó: dos personas no se pisan sin saberlo.
+- **El `500` sale en JSON y con CORS**, desde un middleware por dentro de CORS. Sin él, el navegador oculta la respuesta y el frontend solo ve «Failed to fetch».
+- **En el backoffice, el cambio de estado es optimista.** La fila cambia al momento y vuelve atrás con un mensaje propio si la API lo rechaza. La fila que deja de cumplir el filtro se queda hasta recargar, para que no desaparezca bajo el cursor.
+- **El resumen carga aparte de la lista y sin filtros.** Si `/summary` falla, solo cae el panel. Se vuelve a pedir tras cada cambio de estado confirmado (un contador, `revision`, sin librería de estado). Es el estado de toda la base, no de lo filtrado.
+- **Solo en español.** El briefing pide versión bilingüe solo si la interfaz ya la tenía, y el backoffice no la tiene.
+
 ### CI acotada por rutas
 
 Cada workflow se dispara solo cuando cambia su carpeta. Ver [`.github/workflows/`](../.github/workflows/):
@@ -209,9 +223,9 @@ No hay runner en la raíz. Cada comando se ejecuta **desde su carpeta**.
 | `uis/talent-lab/` | `npm run dev` · `npm run build` (compila la librería + el CSS) |
 | `uis/backoffice/` | `npm run dev` · `npm run build` · `npm run typecheck` · `npm run lint` |
 | `packages/talent-core/` | `npm run typecheck` · `npm test` · `npm run demo` · `npm run build` |
-| `packages/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
+| `packages/shared/incident-analysis/` | `python -m unittest discover -s tests -t tests` |
 | `scripts/` | `python analyze.py incidents-nexova.csv` |
-| `services/api/` | `uv sync` · `uv run seed` · `uv run create-admin` · `uv run --env-file .env uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
+| `services/api/` | `uv sync` · `uv run seed` · `uv run python ../../scripts/seed_incidents.py` · `uv run create-admin` · `uv run --env-file .env uvicorn app.main:app --reload --port 8000` · `uv run python -m unittest discover -s tests` |
 
 ## Restricciones técnicas
 

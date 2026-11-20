@@ -11,7 +11,7 @@ from pathlib import Path
 
 from incident_analysis import analyze_file, render_report, write_results_csv
 
-SAMPLE = Path(__file__).resolve().parents[3] / "scripts" / "incidents-nexova.csv"
+SAMPLE = Path(__file__).resolve().parents[4] / "scripts" / "incidents-nexova.csv"
 
 
 class BriefingAcceptanceTest(unittest.TestCase):

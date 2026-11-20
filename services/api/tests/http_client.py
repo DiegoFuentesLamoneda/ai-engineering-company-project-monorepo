@@ -28,8 +28,18 @@ class Response:
         return json.loads(self.body)
 
 
-def request(app, method: str, path: str, *, json_body=None, form=None, token: str | None = None) -> Response:
-    headers: list[tuple[bytes, bytes]] = []
+def request(
+    app,
+    method: str,
+    path: str,
+    *,
+    json_body=None,
+    form=None,
+    token: str | None = None,
+    headers: dict[str, str] | None = None,
+) -> Response:
+    extra_headers = headers or {}
+    headers: list[tuple[bytes, bytes]] = [(k.lower().encode(), v.encode()) for k, v in extra_headers.items()]
     body = b""
     if json_body is not None:
         body = json.dumps(json_body).encode()

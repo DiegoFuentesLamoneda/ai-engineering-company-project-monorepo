@@ -15,7 +15,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Panel", hint: "Resumen de operaciones" },
   { href: "/candidates", label: "Candidaturas", hint: "Seguimiento del proceso activo" },
-  { href: "/incidents", label: "Incidencias", hint: "Análisis de tickets de soporte" },
+  { href: "/incidents", label: "Incidencias", hint: "Gestor de incidencias y análisis CSV" },
   { href: "/suppliers", label: "Proveedores", hint: "Directorio de proveedores externos" },
   {
     href: "/account/profile",

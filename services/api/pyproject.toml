@@ -39,7 +39,7 @@ create-admin = "app.create_admin:main"
 
 [tool.uv.sources]
 # Paquete del propio monorepo. editable: la API ve los cambios sin reinstalar.
-nexova-incident-analysis = { path = "../../packages/incident-analysis", editable = true }
+nexova-incident-analysis = { path = "../../packages/shared/incident-analysis", editable = true }
 
 [tool.setuptools.packages.find]
 include = ["app*"]
